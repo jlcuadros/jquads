@@ -22,6 +22,8 @@ or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
 - **Online endgame tables** (Lichess Syzygy, ≤ 7 pieces): exact results ("+M12" / "−M20") instead of Stockfish.
 - **Your games from Lichess or Chess.com** (no login, just the username): newest first, filters by
   speed and date, favourites on the device; a game opens with the board on your side.
+- **Save the game on the board** in the favourites (editable PGN headers, variations kept);
+  the favourites are kept as a PGN file and can be downloaded in one `.pgn`.
 - Settings: Maia rating, depths, hash memory, light classic Stockfish, number of lines.
 
 ## How it works

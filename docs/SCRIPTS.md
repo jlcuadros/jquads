@@ -19,6 +19,7 @@ Node scripts for the app: **build helpers** (`copy-vendor` copies the engine fil
 | ------ | ------------ | -------------- |
 | [copy-vendor.mjs](../scripts/copy-vendor.mjs) | Copies `sf17-79.*`, `sfhce.*` (Stockfish) and `ort-wasm-simd-threaded.*` (onnxruntime) from `node_modules` into `public/vendor/` | Automatic with `npm run dev` / `npm run build` |
 | [third-party-licenses.mjs](../scripts/third-party-licenses.mjs) | Writes `public/licenses.txt`: components (author, licence, URL, use), online services and the full licence texts (AGPL-3.0, GPL-3.0, MIT, BSD-2), each once | Automatic with `npm run dev` / `npm run build` (after copy-vendor) |
+| [save-test.mjs](../scripts/save-test.mjs) | Tests **📂 → 💾 Guardar** and **⬇ Descargar PGN** (no network): moves + variation by tapping squares, header form, save/update favourite, local PGN, share sheet (simulated) and plain download, reopening keeps headers and variation, new game → new favourite. 18 checks | After changing saving, favourites or PGN |
 | [credits-test.mjs](../scripts/credits-test.mjs) | Tests ⚙ → **Créditos y licencias**: footer link opens it, every component/licence named, not-affiliated/no-warranty notice, `licenses.txt` served with the 4 texts. 5 checks, screenshot `credits.png` | After changing the credits or the dependencies |
 | [ui-test.mjs](../scripts/ui-test.mjs) | Tests **the app** (`index.html`) in WebKit emulating an **iPhone 13**: waits for the full analysis, plays Maia's first move, waits for the threats, goes back (checks the cache) and saves 2 screenshots. Fails straight away if the engines don't load | After changing the interface. The screenshots are copied to `__Attachment__` to document the design |
 | [smoke-test.mjs](../scripts/smoke-test.mjs) | Opens `proto.html?auto=1&sf=<variant>&depth=14` in each browser, waits until it finishes (up to 10 min) and prints `window.__proto` as JSON. Exit code 1 if anything fails | After changing engine code |
@@ -48,6 +49,7 @@ Development and testing scripts only; none of them ships with the app.
 - `ui-test.mjs` passed in WebKit/iPhone 13 (2026-10-25): full analysis in 12.7 s on the first visit, going back via the cache in 54 ms.
 - `credits-test.mjs` passed **in production** 5/5 (2026-10-25).
 - `games-test.mjs` (Lichess + Chess.com) passed **in production** 20/20 (2026-10-25).
+- `save-test.mjs` passed 18/18 (2026-10-25). Headless WebKit has `navigator.share` but no sheet to answer it: the test replaces `navigator.share` to capture the file, then disables it to test the download.
 - `curl` against the Chess.com API needs a `User-Agent` header, or Cloudflare answers 403 (browsers always send one).
 - `ui-test`, `editor-test`, `tablebase-test` and `credits-test` run with a **Spanish device** (`locale: 'es-ES'`) because they look for Spanish texts; `i18n-test` covers the other languages.
 - `ui-test.mjs` uses a **persistent WebKit profile** in `$TMPDIR/maia-ui-test-webkit-profile` (or `UI_TEST_PROFILE`), so the models stay cached between runs. To simulate a "first visit", delete that folder. It also saves `03-settings.png` (⚙ panel open) and, since iteration 3, checks the threats *Only moves* mode (no bar) and the number of rows per engine. Since iteration 4: the default is *Only moves* (`04-threats-only-moves.png`), it checks *Bar and moves* (`05-threats-bar.png`) and leaves the profile at the default. Since 3.5: waits for `data-done="true"` on the bar blocks (complete analysis), measures the time after a move and **fails if any move in the legends has no colour**.
@@ -68,6 +70,8 @@ node scripts/games-test.mjs http://localhost:4173 <screenshots-folder>
 node scripts/i18n-test.mjs http://localhost:4173 <screenshots-folder>
 # endgame tables:
 node scripts/tablebase-test.mjs http://localhost:4173 <screenshots-folder>
+# save the current game + download the favourites:
+node scripts/save-test.mjs http://localhost:4173 <screenshots-folder>
 # credits and licence texts:
 node scripts/credits-test.mjs http://localhost:4173 <screenshots-folder>
 # position editor (touch taps):

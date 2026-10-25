@@ -157,7 +157,16 @@
         <div class="games-tabs games-sites">
           <button id="site-lichess" class="tab">Lichess</button>
           <button id="site-chesscom" class="tab">Chess.com</button>
+          <!-- Save the game on the board in the favourites, editing its PGN headers (José, 2026-10-25) -->
+          <button id="site-save" class="tab" data-i18n="games.save">💾 Guardar</button>
         </div>
+        <div id="gamesSave" class="games-save" hidden>
+          <p data-i18n="games.save.intro">Guarda la partida del tablero (con sus variantes) en ⭐ Favoritas. Puedes cambiar las cabeceras del PGN:</p>
+          <div class="settings-grid" id="saveFields"></div>
+          <button id="saveGame" class="primary"></button>
+          <div class="games-status" id="saveStatus"></div>
+        </div>
+        <div id="gamesBrowse">
         <div class="games-user">
           <input id="gamesUser" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" data-i18n-aria="games.user" />
           <button id="gamesLoad" class="primary" data-i18n="games.load">Cargar</button>
@@ -166,6 +175,8 @@
           <button id="tabRecent" class="tab active" data-i18n="games.tab.recent">Recientes</button>
           <button id="tabFavorites" class="tab" data-i18n="games.tab.favorites">⭐ Favoritas</button>
         </div>
+        <!-- All the favourites as one .pgn file (shown in the favourites tab) -->
+        <button id="favDownload" class="games-more" data-i18n="games.download" hidden>⬇ Descargar PGN</button>
         <div class="games-filters" id="gamesFilters">
           <div class="chips" id="speedChips"></div>
           <div class="dates">
@@ -176,6 +187,7 @@
         <div class="games-status" id="gamesStatus"></div>
         <ul class="games-list" id="gamesList"></ul>
         <button id="gamesMore" class="games-more" data-i18n="games.more" hidden>Cargar más</button>
+        </div>
       </div>
     </div>
 

@@ -10,20 +10,26 @@
  *     for both sites, each game labelled with its site);
  *   - tapping a game hands it to the app, which opens it at the initial
  *     position with the board facing the user (José's requirement).
+ *   - "💾 Guardar" next to the sites (José, 2026-10-25): edit the PGN
+ *     headers of the game on the board and save it (with its variations) in
+ *     the favourites; "⬇ Descargar PGN" in the favourites gives all of them
+ *     as one .pgn file.
  * The usernames are the same settings as ⚙ → "Usuario de Lichess" /
  * "Usuario de Chess.com". Chess.com has no "classical" speed: its chip is hidden.
  */
 import { t, getLang, type MessageKey } from '../i18n/i18n'
 import {
-  dayRange, scoreText, siteOf, timeControlText, userColor, userResult, GamesError,
-  PAGE_SIZE, SITES, SITE_NAMES, SPEEDS, type GameSummary, type GamesPage, type GamesQuery, type Site, type Speed,
+  dayRange, scoreText, siteOf, summaryFromPgn, timeControlText, userColor, userResult, GamesError,
+  PAGE_SIZE, SITES, SITE_NAMES, SPEEDS, type GameSummary, type GamesPage, type GamesQuery, type OnlineSite, type Speed,
 } from '../games/common'
-import { isFavorite, listFavorites, toggleFavorite } from '../games/favorites'
+import { favoritesPgn, isFavorite, listFavorites, saveFavorite, toggleFavorite } from '../games/favorites'
+import { RESULTS, ROSTER, defaultHeaders, pgnDate, type PgnHeaders } from '../game/pgn'
+import { shareFile } from '../lib/download'
 import { fetchLichessGames } from '../lichess/games'
 import { fetchChessComGames, CHESSCOM_SPEEDS } from '../chesscom/games'
 
 /** Each site: how to download a page, and which speed chips make sense. */
-const SOURCES: Record<Site, { fetch: (q: GamesQuery) => Promise<GamesPage>; speeds: Speed[] }> = {
+const SOURCES: Record<OnlineSite, { fetch: (q: GamesQuery) => Promise<GamesPage>; speeds: Speed[] }> = {
   lichess: { fetch: fetchLichessGames, speeds: SPEEDS },
   chesscom: { fetch: fetchChessComGames, speeds: CHESSCOM_SPEEDS },
 }
@@ -31,10 +37,19 @@ const SOURCES: Record<Site, { fetch: (q: GamesQuery) => Promise<GamesPage>; spee
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 
 interface Hooks {
-  getUser: (site: Site) => string
-  setUser: (site: Site, name: string) => void
+  getUser: (site: OnlineSite) => string
+  setUser: (site: OnlineSite, name: string) => void
   onPick: (game: GameSummary) => void
+  /** Headers of the game on the board (from the PGN it was opened from), and its favourite id if it was saved here. */
+  current: () => { headers: PgnHeaders; savedId?: string }
+  /** PGN of the game on the board with these headers. */
+  buildPgn: (headers: PgnHeaders) => string
+  /** The game on the board was saved as favourite `id` with `headers`. */
+  onSaved: (id: string, headers: PgnHeaders) => void
 }
+
+/** Headers editable in "Guardar", in this order (Result is a list; the rest text). */
+const SAVE_FIELDS = [...ROSTER.filter((k) => k !== 'Result'), 'WhiteElo', 'BlackElo', 'Result']
 
 /** Filters, remembered on the device between visits. */
 interface Filters {
@@ -60,9 +75,9 @@ function saveFilters() {
 
 /** Selected site, remembered on the device. */
 const SITE_KEY = 'gamesSite'
-function loadSite(): Site {
+function loadSite(): OnlineSite {
   try {
-    const v = localStorage.getItem(SITE_KEY) as Site | null
+    const v = localStorage.getItem(SITE_KEY) as OnlineSite | null
     return v && SITES.includes(v) ? v : 'lichess'
   } catch {
     return 'lichess'
@@ -70,7 +85,8 @@ function loadSite(): Site {
 }
 
 let hooks: Hooks
-let site: Site = loadSite()
+let site: OnlineSite = loadSite()
+let view: 'list' | 'save' = 'list' // "💾 Guardar" shows the header form instead of the list
 let filters = loadFilters()
 let tab: 'recent' | 'favorites' = 'recent'
 let games: GameSummary[] = [] // loaded so far (recent tab)
@@ -91,6 +107,7 @@ export function openGames(h: Hooks) {
   $('games').hidden = false
   $('games').scrollTop = 0
   document.body.style.overflow = 'hidden'
+  view = 'list'
   renderSite()
   renderFilters()
   // Reload only if the site, the user or the filters changed since the last time.
@@ -109,6 +126,7 @@ export function retranslateGames() {
     renderSite()
     renderFilters()
     render()
+    if (view === 'save') renderSaveForm()
   }
 }
 
@@ -135,6 +153,9 @@ function setup() {
   }
   $('tabFavorites').onclick = () => setTab('favorites')
   for (const s of SITES) $(`site-${s}`).onclick = () => setSite(s)
+  $('site-save').onclick = openSave
+  $('saveGame').onclick = saveCurrentGame
+  $('favDownload').onclick = () => void downloadFavorites()
   $('gamesFrom').onchange = () => onFilterChange(() => (filters.from = $<HTMLInputElement>('gamesFrom').value))
   $('gamesTo').onchange = () => onFilterChange(() => (filters.to = $<HTMLInputElement>('gamesTo').value))
   $('gamesMore').onclick = () => void loadPage()
@@ -156,9 +177,10 @@ function setup() {
 }
 
 /** Lichess | Chess.com: each keeps its username; the list reloads for the new site. */
-function setSite(next: Site) {
-  if (next === site && tab === 'recent') return
+function setSite(next: OnlineSite) {
+  if (next === site && tab === 'recent' && view === 'list') return
   site = next
+  view = 'list'
   try {
     localStorage.setItem(SITE_KEY, site)
   } catch {
@@ -178,11 +200,61 @@ function setSite(next: Site) {
 }
 
 function renderSite() {
-  for (const s of SITES) $(`site-${s}`).classList.toggle('active', s === site)
+  for (const s of SITES) $(`site-${s}`).classList.toggle('active', view === 'list' && s === site)
+  $('site-save').classList.toggle('active', view === 'save')
+  $('gamesBrowse').hidden = view === 'save'
+  $('gamesSave').hidden = view === 'list'
   const input = $<HTMLInputElement>('gamesUser')
   input.value = user()
   input.setAttribute('aria-label', t(site === 'lichess' ? 'games.user' : 'games.userChesscom'))
   input.placeholder = input.getAttribute('aria-label')!
+}
+
+// ---------------------------------------------------------------------------
+// 💾 Guardar: the game on the board → favourites, with edited PGN headers
+// ---------------------------------------------------------------------------
+
+function openSave() {
+  view = 'save'
+  renderSite()
+  renderSaveForm()
+}
+
+/** The form, filled with the game's headers (or the defaults of a game analysed here). */
+function renderSaveForm() {
+  const { headers, savedId } = hooks.current()
+  const values: PgnHeaders = { ...defaultHeaders(), ...headers }
+  $('saveFields').innerHTML = SAVE_FIELDS.map((k) => {
+    const id = `pgnh-${k}`
+    const input =
+      k === 'Result'
+        ? `<select id="${id}">${RESULTS.map((r) => `<option${r === values.Result ? ' selected' : ''}>${r}</option>`).join('')}</select>`
+        : `<input id="${id}" type="text" value="${escapeHtml(values[k] ?? '')}" autocapitalize="off" autocomplete="off" spellcheck="false"${k.endsWith('Elo') ? ' inputmode="numeric"' : ''} />`
+    return `<label><span>${t(`pgnh.${k}` as MessageKey)}</span> ${input}</label>`
+  }).join('')
+  // A game saved here and still a favourite is updated, not duplicated.
+  $('saveGame').textContent = t(savedId && isFavorite(savedId) ? 'games.save.update' : 'games.save.button')
+  $('saveStatus').textContent = ''
+}
+
+function saveCurrentGame() {
+  const { headers, savedId } = hooks.current()
+  // Tags not in the form (Lichess/Chess.com extras: TimeControl, ECO…) are kept.
+  const edited: PgnHeaders = { ...headers }
+  for (const k of SAVE_FIELDS) edited[k] = $<HTMLInputElement>(`pgnh-${k}`).value.trim()
+  const id = savedId && isFavorite(savedId) ? savedId : `local-${Date.now()}`
+  saveFavorite(summaryFromPgn(hooks.buildPgn(edited), id, Date.now()))
+  hooks.onSaved(id, edited)
+  // Show it in the favourites.
+  view = 'list'
+  renderSite()
+  setTab('favorites')
+  setStatus(t('games.save.done'))
+}
+
+/** All the favourites as one .pgn file (share sheet on the iPhone → "Save to Files"). */
+async function downloadFavorites() {
+  await shareFile(favoritesPgn(), `jquads-favoritas-${pgnDate(new Date()).replace(/\./g, '-')}.pgn`, t('pgn.favoritesTitle'))
 }
 
 function setTab(next: typeof tab) {
@@ -286,11 +358,22 @@ function renderFilters() {
   $('gamesFilters').hidden = tab === 'favorites'
 }
 
+/**
+ * Whose game it is: the username of its site; for a game saved here, whichever
+ * of the two usernames appears in it (or "" if none).
+ */
+export function ownerName(g: GameSummary, getUser: (s: OnlineSite) => string = (s) => hooks.getUser(s)): string {
+  const site = siteOf(g)
+  if (site !== 'local') return getUser(site)
+  return SITES.map(getUser).find((u) => u && userColor(g, u)) ?? ''
+}
+
 const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
 function render() {
   $('gamesFilters').hidden = tab === 'favorites'
   const list = currentList()
+  $('favDownload').hidden = tab !== 'favorites' || !list.length
   if (tab === 'favorites' && !list.length) setStatus(t('games.noFavorites'))
   else if (tab === 'recent' && !list.length && $('gamesStatus').textContent === '' && user() && exhausted) setStatus(t('games.empty'))
   else if (tab === 'favorites') setStatus('')
@@ -298,7 +381,7 @@ function render() {
   const dateFmt = new Intl.DateTimeFormat(getLang(), { day: 'numeric', month: 'short', year: 'numeric' })
   $('gamesList').innerHTML = list
     .map((g) => {
-      const gameUser = hooks.getUser(siteOf(g)) // favourites mix both sites
+      const gameUser = ownerName(g) // favourites mix the sites
       const result = userResult(g, gameUser)
       const me = userColor(g, gameUser)
       const player = (color: 'white' | 'black') => {
@@ -306,15 +389,17 @@ function render() {
         const name = `${escapeHtml(p.name)}${p.rating ? ` ${p.rating}` : ''}`
         return me === color ? `<span class="me">${name}</span>` : name
       }
-      const speed = t(`games.speed.${g.speed === 'ultraBullet' ? 'bullet' : g.speed}` as MessageKey)
-      // In the favourites (both sites) each game says where it comes from.
-      const meta = [tab === 'favorites' ? SITE_NAMES[siteOf(g)] : '', dateFmt.format(g.createdAt), `${timeControlText(g)} ${speed}`, g.rated ? '' : t('games.casual'), g.opening ? escapeHtml(g.opening) : '']
+      const site = siteOf(g)
+      // Saved games have no speed: their Event goes where the opening goes.
+      const speed = g.speed ? `${timeControlText(g)} ${t(`games.speed.${g.speed === 'ultraBullet' ? 'bullet' : g.speed}` as MessageKey)}` : ''
+      // In the favourites (several sites) each game says where it comes from.
+      const meta = [tab === 'favorites' ? (site === 'local' ? t('games.site.local') : SITE_NAMES[site]) : '', dateFmt.format(g.createdAt), speed, g.rated || site === 'local' ? '' : t('games.casual'), g.opening ? escapeHtml(g.opening) : '']
         .filter(Boolean)
         .join(' · ')
       const fav = isFavorite(g.id)
       return (
         // data-created / data-me: used by scripts/games-test.mjs (order and board orientation)
-        `<li data-id="${g.id}" data-site="${siteOf(g)}" data-created="${g.createdAt}" data-me="${me ?? ''}">` +
+        `<li data-id="${g.id}" data-site="${site}" data-created="${g.createdAt}" data-me="${me ?? ''}">` +
         `<span class="res ${result ?? 'draw'}">${scoreText(g)}</span>` +
         `<span class="info"><div class="players">♔ ${player('white')} – ♚ ${player('black')}</div><div class="meta">${meta}</div></span>` +
         `<button class="fav" aria-label="${t(fav ? 'games.unfavorite' : 'games.favorite')}">${fav ? '⭐' : '☆'}</button>` +

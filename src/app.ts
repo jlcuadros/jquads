@@ -17,7 +17,7 @@ import './style.css'
 
 import { Chess } from 'chess.js'
 import { GameTree } from './game/tree'
-import { gamePgn, treeFromPgn } from './game/pgn'
+import { gamePgn, parsePgnHeaders, treeFromPgn, type PgnHeaders } from './game/pgn'
 import type { Notation } from './game/notation'
 import { whiteWinProb } from './analysis/classify'
 import { TablebaseClient } from './analysis/tablebase'
@@ -26,8 +26,8 @@ import { MaiaClient } from './maia/maiaClient'
 import { StockfishClient, type StockfishVariant } from './stockfish/stockfishClient'
 import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analyzer'
 import { openEditor, retranslateEditor } from './ui/editor'
-import { openGames, retranslateGames } from './ui/gamesPanel'
-import { siteOf, userColor, type Site } from './games/common'
+import { openGames, ownerName, retranslateGames } from './ui/gamesPanel'
+import { userColor, type OnlineSite } from './games/common'
 import { setViewOptions, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
@@ -108,6 +108,17 @@ const settings = loadSettings()
 // ---------------------------------------------------------------------------
 
 let tree = new GameTree()
+// PGN headers of the game on the board (from the PGN it was opened from; {} for
+// a game made here) and its favourite id if it was saved with 📂 → 💾 Guardar.
+let gameHeaders: PgnHeaders = {}
+let savedId: string | undefined
+
+/** A new game (editor, FEN, "Nueva partida"): forgets the headers and the saved favourite. */
+function startNewGame(next: GameTree) {
+  tree = next
+  gameHeaders = {}
+  savedId = undefined
+}
 let orientation: 'white' | 'black' = 'white'
 let enginesReady = false
 let hideMoves = false // training mode: 🙈 hides the moves, 💡 shows them again (not saved: always starts visible)
@@ -295,7 +306,7 @@ function setupControls() {
   $<HTMLInputElement>('evalBar').checked = settings.evalBar
   $<HTMLInputElement>('tablebase').checked = settings.tablebase
   // Usernames per site (also editable in the 📂 panel; same saved values).
-  const USER_SETTING: Record<Site, { key: 'lichessUser' | 'chesscomUser'; input: string }> = {
+  const USER_SETTING: Record<OnlineSite, { key: 'lichessUser' | 'chesscomUser'; input: string }> = {
     lichess: { key: 'lichessUser', input: 'lichessUserSetting' },
     chesscom: { key: 'chesscomUser', input: 'chesscomUserSetting' },
   }
@@ -325,9 +336,17 @@ function setupControls() {
           alert(t('msg.invalidFen'))
           return
         }
-        orientation = userColor(game, settings[USER_SETTING[siteOf(game)].key]) ?? 'white'
+        gameHeaders = parsePgnHeaders(game.pgn)
+        savedId = game.site === 'local' ? game.id : undefined
+        orientation = userColor(game, ownerName(game, (s) => settings[USER_SETTING[s].key])) ?? 'white'
         positionChanged()
         renderEvalBar()
+      },
+      current: () => ({ headers: gameHeaders, savedId }),
+      buildPgn: (headers) => gamePgn(tree, new Date(), headers),
+      onSaved: (id, headers) => {
+        savedId = id
+        gameHeaders = headers
       },
     })
   }
@@ -423,17 +442,17 @@ function setupControls() {
   // Export the whole game with its variations: the iPhone share sheet
   // (copy, Notes, Mail, other apps…) or, where not available, the clipboard.
   $('exportPgn').onclick = async () => {
-    const pgn = gamePgn(tree)
+    const pgn = gamePgn(tree, new Date(), gameHeaders) // keeps the headers of an opened game
     try {
       if (navigator.share) await navigator.share({ title: t('pgn.title'), text: pgn })
       else {
         await navigator.clipboard.writeText(pgn)
-        alert('PGN copiado al portapapeles')
+        alert(t('msg.pgnCopied'))
       }
     } catch (e) {
       if (e instanceof Error && e.name === 'AbortError') return // user closed the share sheet
       await navigator.clipboard.writeText(pgn).catch(() => undefined)
-      alert('PGN copiado al portapapeles')
+      alert(t('msg.pgnCopied'))
     }
   }
   // Same URL format as task_01: FEN with "_" instead of spaces.
@@ -458,13 +477,13 @@ function setupControls() {
     $('settings').hidden = true
     analyzer.cancel() // no engine work while editing
     openEditor(tree.current.fen, orientation, (fen) => {
-      tree = new GameTree(fen)
+      startNewGame(new GameTree(fen))
       positionChanged()
     })
   }
   $('loadFen').onclick = () => {
     try {
-      tree = new GameTree($<HTMLInputElement>('fenInput').value.trim())
+      startNewGame(new GameTree($<HTMLInputElement>('fenInput').value.trim()))
       $('settings').hidden = true
       positionChanged()
     } catch {
@@ -472,7 +491,7 @@ function setupControls() {
     }
   }
   $('newGame').onclick = () => {
-    tree = new GameTree()
+    startNewGame(new GameTree())
     $('settings').hidden = true
     positionChanged()
   }

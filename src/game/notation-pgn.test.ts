@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { formatSan } from './notation'
-import { gamePgn } from './pgn'
+import { gamePgn, parsePgnHeaders, treeFromPgn } from './pgn'
 import { GameTree } from './tree'
 
 describe('formatSan', () => {
@@ -48,3 +48,54 @@ describe('gamePgn', () => {
     expect(pgn).toContain('1... Kd7 *')
   })
 })
+
+describe('PGN headers and import with variations', () => {
+  const date = new Date(2026, 9, 25)
+  const sample = () => {
+    const t = new GameTree()
+    ;['e2e4', 'e7e5', 'g1f3', 'b8c6'].forEach((m) => t.play(m))
+    t.toStart()
+    t.play('e2e4')
+    t.play('c7c5') // variation 1... c5
+    t.play('g1f3')
+    t.play('d7d6')
+    t.goTo(t.root.children[0].children[1].children[0]) // after 1. e4 c5 2. Nf3
+    t.play('b8c6') // nested variation 2... Nc6
+    return t
+  }
+
+  it('writes edited headers in roster order, extras after, Result as the end marker', () => {
+    const pgn = gamePgn(sample(), date, { White: 'Ousland', Black: 'Rival "R"', Result: '1-0', WhiteElo: '1900', BlackElo: '', FEN: 'ignored' })
+    const lines = pgn.split('\n')
+    expect(lines.slice(0, 8)).toEqual([
+      '[Event "Análisis"]', '[Site "https://jquads.pages.dev"]', '[Date "2026.10.25"]', '[Round "-"]',
+      '[White "Ousland"]', '[Black "Rival \\"R\\""]', '[Result "1-0"]', '[WhiteElo "1900"]',
+    ])
+    expect(pgn).not.toContain('BlackElo') // empty extras are left out
+    expect(pgn).not.toContain('ignored') // FEN comes from the tree
+    expect(pgn.trim().endsWith('1-0')).toBe(true)
+    expect(parsePgnHeaders(pgn)).toMatchObject({ White: 'Ousland', Black: 'Rival "R"', Result: '1-0' })
+  })
+
+  it('an invalid result becomes "*"', () => {
+    expect(gamePgn(sample(), date, { Result: 'win' })).toContain('[Result "*"]')
+  })
+
+  it('round trip keeps every variation (also nested)', () => {
+    const pgn = gamePgn(sample(), date)
+    expect(pgn).toContain('1. e4 e5 (1... c5 2. Nf3 d6 (2... Nc6)) 2. Nf3 Nc6 *')
+    const back = treeFromPgn(pgn)
+    expect(back.current).toBe(back.root) // opens at the start
+    expect(gamePgn(back, date)).toBe(pgn)
+  })
+
+  it('reads Lichess / Chess.com style movetext: clocks, comments, NAGs, "1...", custom FEN', () => {
+    const t = treeFromPgn('[FEN "4k3/8/8/8/8/8/8/K3R3 b - - 0 1"]\n\n1... Kd7 {[%clk 0:03:00]} 2.Re2!? $1 ; note\n(2. Ka2 Kc6) 2... Kd6 *')
+    expect(gamePgn(t, date)).toContain('1... Kd7 2. Re2 (2. Ka2 Kc6) 2... Kd6 *')
+  })
+
+  it('throws on an illegal move', () => {
+    expect(() => treeFromPgn('1. e5 *')).toThrow(/Illegal/)
+  })
+})
+

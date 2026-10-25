@@ -7,9 +7,14 @@
  * favourites and opening a game are shared.
  */
 
-export type Site = 'lichess' | 'chesscom'
-export const SITES: Site[] = ['lichess', 'chesscom']
-export const SITE_NAMES: Record<Site, string> = { lichess: 'Lichess', chesscom: 'Chess.com' }
+import { parsePgnHeaders } from '../game/pgn'
+
+/** Sites games are downloaded from. */
+export type OnlineSite = 'lichess' | 'chesscom'
+export const SITES: OnlineSite[] = ['lichess', 'chesscom']
+export const SITE_NAMES: Record<OnlineSite, string> = { lichess: 'Lichess', chesscom: 'Chess.com' }
+/** Where a game comes from: a site, or 'local' = saved from the board (📂 → Guardar). */
+export type Site = OnlineSite | 'local'
 
 export type Speed = 'bullet' | 'blitz' | 'rapid' | 'classical' | 'correspondence'
 export const SPEEDS: Speed[] = ['bullet', 'blitz', 'rapid', 'classical', 'correspondence']
@@ -54,6 +59,29 @@ export class GamesError extends Error {
 }
 
 export const siteOf = (g: GameSummary): Site => g.site ?? 'lichess'
+
+/**
+ * Summary of a game saved from the board (📂 → Guardar, José 2026-10-25),
+ * built from its PGN headers so it shows in the favourites like the others.
+ * `createdAt` = when it was saved (the favourites are sorted by it).
+ */
+export function summaryFromPgn(pgn: string, id: string, createdAt: number): GameSummary {
+  const h = parsePgnHeaders(pgn)
+  const rating = (v?: string) => (v && /^\d+$/.test(v) ? Number(v) : undefined)
+  return {
+    site: 'local',
+    id,
+    createdAt,
+    speed: '',
+    rated: false,
+    status: h.Result === '*' || !h.Result ? 'started' : h.Result === '1/2-1/2' ? 'draw' : 'mate',
+    winner: h.Result === '1-0' ? 'white' : h.Result === '0-1' ? 'black' : undefined,
+    opening: h.Event && h.Event !== '?' ? h.Event : undefined, // shown in the list where the opening goes
+    white: { name: h.White || '?', rating: rating(h.WhiteElo) },
+    black: { name: h.Black || '?', rating: rating(h.BlackElo) },
+    pgn,
+  }
+}
 
 /** Which colour `username` played (case-insensitive), or null if neither. */
 export function userColor(g: GameSummary, username: string): 'white' | 'black' | null {

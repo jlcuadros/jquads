@@ -244,3 +244,11 @@ html, body { overflow-x: hidden; }
 .games-list .fav { flex: 0 0 auto; background: none; border: none; font-size: 1.3rem; padding: 2px 4px; color: #e0a800; }
 .games-more { width: 100%; margin: 8px 0 20px; padding: 8px; }
 
+
+/* 📂 → 💾 Guardar: PGN header form (José, 2026-10-25) */
+.games-save p { margin: 4px 0 8px; }
+.games-save .settings-grid input, .games-save .settings-grid select { width: 58%; min-width: 0; padding: 5px; }
+.games-save #saveGame { width: 100%; margin: 10px 0 6px; padding: 8px; }
+#favDownload { margin: 0 0 6px; }
+/* Lichess | Chess.com | 💾: one line each, also "💾 Сохранить" (Russian wrapped to two lines) */
+.games-sites .tab { white-space: nowrap; padding-left: 2px; padding-right: 2px; }
