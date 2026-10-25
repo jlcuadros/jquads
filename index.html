@@ -59,6 +59,7 @@
               </select>
             </label>
             <label class="check"><input type="checkbox" id="evalBar" /> Barra de evaluación junto al tablero</label>
+            <label class="check"><input type="checkbox" id="tablebase" /> Tablas de finales en línea (Lichess, ≤ 7 piezas)</label>
           </div>
           <label class="fen">FEN <input id="fenInput" type="text" spellcheck="false" autocapitalize="off" /></label>
           <div class="settings-actions">
@@ -75,6 +76,7 @@
               <li><b>1ª barra — jugadas</b>: cómo se reparte la probabilidad de Maia (lo que jugaría un humano de ese Elo) entre jugadas buenas ✓, imprecisiones ?! y errores ??.</li>
               <li><b>2ª barra — amenazas</b>: lo mismo para el rival si le tocara mover a él (como si el bando que mueve pasara turno). No se calcula si hay jaque. Va marcada con un borde naranja (el color de la flecha de amenaza) y sus jugadas llevan triángulos de color en vez de círculos. En ajustes se puede ver como barra y jugadas, solo las jugadas, o no calcularla.</li>
               <li><b>Colores</b>: según cuánta probabilidad de ganar se pierde frente a la mejor jugada de Stockfish: verde &lt; 5 %, amarillo 5–10 %, rojo ≥ 10 %. Cuanto más oscuro el verde, mejor; cuanto más oscuro el rojo, peor.</li>
+              <li><b>Tablas de finales</b>: con 7 piezas o menos (reyes incluidos) y sin enroques, el resultado exacto viene de las tablas Syzygy de Lichess en vez de Stockfish: arriba «TB: …» y la columna derecha «Tablas Syzygy» con «Gana M12» (mate en 12), «Tablas» o «Pierde». Se puede desactivar en esta pantalla; si fallan o no hay conexión, se usa Stockfish.</li>
               <li><b>Barra vertical</b> (opcional): blanco/negro según la evaluación de Stockfish; la marca roja es la probabilidad de victoria de las blancas según Maia.</li>
               <li><b>Exportar PGN</b>: la partida con sus variantes; se puede copiar o enviar a otra app (para Lichess: pegarla en lichess.org/paste). <b>↗Li</b> abre la posición actual en Lichess.</li>
               <li><b>Memoria</b>: el hash de Stockfish sirve para el análisis y para las amenazas (es el mismo motor). La versión clásica ahorra unos 80 MB de redes neuronales; cambiarla recarga la página.</li>

@@ -33,6 +33,7 @@ Development and testing scripts only; none of them ships with the app.
 | [copy-vendor.mjs](../scripts/copy-vendor.mjs) | List `FILES` of source → destination |
 | [export-docs.mjs](../scripts/export-docs.mjs) | Generates `docs/ARCHITECTURE.md` and `docs/SCRIPTS.md` (public) from `app.md` and this note: Obsidian links → text, no images or emails. Run before each commit |
 | [smoke-test.mjs](../scripts/smoke-test.mjs) | Playwright test of the engines (`proto.html`); variants via `SF_VARIANTS` |
+| [tablebase-test.mjs](../scripts/tablebase-test.mjs) | Playwright test of the **endgame tables**: 0 requests from the start, K+R vs K ("TB +M12", column, bar, colours, text, threats), cache, option off → Stockfish; counts the requests to the API |
 | [editor-test.mjs](../scripts/editor-test.mjs) | Playwright test of the **position editor** with touch taps (iPhone 13): validation, placing pieces, castling, Analizar; 3 screenshots |
 | [ui-test.mjs](../scripts/ui-test.mjs) | Playwright test of the interface, iPhone emulation; screenshots to the folder given as an argument |
 
@@ -51,6 +52,8 @@ node scripts/smoke-test.mjs http://localhost:4173 webkit,chromium
 SF_VARIANTS=sfhce node scripts/smoke-test.mjs http://localhost:4173 webkit
 # interface (iPhone emulation) + screenshots:
 node scripts/ui-test.mjs http://localhost:4173 <screenshots-folder>
+# endgame tables:
+node scripts/tablebase-test.mjs http://localhost:4173 <screenshots-folder>
 # position editor (touch taps):
 node scripts/editor-test.mjs http://localhost:4173 <screenshots-folder>
 # against production: replace the URL with https://jquads.pages.dev

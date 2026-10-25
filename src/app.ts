@@ -20,6 +20,7 @@ import { GameTree } from './game/tree'
 import { gamePgn } from './game/pgn'
 import type { Notation } from './game/notation'
 import { whiteWinProb } from './analysis/classify'
+import { TablebaseClient } from './analysis/tablebase'
 import { MaiaClient } from './maia/maiaClient'
 import { StockfishClient, type StockfishVariant } from './stockfish/stockfishClient'
 import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analyzer'
@@ -47,6 +48,7 @@ const DEFAULTS: AppSettings = {
   variant: 'sf17',
   notation: 'figurine', // iteration 4: chess figurines by default
   evalBar: true, // iteration 4: thin vertical evaluation bar beside the board
+  tablebase: true, // Lichess online endgame tables when ≤ 7 pieces (José: on by default)
 }
 
 /** Bumped when a default changes and saved settings must be migrated (see loadSettings). */
@@ -104,7 +106,7 @@ let analysis: PositionAnalysis | undefined // analysis of tree.current (may be p
 
 const maia = new MaiaClient()
 const stockfish = new StockfishClient()
-const analyzer = new Analyzer(maia, stockfish)
+const analyzer = new Analyzer(maia, stockfish, new TablebaseClient())
 
 // ---------------------------------------------------------------------------
 // Board
@@ -217,7 +219,7 @@ function renderPanel() {
     settings.threatsMode === 'bar', // 'moves' → only the legend line, no bar
   )
   $('maiaCol').innerHTML = renderMaiaCol(analysis?.main, settings.elo, settings.lines)
-  $('sfCol').innerHTML = renderSfCol(analysis?.main, settings.variant === 'sf17' ? 'Stockfish 17' : 'SF clásico')
+  $('sfCol').innerHTML = renderSfCol(analysis?.main, settings.variant === 'sf17' ? 'Stockfish 17' : 'SF clásico') // or the endgame tables
   $('text').innerHTML = renderText(analysis, settings.elo)
   board.setAutoShapes(arrows())
 }
@@ -282,6 +284,12 @@ function setupControls() {
   $<HTMLSelectElement>('threatsMode').value = settings.threatsMode
   $<HTMLSelectElement>('notation').value = settings.notation
   $<HTMLInputElement>('evalBar').checked = settings.evalBar
+  $<HTMLInputElement>('tablebase').checked = settings.tablebase
+  $('tablebase').onchange = (ev) => {
+    settings.tablebase = (ev.target as HTMLInputElement).checked
+    saveSettings()
+    positionChanged()
+  }
   $('notation').onchange = (ev) => {
     settings.notation = (ev.target as HTMLSelectElement).value as Notation
     saveSettings()

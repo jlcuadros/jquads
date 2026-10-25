@@ -12,6 +12,7 @@ import { describePosition } from '../analysis/describe'
 import type { EngineLine } from '../stockfish/stockfishClient'
 import type { GameTree } from '../game/tree'
 import { formatSan, type Notation } from '../game/notation'
+import { tbLabel, type TbResult } from '../analysis/tablebase'
 
 /**
  * Display options set by app.ts before rendering (iteration 4):
@@ -63,8 +64,21 @@ export function renderNumbers(a: PositionAnalysis | undefined): string {
   // "blancas" dropped to make room for the hide-moves button (iteration 4).
   const maia = m?.maia ? `Maia: ${Math.round(m.maia.whiteWinProb * 100)}%` : 'Maia: …'
   const best = m?.lines[0]
-  const sf = best ? `SF ${formatScore(lineScoreOf(best))} · d${m.depth}` : 'SF: …'
+  const sf = m?.tb ? `TB ${tbPositionLabel(m.tb, m.fen)}` : best ? `SF ${formatScore(lineScoreOf(best))} · d${m.depth}` : 'SF: …'
   return `<span class="maia">${maia}</span><span class="sf">${sf}</span>`
+}
+
+/**
+ * Endgame-table result for the top line, short and in White's point of view
+ * like Stockfish's eval: "+M12" (White mates in 12), "−M8", "tablas", or
+ * "+gana" / "−gana" when the mate distance is unknown. (A longer wording did
+ * not fit next to the buttons on the iPhone.)
+ */
+function tbPositionLabel(tb: TbResult, fen: string): string {
+  if (tb.outcome === 'draw') return 'tablas'
+  const whiteToMove = fen.split(' ')[1] === 'w'
+  const sign = (tb.outcome === 'win') === whiteToMove ? '+' : '−'
+  return tb.mateIn !== undefined ? `${sign}M${tb.mateIn}` : `${sign}gana`
 }
 
 const lineScoreOf = (l: EngineLine) => (l.mate !== undefined ? { mate: l.mate } : { cp: l.scoreCp })
@@ -127,8 +141,20 @@ export function renderMaiaCol(side: SideAnalysis | undefined, elo: number, count
   return `<table><tr><th>Maia ${elo}</th><th>prob</th></tr>${rows}</table>`
 }
 
-/** Right column: Stockfish's best lines. */
+/** Right column: Stockfish's best lines — or the endgame tables' exact results. */
 export function renderSfCol(side: SideAnalysis | undefined, engineName: string): string {
+  if (side?.tb) {
+    const tb = side.tb
+    const rows = side.lines
+      .map((l) => {
+        const uci = l.pv[0]
+        const m = tb.moves.find((x) => x.uci === uci)
+        const label = m ? tbLabel(m.outcome, m.mateIn, m.cursed) : ''
+        return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), side.classified.get(uci)?.color)}</td><td>${label}</td></tr>`
+      })
+      .join('')
+    return `<table><tr><th>Tablas <small>Syzygy</small></th><th>resultado</th></tr>${rows}</table>`
+  }
   const rows = side?.lines.length
     ? side.lines
         .map((l) => {
@@ -155,5 +181,6 @@ export function renderText(a: PositionAnalysis | undefined, elo: number): string
     policy: m.maia.policy,
     san: (uci) => sanOf(m.fen, uci),
   })
-  return segs.map((s) => ('text' in s ? s.text : chip(s.move, s.san, s.color))).join('')
+  const body = segs.map((s) => ('text' in s ? s.text : chip(s.move, s.san, s.color))).join('')
+  return m.tb ? `<b>Tablas de finales (resultado exacto):</b> ${body}` : body
 }

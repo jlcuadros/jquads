@@ -20,6 +20,7 @@ import type { MaiaClient } from '../maia/maiaClient'
 import type { EngineLine, StockfishClient } from '../stockfish/stockfishClient'
 import { blunderMeter, classifyMoves, type ClassifiedMove, type Score } from './classify'
 import { nullMoveFen } from '../game/tree'
+import type { TablebaseClient, TbResult } from './tablebase'
 
 /** Below this depth the colour code is not reliable (same as maiachess). */
 export const MIN_CLASSIFY_DEPTH = 12
@@ -46,6 +47,7 @@ export interface Settings {
   threatDepth: number // Stockfish depth for threats
   threats: boolean // compute threats at all (⚙ "Amenazas" ≠ "No calcular")
   lines: number // Stockfish MultiPV for the main analysis (= rows shown per engine)
+  tablebase: boolean // use Lichess' online endgame tables when possible (⚙, default on)
 }
 
 /** Everything known about one position (main side to move, or threats). */
@@ -56,6 +58,8 @@ export interface SideAnalysis {
   depth: number // depth reached by the main lines
   classified: Map<string, ClassifiedMove>
   meter?: ReturnType<typeof blunderMeter>
+  /** Exact endgame-table result when it replaced Stockfish (≤ 7 pieces). */
+  tb?: TbResult
   done: boolean
 }
 
@@ -74,6 +78,7 @@ export class Analyzer {
   constructor(
     private maia: MaiaClient,
     private stockfish: StockfishClient,
+    private tablebase: TablebaseClient,
   ) {}
 
   /** Cancels the analysis in progress (call when the position changes). */
@@ -89,7 +94,7 @@ export class Analyzer {
   async analyse(fen: string, s: Settings, onUpdate: (a: PositionAnalysis) => void): Promise<void> {
     this.cancel()
     const gen = this.generation
-    const key = `${fen}|${s.elo}|${s.depth}|${s.threatDepth}|${s.lines}`
+    const key = `${fen}|${s.elo}|${s.depth}|${s.threatDepth}|${s.lines}|${s.tablebase}`
     const alive = () => gen === this.generation
 
     // Reuse what was already finished for this position (main and/or threats);
@@ -106,7 +111,7 @@ export class Analyzer {
     if (result.threats !== undefined) return // everything was cached
 
     if (!result.main.done) {
-      await this.analyseSide(result.main, s.elo, s.depth, s.lines, alive, emit)
+      await this.analyseSide(result.main, s.elo, s.depth, s.lines, s.tablebase, alive, emit)
       if (!alive()) return
     }
 
@@ -117,7 +122,7 @@ export class Analyzer {
     } else {
       result.threats = emptySide(nullFen)
       // Threats only need the opponent's best moves (arrow + colours): 3 lines.
-      await this.analyseSide(result.threats, s.elo, s.threatDepth, 3, alive, emit)
+      await this.analyseSide(result.threats, s.elo, s.threatDepth, 3, s.tablebase, alive, emit)
       if (!alive()) return
     }
     emit()
@@ -129,6 +134,7 @@ export class Analyzer {
     elo: number,
     depth: number,
     multiPv: number,
+    useTablebase: boolean,
     alive: () => boolean,
     emit: () => void,
   ) {
@@ -140,12 +146,38 @@ export class Analyzer {
     side.maia = { policy: predictions[0].policy, whiteWinProb: predictions[0].whiteWinProb }
     emit()
 
-    // 2. Stockfish main lines, with progressive updates.
     const scores = new Map<string, Score>()
     const reclassify = () => {
       side.classified = classifyMoves(scores, whiteToMove)
       side.meter = side.maia ? blunderMeter(side.maia.policy, side.classified) : undefined
     }
+
+    // 2a. Endgame tables (≤ 7 pieces, no castling): exact result for EVERY legal
+    //     move, so Stockfish is not needed (saves battery). If the tables are off,
+    //     don't know the position or the API fails, Stockfish is used as always.
+    if (useTablebase) {
+      const tb = await this.tablebase.lookup(side.fen)
+      if (!alive()) return
+      if (tb && tb.moves.length) {
+        side.tb = tb
+        for (const m of tb.moves) scores.set(m.uci, m.score)
+        // Same shape as Stockfish lines, best first, so the right column, the
+        // blue arrow, the top line, the vertical bar and the text work unchanged.
+        side.lines = tb.moves.slice(0, multiPv).map((m, i) => ({
+          multipv: i + 1,
+          depth: 0,
+          scoreCp: m.score.cp,
+          mate: m.score.mate,
+          pv: [m.uci],
+        }))
+        reclassify()
+        side.done = true
+        emit()
+        return
+      }
+    }
+
+    // 2b. Stockfish main lines, with progressive updates.
     await this.stockfish.analyse(side.fen, depth, multiPv, (lines) => {
       if (!alive()) return
       side.lines = lines
