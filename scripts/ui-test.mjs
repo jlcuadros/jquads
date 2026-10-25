@@ -63,8 +63,12 @@ await iter4(evalBar.visible && evalBar.white && evalBar.maia, `vertical eval bar
 const widths = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth }))
 await iter4(widths.doc <= widths.viewport, `no horizontal overflow: page ${widths.doc} px vs screen ${widths.viewport} px`)
 
-// Hide moves (👁): moves become "--", evaluations stay, nothing playable, no arrows.
+// Hide moves: button 🙈 (moves visible) → moves become "--", evaluations stay,
+// nothing playable, no arrows; the button then shows 💡 (tap to show them again).
+const iconBefore = await page.textContent('#hideMoves')
 await page.tap('#hideMoves')
+const iconHidden = await page.textContent('#hideMoves')
+await iter4(iconBefore === '🙈' && iconHidden === '💡', `hide button icon: visible=${iconBefore} hidden=${iconHidden}`)
 const hidden = await page.evaluate(() => ({
   maia: document.getElementById('maiaCol').textContent,
   sf: document.getElementById('sfCol').textContent,
@@ -77,6 +81,7 @@ await iter4(hidden.maia.includes('--') && hidden.sf.includes('--') && /[+−]\d/
 await iter4(!/[a-h][1-8]/.test(hidden.text), `hidden moves also in the text: "${hidden.text.slice(0, 80)}"`)
 await page.screenshot({ path: `${outDir}/06-hidden-moves.png`, fullPage: true })
 await page.tap('#hideMoves')
+await iter4((await page.textContent('#hideMoves')) === '🙈', 'hide button back to 🙈 after showing the moves again')
 
 // Tap Maia's most likely move.
 const first = await page.textContent('#maiaCol tr[data-move] .move-chip')

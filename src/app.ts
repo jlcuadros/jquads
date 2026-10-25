@@ -99,7 +99,7 @@ const settings = loadSettings()
 let tree = new GameTree()
 let orientation: 'white' | 'black' = 'white'
 let enginesReady = false
-let hideMoves = false // 👁 training mode (not saved: always starts visible)
+let hideMoves = false // training mode: 🙈 hides the moves, 💡 shows them again (not saved: always starts visible)
 let analysis: PositionAnalysis | undefined // analysis of tree.current (may be partial)
 
 const maia = new MaiaClient()
@@ -338,11 +338,16 @@ function setupControls() {
     updateBoard()
     renderEvalBar()
   }
-  // 👁 / 🙈: hide the suggested moves (training) but keep the evaluations.
+  // 🙈 (moves visible) hides the suggested moves but keeps the evaluations;
+  // 💡 (moves hidden) shows them again. José: the eye "seemed to be watching me".
   $('hideMoves').onclick = () => {
     hideMoves = !hideMoves
-    $('hideMoves').textContent = hideMoves ? '🙈' : '👁'
-    $('hideMoves').setAttribute('aria-pressed', String(hideMoves))
+    const btn = $('hideMoves')
+    btn.textContent = hideMoves ? '💡' : '🙈'
+    const label = hideMoves ? 'Mostrar jugadas' : 'Ocultar jugadas'
+    btn.title = label
+    btn.setAttribute('aria-label', label)
+    btn.setAttribute('aria-pressed', String(hideMoves))
     renderPanel()
   }
   // Export the whole game with its variations: the iPhone share sheet
