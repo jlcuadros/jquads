@@ -12,7 +12,7 @@ import { describePosition } from '../analysis/describe'
 import type { EngineLine } from '../stockfish/stockfishClient'
 import type { GameTree } from '../game/tree'
 import { formatSan, type Notation } from '../game/notation'
-import { tbLabel, type TbResult } from '../analysis/tablebase'
+import { tbLabel, tbPositionScore } from '../analysis/tablebase'
 import { t } from '../i18n/i18n'
 
 /**
@@ -65,21 +65,8 @@ export function renderNumbers(a: PositionAnalysis | undefined): string {
   // "blancas" dropped to make room for the hide-moves button (iteration 4).
   const maia = m?.maia ? `Maia: ${Math.round(m.maia.whiteWinProb * 100)}%` : 'Maia: …'
   const best = m?.lines[0]
-  const sf = m?.tb ? `TB ${tbPositionLabel(m.tb, m.fen)}` : best ? `SF ${formatScore(lineScoreOf(best))} · d${m.depth}` : 'SF: …'
+  const sf = m?.tb ? `TB ${tbLabel(tbPositionScore(m.tb, m.fen), m.tb.outcome)}` : best ? `SF ${formatScore(lineScoreOf(best))} · d${m.depth}` : 'SF: …'
   return `<span class="maia">${maia}</span><span class="sf">${sf}</span>`
-}
-
-/**
- * Endgame-table result for the top line, short and in White's point of view
- * like Stockfish's eval: "+M12" (White mates in 12), "−M8", "tablas", or
- * "+gana" / "−gana" when the mate distance is unknown. (A longer wording did
- * not fit next to the buttons on the iPhone.)
- */
-function tbPositionLabel(tb: TbResult, fen: string): string {
-  if (tb.outcome === 'draw') return t('tb.draw')
-  const whiteToMove = fen.split(' ')[1] === 'w'
-  const sign = (tb.outcome === 'win') === whiteToMove ? '+' : '−'
-  return tb.mateIn !== undefined ? `${sign}M${tb.mateIn}` : `${sign}${t('tb.win')}`
 }
 
 const lineScoreOf = (l: EngineLine) => (l.mate !== undefined ? { mate: l.mate } : { cp: l.scoreCp })
@@ -150,7 +137,7 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
       .map((l) => {
         const uci = l.pv[0]
         const m = tb.moves.find((x) => x.uci === uci)
-        const label = m ? tbLabel(m.outcome, m.mateIn, m.cursed) : ''
+        const label = m ? tbLabel(m.score, m.outcome, m.cursed) : ''
         return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), side.classified.get(uci)?.color)}</td><td>${label}</td></tr>`
       })
       .join('')

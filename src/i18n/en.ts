@@ -70,10 +70,6 @@ export const en: Messages = {
   'meter.main': 'Moves according to Maia',
   'meter.threats': 'Threats (if the opponent moved)',
 
-  'tb.draw': 'draw',
-  'tb.win': 'wins',
-  'tb.label.win': 'Wins',
-  'tb.label.loss': 'Loses',
   'tb.label.draw': 'Draw',
   'tb.label.draw50': 'Draw (50 m.)',
 

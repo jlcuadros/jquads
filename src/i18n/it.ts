@@ -70,10 +70,6 @@ export const it: Messages = {
   'meter.main': 'Mosse secondo Maia',
   'meter.threats': "Minacce (se muovesse l'avversario)",
 
-  'tb.draw': 'patta',
-  'tb.win': 'vince',
-  'tb.label.win': 'Vince',
-  'tb.label.loss': 'Perde',
   'tb.label.draw': 'Patta',
   'tb.label.draw50': 'Patta (50 m.)',
 

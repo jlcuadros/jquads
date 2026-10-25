@@ -70,10 +70,6 @@ export const de: Messages = {
   'meter.main': 'Züge laut Maia',
   'meter.threats': 'Drohungen (wenn der Gegner zöge)',
 
-  'tb.draw': 'Remis',
-  'tb.win': 'gewinnt',
-  'tb.label.win': 'Gewinnt',
-  'tb.label.loss': 'Verliert',
   'tb.label.draw': 'Remis',
   'tb.label.draw50': 'Remis (50 Z.)',
 

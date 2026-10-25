@@ -70,10 +70,6 @@ export const fr: Messages = {
   'meter.main': 'Coups selon Maia',
   'meter.threats': "Menaces (si l'adversaire jouait)",
 
-  'tb.draw': 'nulle',
-  'tb.win': 'gagne',
-  'tb.label.win': 'Gagne',
-  'tb.label.loss': 'Perd',
   'tb.label.draw': 'Nulle',
   'tb.label.draw50': 'Nulle (50 c.)',
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { outcomeOf, parseTablebase, tablebaseEligible, tbLabel, type TbJson } from './tablebase'
+import { outcomeOf, parseTablebase, tablebaseEligible, tbLabel, tbPositionScore, type TbJson } from './tablebase'
 import { classifyMoves, whiteWinProb } from './classify'
 
 // Trimmed real answer of the API for KR vs K (8/8/4k3/8/8/4K3/8/7R w - - 0 1),
@@ -74,10 +74,18 @@ describe('parseTablebase', () => {
 })
 
 describe('tbLabel', () => {
-  it('formats results in Spanish', () => {
-    expect(tbLabel('win', 12)).toBe('Gana M12')
-    expect(tbLabel('loss', 3)).toBe('Pierde M3')
-    expect(tbLabel('draw')).toBe('Tablas')
-    expect(tbLabel('draw', undefined, true)).toBe('Tablas (50 j.)')
+  it('uses signs in White\'s point of view instead of words', () => {
+    expect(tbLabel({ mate: 12 }, 'win')).toBe('+M12')
+    expect(tbLabel({ mate: -20 }, 'loss')).toBe('−M20') // Black mates in 20
+    expect(tbLabel({ cp: 2000 }, 'win')).toBe('+M?') // distance unknown
+    expect(tbLabel({ cp: -2000 }, 'win')).toBe('−M?')
+    expect(tbLabel({ cp: 0 }, 'draw')).toBe('Tablas')
+    expect(tbLabel({ cp: 0 }, 'draw', true)).toBe('Tablas (50 j.)')
+  })
+
+  it('position score: Black to move and winning → negative', () => {
+    const tb = { outcome: 'win' as const, mateIn: 20, moves: [] }
+    expect(tbLabel(tbPositionScore(tb, '8/8/8/8/8/2k5/1q6/K7 b - - 0 1'), 'win')).toBe('−M20')
+    expect(tbLabel(tbPositionScore(tb, '8/8/8/8/8/2K5/1Q6/k7 w - - 0 1'), 'win')).toBe('+M20')
   })
 })

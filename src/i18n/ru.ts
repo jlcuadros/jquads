@@ -73,10 +73,6 @@ export const ru: Messages = {
   'meter.main': 'Ходы по Maia',
   'meter.threats': 'Угрозы (если бы ходил соперник)',
 
-  'tb.draw': 'ничья',
-  'tb.win': 'выигрыш',
-  'tb.label.win': 'Выигрыш',
-  'tb.label.loss': 'Проигрыш',
   'tb.label.draw': 'Ничья',
   'tb.label.draw50': 'Ничья (50 х.)',
 

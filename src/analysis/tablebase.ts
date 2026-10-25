@@ -13,7 +13,7 @@
  * unchanged: win → mate in N (or a big score when the distance is unknown),
  * draw → 0.00, loss → being mated.
  */
-import type { Score } from './classify'
+import { formatScore, type Score } from './classify'
 import { t } from '../i18n/i18n'
 
 export const TABLEBASE_URL = 'https://tablebase.lichess.org/standard'
@@ -126,12 +126,24 @@ export function parseTablebase(json: TbJson, fen: string): TbResult | null {
   return { outcome, mateIn, moves }
 }
 
-/** Short label for a move, in the selected language: "Gana M12", "Tablas", "Pierde M7"… */
-export function tbLabel(outcome: TbOutcome, mateIn?: number, cursed = false): string {
+/**
+ * Short result label, in White's point of view like Stockfish's eval:
+ * "+M20" (White mates in 20), "−M20" (Black mates in 20), "Tablas",
+ * "Tablas (50 j.)". When the tables don't give the mate distance (usually
+ * 6–7 pieces): "+M?" / "−M?". Signs instead of "Gana" / "Pierde" (José,
+ * 2026-10-25): in some languages the words didn't fit on one line.
+ * Used for the moves (right column) and for the position (top line).
+ */
+export function tbLabel(score: Score, outcome: TbOutcome, cursed = false): string {
   if (cursed) return t('tb.label.draw50')
   if (outcome === 'draw') return t('tb.label.draw')
-  const word = t(outcome === 'win' ? 'tb.label.win' : 'tb.label.loss')
-  return mateIn !== undefined ? `${word} M${mateIn}` : word
+  if (score.mate !== undefined) return formatScore(score)
+  return `${(score.cp ?? 0) > 0 ? '+' : '−'}M?`
+}
+
+/** Score of the position itself (White's point of view), for the top line. */
+export function tbPositionScore(tb: TbResult, fen: string): Score {
+  return toScore(tb.outcome, tb.mateIn, fen.split(' ')[1] === 'w')
 }
 
 // ---------------------------------------------------------------------------

@@ -70,10 +70,6 @@ export const pt: Messages = {
   'meter.main': 'Lances segundo o Maia',
   'meter.threats': 'Ameaças (se o adversário jogasse)',
 
-  'tb.draw': 'empate',
-  'tb.win': 'vence',
-  'tb.label.win': 'Vence',
-  'tb.label.loss': 'Perde',
   'tb.label.draw': 'Empate',
   'tb.label.draw50': 'Empate (50 l.)',
 

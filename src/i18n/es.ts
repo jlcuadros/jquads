@@ -84,10 +84,6 @@ export const es = {
   'meter.threats': 'Amenazas (si moviera el rival)',
 
   // --- Endgame tables -----------------------------------------------------------
-  'tb.draw': 'tablas', // top line: "TB tablas"
-  'tb.win': 'gana', // top line when the mate distance is unknown: "TB +gana"
-  'tb.label.win': 'Gana',
-  'tb.label.loss': 'Pierde',
   'tb.label.draw': 'Tablas',
   'tb.label.draw50': 'Tablas (50 j.)',
 

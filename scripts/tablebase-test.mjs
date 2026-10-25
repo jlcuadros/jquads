@@ -3,7 +3,7 @@
 //
 //   1. Starting position (32 pieces): NO request to the tablebase API.
 //   2. Load K+R vs K by FEN: top line "TB: …", right column "Tablas Syzygy" with
-//      "Gana M…", vertical bar fully white, every legend move coloured, text
+//      "+M…" (signs in White's view, no words), vertical bar fully white, every legend move coloured, text
 //      prefixed "Tablas de finales", threats computed too.
 //   3. Going back and forth: answers come from the cache (no repeated requests).
 //   4. ⚙ "Tablas de finales en línea" off → Stockfish again ("SF …").
@@ -51,7 +51,7 @@ const text = await page.textContent('#text')
 check(/TB \+M\d+/.test(numbers), `top line: "${numbers}"`)
 const fits = await page.evaluate(() => { const n = document.getElementById('numbers'); return n.scrollWidth <= n.clientWidth })
 check(fits, 'top line fits (not cut off)')
-check(sfCol.includes('Tablas Syzygy') && /Gana M\d+/.test(sfCol), `right column: "${sfCol.slice(0, 90)}"`)
+check(sfCol.includes('Tablas Syzygy') && /[+−]M(\d+|\?)/.test(sfCol) && !/Gana|Pierde/.test(sfCol), `right column: "${sfCol.slice(0, 90)}"`)
 check(bar === '100.0%', `vertical bar fully white: --white-pos=${bar}`)
 check(uncoloured === 0, `every legend move coloured (uncoloured: ${uncoloured})`)
 check(text.startsWith('Tablas de finales'), `text: "${text.slice(0, 110)}"`)
