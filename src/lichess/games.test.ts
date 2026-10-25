@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { dayRange, gamesUrl, parseGameLine, scoreText, timeControlText, userColor, userResult } from './games'
-import { isFavorite, listFavorites, toggleFavorite } from './favorites'
+import { gamesUrl, parseGameLine } from './games'
+import { dayRange, scoreText, timeControlText, userColor, userResult } from '../games/common'
+import { isFavorite, listFavorites, toggleFavorite } from '../games/favorites'
 import { treeFromPgn } from '../game/pgn'
 
 // Trimmed real NDJSON line from the API (Ousland, 2026-10-20).

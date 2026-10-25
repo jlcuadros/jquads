@@ -11,9 +11,7 @@
  *     WebKit on 2026-10-25). Anonymous requests stream 20 games/s; Lichess asks
  *     for one request at a time and a minute of pause after HTTP 429.
  */
-
-export type Speed = 'bullet' | 'blitz' | 'rapid' | 'classical' | 'correspondence'
-export const SPEEDS: Speed[] = ['bullet', 'blitz', 'rapid', 'classical', 'correspondence']
+import { PAGE_SIZE, SPEEDS, fetchOrThrow, serialQueue, type GameSummary, type GamesPage, type GamesQuery, type Speed } from '../games/common'
 
 /** API perfTypes per filter chip ("bullet" also covers ultraBullet). */
 const PERF_TYPES: Record<Speed, string[]> = {
@@ -22,32 +20,6 @@ const PERF_TYPES: Record<Speed, string[]> = {
   rapid: ['rapid'],
   classical: ['classical'],
   correspondence: ['correspondence'],
-}
-
-/** Games loaded per page ("load more" fetches the next page). */
-export const PAGE_SIZE = 20
-
-export interface GameSummary {
-  id: string
-  createdAt: number // ms
-  speed: string
-  rated: boolean
-  clock?: { initial: number; increment: number } // seconds
-  daysPerTurn?: number // correspondence
-  status: string // mate, resign, outoftime, draw, stalemate…
-  winner?: 'white' | 'black'
-  opening?: string
-  white: { name: string; rating?: number }
-  black: { name: string; rating?: number }
-  pgn: string
-}
-
-export interface GamesQuery {
-  username: string
-  speeds: Speed[] // empty = all standard speeds
-  since?: number // ms, inclusive
-  until?: number // ms, inclusive
-  max?: number
 }
 
 // ---------------------------------------------------------------------------
@@ -81,6 +53,7 @@ export function parseGameLine(line: string): GameSummary | null {
     rating: p?.rating,
   })
   return {
+    site: 'lichess',
     id: g.id,
     createdAt: g.createdAt,
     speed: g.speed,
@@ -96,77 +69,18 @@ export function parseGameLine(line: string): GameSummary | null {
   }
 }
 
-/** Which colour `username` played (case-insensitive), or null if neither. */
-export function userColor(g: GameSummary, username: string): 'white' | 'black' | null {
-  const u = username.trim().toLowerCase()
-  if (g.white.name.toLowerCase() === u) return 'white'
-  if (g.black.name.toLowerCase() === u) return 'black'
-  return null
-}
-
-/** Result from the user's point of view: win / loss / draw (or null if not their game). */
-export function userResult(g: GameSummary, username: string): 'win' | 'loss' | 'draw' | null {
-  const color = userColor(g, username)
-  if (!color) return null
-  if (!g.winner) return 'draw'
-  return g.winner === color ? 'win' : 'loss'
-}
-
-/** "1-0", "0-1", "½-½" (or "*" if unfinished). */
-export function scoreText(g: GameSummary): string {
-  if (g.winner === 'white') return '1-0'
-  if (g.winner === 'black') return '0-1'
-  return ['started', 'created'].includes(g.status) ? '*' : '½-½'
-}
-
-/** "3+2" (minutes + increment), "¼+0" for 15 s, or "3d" for correspondence. */
-export function timeControlText(g: GameSummary): string {
-  if (g.clock) {
-    const min = g.clock.initial / 60
-    const m = min === 0.25 ? '¼' : min === 0.5 ? '½' : min === 0.75 ? '¾' : String(Math.round(min * 10) / 10)
-    return `${m}+${g.clock.increment}`
-  }
-  return g.daysPerTurn ? `${g.daysPerTurn}d` : '∞'
-}
-
-/** Local date "YYYY-MM-DD" (from a <input type=date>) → [start, end] of that day in ms. */
-export function dayRange(isoDate: string): [number, number] {
-  const [y, m, d] = isoDate.split('-').map(Number)
-  const start = new Date(y, m - 1, d).getTime()
-  return [start, start + 86_400_000 - 1]
-}
-
 // ---------------------------------------------------------------------------
 // Client: one request at a time
 // ---------------------------------------------------------------------------
 
-export class LichessGamesError extends Error {
-  constructor(public kind: 'notFound' | 'rateLimited' | 'network', message: string) {
-    super(message)
-  }
-}
+const queue = serialQueue()
 
-let busy: Promise<unknown> = Promise.resolve()
-
-/** Downloads one page of games (newest first). Throws LichessGamesError. */
-export function fetchGames(q: GamesQuery): Promise<GameSummary[]> {
-  const job = busy.then(async () => {
-    let res: Response
-    try {
-      res = await fetch(gamesUrl(q), { headers: { Accept: 'application/x-ndjson' } })
-    } catch (e) {
-      // Note: when Lichess rate-limits (HTTP 429) its answer may lack the CORS
-      // headers, so the browser reports a generic "access control" failure
-      // here instead of the 429 status (seen while testing, 2026-10-25). The
-      // message shown to the user mentions waiting a minute for that reason.
-      throw new LichessGamesError('network', e instanceof Error ? e.message : String(e))
-    }
-    if (res.status === 404) throw new LichessGamesError('notFound', q.username)
-    if (res.status === 429) throw new LichessGamesError('rateLimited', 'HTTP 429')
-    if (!res.ok) throw new LichessGamesError('network', `HTTP ${res.status}`)
+/** Downloads one page of games (newest first). Throws GamesError. */
+export function fetchLichessGames(q: GamesQuery): Promise<GamesPage> {
+  return queue(async () => {
+    const res = await fetchOrThrow(gamesUrl(q), { headers: { Accept: 'application/x-ndjson' } }, q.username)
     const text = await res.text()
-    return text.split('\n').map(parseGameLine).filter((g): g is GameSummary => g !== null)
+    const games = text.split('\n').map(parseGameLine).filter((g): g is GameSummary => g !== null)
+    return { games, exhausted: games.length < (q.max ?? PAGE_SIZE) }
   })
-  busy = job.catch(() => undefined)
-  return job
 }

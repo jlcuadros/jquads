@@ -3,7 +3,7 @@
  * (2026-10-25): no login needed; not shared between devices. Each favourite
  * keeps the whole summary (with its PGN), so it opens even without connection.
  */
-import type { GameSummary } from './games'
+import type { GameSummary } from './common'
 
 const KEY = 'favoriteGames'
 
@@ -37,7 +37,7 @@ export function toggleFavorite(game: GameSummary): boolean {
   return nowFavorite
 }
 
-/** All favourites, newest first (same order as the Lichess list). */
+/** All favourites, newest first (same order as the lists), from both sites. */
 export function listFavorites(): GameSummary[] {
   return Object.values(read()).sort((a, b) => b.createdAt - a.createdAt)
 }

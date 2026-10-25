@@ -39,6 +39,7 @@ const COMPONENTS = [
 
 const SERVICES = [
   'Lichess (https://lichess.org): public API for a user\'s games and the Syzygy endgame tablebase (tablebase.lichess.org). Used without login, one request at a time, as Lichess asks. Not affiliated with Lichess.',
+  'Chess.com (https://www.chess.com/news/view/published-data-api): published-data API (PubAPI) for a user\'s monthly game archives. Read-only, without login, one request at a time. Not affiliated with Chess.com.',
 ]
 
 const rule = '='.repeat(78)
@@ -46,7 +47,7 @@ const out = [
   'jquads — third-party components and licences',
   '',
   'Unofficial personal project. Not affiliated with or endorsed by Maia Chess / the',
-  'CSSLab (University of Toronto), the Stockfish project or Lichess. Their names',
+  'CSSLab (University of Toronto), the Stockfish project, Lichess or Chess.com. Their names',
   'belong to their owners. Provided WITHOUT ANY WARRANTY (see the AGPL-3.0 below).',
   '',
   ...COMPONENTS.flatMap(([name, author, licence, url, use]) => [`- ${name}`, `    ${author} · ${licence}`, `    ${url}`, `    ${use}`]),

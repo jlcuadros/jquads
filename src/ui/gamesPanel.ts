@@ -1,26 +1,38 @@
 /**
- * Full-screen "📂 Lichess games" panel (José, 2026-10-25), modelled on
+ * Full-screen "📂 games" panel (José, 2026-10-25), modelled on
  * maiachess.com's "Select game → Lichess":
+ *   - site selector Lichess | Chess.com, each with its own username (José:
+ *     "a tab for Lichess and another for Chess.com");
  *   - the user's games, newest first, PAGE_SIZE at a time ("Load more");
  *   - filters: speed chips (bullet / blitz / rapid / classical /
  *     correspondence) and a date range;
- *   - ☆ / ⭐ favourites stored on the device, with their own tab;
+ *   - ☆ / ⭐ favourites stored on the device, with their own tab (one list
+ *     for both sites, each game labelled with its site);
  *   - tapping a game hands it to the app, which opens it at the initial
  *     position with the board facing the user (José's requirement).
- * The username is the same setting as ⚙ → "Usuario de Lichess".
+ * The usernames are the same settings as ⚙ → "Usuario de Lichess" /
+ * "Usuario de Chess.com". Chess.com has no "classical" speed: its chip is hidden.
  */
 import { t, getLang, type MessageKey } from '../i18n/i18n'
 import {
-  fetchGames, dayRange, scoreText, timeControlText, userColor, userResult, LichessGamesError,
-  PAGE_SIZE, SPEEDS, type GameSummary, type Speed,
-} from '../lichess/games'
-import { isFavorite, listFavorites, toggleFavorite } from '../lichess/favorites'
+  dayRange, scoreText, siteOf, timeControlText, userColor, userResult, GamesError,
+  PAGE_SIZE, SITES, SITE_NAMES, SPEEDS, type GameSummary, type GamesPage, type GamesQuery, type Site, type Speed,
+} from '../games/common'
+import { isFavorite, listFavorites, toggleFavorite } from '../games/favorites'
+import { fetchLichessGames } from '../lichess/games'
+import { fetchChessComGames, CHESSCOM_SPEEDS } from '../chesscom/games'
+
+/** Each site: how to download a page, and which speed chips make sense. */
+const SOURCES: Record<Site, { fetch: (q: GamesQuery) => Promise<GamesPage>; speeds: Speed[] }> = {
+  lichess: { fetch: fetchLichessGames, speeds: SPEEDS },
+  chesscom: { fetch: fetchChessComGames, speeds: CHESSCOM_SPEEDS },
+}
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 
 interface Hooks {
-  getUser: () => string
-  setUser: (name: string) => void
+  getUser: (site: Site) => string
+  setUser: (site: Site, name: string) => void
   onPick: (game: GameSummary) => void
 }
 
@@ -46,15 +58,28 @@ function saveFilters() {
   }
 }
 
+/** Selected site, remembered on the device. */
+const SITE_KEY = 'gamesSite'
+function loadSite(): Site {
+  try {
+    const v = localStorage.getItem(SITE_KEY) as Site | null
+    return v && SITES.includes(v) ? v : 'lichess'
+  } catch {
+    return 'lichess'
+  }
+}
+
 let hooks: Hooks
+let site: Site = loadSite()
 let filters = loadFilters()
 let tab: 'recent' | 'favorites' = 'recent'
 let games: GameSummary[] = [] // loaded so far (recent tab)
 let loadedFor = '' // query key the list belongs to (user + filters)
-let exhausted = false // the last page came back incomplete: no more games
+let exhausted = false // the site said there are no older games
 let setupDone = false
 
-const queryKey = () => JSON.stringify([hooks.getUser().toLowerCase(), filters])
+const user = () => hooks.getUser(site)
+const queryKey = () => JSON.stringify([site, user().toLowerCase(), filters])
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -66,10 +91,10 @@ export function openGames(h: Hooks) {
   $('games').hidden = false
   $('games').scrollTop = 0
   document.body.style.overflow = 'hidden'
-  $<HTMLInputElement>('gamesUser').value = hooks.getUser()
+  renderSite()
   renderFilters()
-  // Reload only if the user or the filters changed since the last time.
-  if (tab === 'recent' && hooks.getUser() && loadedFor !== queryKey()) void reload()
+  // Reload only if the site, the user or the filters changed since the last time.
+  if (tab === 'recent' && user() && loadedFor !== queryKey()) void reload()
   else render()
 }
 
@@ -81,6 +106,7 @@ function closeGames() {
 /** Re-applies the current language to texts generated in code. */
 export function retranslateGames() {
   if (setupDone && !$('games').hidden) {
+    renderSite()
     renderFilters()
     render()
   }
@@ -94,7 +120,7 @@ function setup() {
   setupDone = true
   $('gamesClose').onclick = closeGames
   const load = () => {
-    hooks.setUser($<HTMLInputElement>('gamesUser').value.trim())
+    hooks.setUser(site, $<HTMLInputElement>('gamesUser').value.trim())
     setTab('recent')
     void reload()
   }
@@ -108,6 +134,7 @@ function setup() {
     else render()
   }
   $('tabFavorites').onclick = () => setTab('favorites')
+  for (const s of SITES) $(`site-${s}`).onclick = () => setSite(s)
   $('gamesFrom').onchange = () => onFilterChange(() => (filters.from = $<HTMLInputElement>('gamesFrom').value))
   $('gamesTo').onchange = () => onFilterChange(() => (filters.to = $<HTMLInputElement>('gamesTo').value))
   $('gamesMore').onclick = () => void loadPage()
@@ -126,6 +153,36 @@ function setup() {
     closeGames()
     hooks.onPick(game)
   }
+}
+
+/** Lichess | Chess.com: each keeps its username; the list reloads for the new site. */
+function setSite(next: Site) {
+  if (next === site && tab === 'recent') return
+  site = next
+  try {
+    localStorage.setItem(SITE_KEY, site)
+  } catch {
+    /* not persisted */
+  }
+  setStatus('')
+  renderSite()
+  renderFilters()
+  setTab('recent')
+  if (user() && loadedFor !== queryKey()) void reload()
+  else if (!user()) {
+    games = []
+    loadedFor = ''
+    setStatus(t('games.needUser', { site: SITE_NAMES[site] }))
+    render()
+  }
+}
+
+function renderSite() {
+  for (const s of SITES) $(`site-${s}`).classList.toggle('active', s === site)
+  const input = $<HTMLInputElement>('gamesUser')
+  input.value = user()
+  input.setAttribute('aria-label', t(site === 'lichess' ? 'games.user' : 'games.userChesscom'))
+  input.placeholder = input.getAttribute('aria-label')!
 }
 
 function setTab(next: typeof tab) {
@@ -156,7 +213,17 @@ function onFilterChange(change: () => void) {
 // Loading (Lichess API, see lichess/games.ts)
 // ---------------------------------------------------------------------------
 
+/**
+ * Each reload has a number; a page that arrives for an older reload is
+ * dropped. Without it, changing a filter and tapping "Cargar" within the
+ * debounce made two loads with the same query, and the list came out twice
+ * (found by games-test, 2026-10-25).
+ */
+let loadSeq = 0
+
 async function reload() {
+  clearTimeout(filterTimer) // a pending filter reload would repeat this one
+  loadSeq++
   games = []
   exhausted = false
   loadedFor = queryKey()
@@ -165,25 +232,29 @@ async function reload() {
 
 /** Next page: games older than the last one shown ("until"). */
 async function loadPage() {
-  const username = hooks.getUser()
-  if (!username) return setStatus(t('games.needUser'))
+  const username = user()
+  const siteName = SITE_NAMES[site]
+  if (!username) return setStatus(t('games.needUser', { site: siteName }))
   const key = queryKey()
+  const seq = loadSeq
   const since = filters.from ? dayRange(filters.from)[0] : undefined
   let until = filters.to ? dayRange(filters.to)[1] : undefined
   if (games.length) until = games[games.length - 1].createdAt - 1
   setStatus(t('games.loading'))
   $('gamesMore').hidden = true
   try {
-    const page = await fetchGames({ username, speeds: filters.speeds, since, until, max: PAGE_SIZE })
-    if (key !== queryKey()) return // filters changed meanwhile: a newer load is running
-    games.push(...page)
-    exhausted = page.length < PAGE_SIZE
-    setStatus('')
+    const page = await SOURCES[site].fetch({ username, speeds: filters.speeds, since, until, max: PAGE_SIZE })
+    if (key !== queryKey() || seq !== loadSeq) return // a newer load is running
+    games.push(...page.games)
+    exhausted = page.exhausted
+    // Chess.com can stop after a few months without matches: "Load more" goes on.
+    setStatus(!games.length && !exhausted ? t('games.emptySoFar') : '')
   } catch (e) {
-    const err = e instanceof LichessGamesError ? e : new LichessGamesError('network', String(e))
-    if (err.kind === 'notFound') setStatus(t('games.err.notFound', { user: username }))
-    else if (err.kind === 'rateLimited') setStatus(t('games.err.rateLimited'))
-    else setStatus(t('games.err.network', { detail: err.message }))
+    if (seq !== loadSeq) return // error of a load nobody is waiting for
+    const err = e instanceof GamesError ? e : new GamesError('network', String(e))
+    if (err.kind === 'notFound') setStatus(t('games.err.notFound', { user: username, site: siteName }))
+    else if (err.kind === 'rateLimited') setStatus(t('games.err.rateLimited', { site: siteName }))
+    else setStatus(t('games.err.network', { detail: err.message, site: siteName }))
     loadedFor = '' // allow retrying
   }
   render()
@@ -200,7 +271,7 @@ function setStatus(text: string) {
 const currentList = () => (tab === 'favorites' ? listFavorites() : games)
 
 function renderFilters() {
-  $('speedChips').innerHTML = SPEEDS.map(
+  $('speedChips').innerHTML = SOURCES[site].speeds.map(
     (s) => `<button class="chip${filters.speeds.includes(s) ? ' on' : ''}" data-speed="${s}">${t(`games.speed.${s}` as MessageKey)}</button>`,
   ).join('')
   for (const chip of $('speedChips').querySelectorAll<HTMLButtonElement>('.chip')) {
@@ -220,29 +291,30 @@ const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '
 function render() {
   $('gamesFilters').hidden = tab === 'favorites'
   const list = currentList()
-  const user = hooks.getUser()
   if (tab === 'favorites' && !list.length) setStatus(t('games.noFavorites'))
-  else if (tab === 'recent' && !list.length && $('gamesStatus').textContent === '' && user) setStatus(t('games.empty'))
+  else if (tab === 'recent' && !list.length && $('gamesStatus').textContent === '' && user() && exhausted) setStatus(t('games.empty'))
   else if (tab === 'favorites') setStatus('')
 
   const dateFmt = new Intl.DateTimeFormat(getLang(), { day: 'numeric', month: 'short', year: 'numeric' })
   $('gamesList').innerHTML = list
     .map((g) => {
-      const result = userResult(g, user)
-      const me = userColor(g, user)
+      const gameUser = hooks.getUser(siteOf(g)) // favourites mix both sites
+      const result = userResult(g, gameUser)
+      const me = userColor(g, gameUser)
       const player = (color: 'white' | 'black') => {
         const p = g[color]
         const name = `${escapeHtml(p.name)}${p.rating ? ` ${p.rating}` : ''}`
         return me === color ? `<span class="me">${name}</span>` : name
       }
       const speed = t(`games.speed.${g.speed === 'ultraBullet' ? 'bullet' : g.speed}` as MessageKey)
-      const meta = [dateFmt.format(g.createdAt), `${timeControlText(g)} ${speed}`, g.rated ? '' : t('games.casual'), g.opening ? escapeHtml(g.opening) : '']
+      // In the favourites (both sites) each game says where it comes from.
+      const meta = [tab === 'favorites' ? SITE_NAMES[siteOf(g)] : '', dateFmt.format(g.createdAt), `${timeControlText(g)} ${speed}`, g.rated ? '' : t('games.casual'), g.opening ? escapeHtml(g.opening) : '']
         .filter(Boolean)
         .join(' · ')
       const fav = isFavorite(g.id)
       return (
         // data-created / data-me: used by scripts/games-test.mjs (order and board orientation)
-        `<li data-id="${g.id}" data-created="${g.createdAt}" data-me="${me ?? ''}">` +
+        `<li data-id="${g.id}" data-site="${siteOf(g)}" data-created="${g.createdAt}" data-me="${me ?? ''}">` +
         `<span class="res ${result ?? 'draw'}">${scoreText(g)}</span>` +
         `<span class="info"><div class="players">♔ ${player('white')} – ♚ ${player('black')}</div><div class="meta">${meta}</div></span>` +
         `<button class="fav" aria-label="${t(fav ? 'games.unfavorite' : 'games.favorite')}">${fav ? '⭐' : '☆'}</button>` +
@@ -250,5 +322,5 @@ function render() {
       )
     })
     .join('')
-  $('gamesMore').hidden = tab !== 'recent' || exhausted || !games.length
+  $('gamesMore').hidden = tab !== 'recent' || exhausted || !loadedFor
 }

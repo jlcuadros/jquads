@@ -5,7 +5,7 @@ A lightweight, mobile-first chess analysis board that runs **entirely in the bro
 evaluates them. It is a reduced, personal take on the analysis page of
 [maiachess.com](https://www.maiachess.com), designed to be used on an iPhone.
 
-**Live:** https://jquads.pages.dev · UI in Spanish.
+**Live:** https://jquads.pages.dev · UI in 7 languages (es, en, fr, it, ru, de, pt).
 
 Created by **José Luis Cuadros** — say hi on [Lichess (Ousland)](https://lichess.org/@/Ousland)
 or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
@@ -17,8 +17,11 @@ or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
 - **Colour code** for every move shown (good / inaccuracy / blunder, by win probability lost
   versus Stockfish's best move) and a "Blunder Meter"-style bar.
 - **Threats**: the same analysis as if the opponent were to move (orange arrow, triangles).
-- Explanatory text (Spanish) generated from both engines.
-- **Position editor** (full screen), FEN loading, "open in Lichess".
+- Explanatory text generated from both engines (in the selected language).
+- **Position editor** (full screen), FEN loading, PGN export, "open in Lichess".
+- **Online endgame tables** (Lichess Syzygy, ≤ 7 pieces): exact results ("+M12" / "−M20") instead of Stockfish.
+- **Your games from Lichess or Chess.com** (no login, just the username): newest first, filters by
+  speed and date, favourites on the device; a game opens with the board on your side.
 - Settings: Maia rating, depths, hash memory, light classic Stockfish, number of lines.
 
 ## How it works
@@ -61,12 +64,13 @@ Browser end-to-end tests (Playwright, WebKit emulating an iPhone) are described 
   (Colin M.L. Burnett, GPL-2.0-or-later), [chess.js](https://github.com/jhlywa/chess.js) (BSD-2),
   [onnxruntime-web](https://github.com/microsoft/onnxruntime) (MIT).
 - [Lichess public API](https://lichess.org/api): a user's games and the Syzygy endgame tablebase.
+- [Chess.com published-data API](https://www.chess.com/news/view/published-data-api): a user's games.
 
 The full licence texts of the shipped components are generated into `licenses.txt`
 (`scripts/third-party-licenses.mjs`), linked from ⚙ → Credits and licences.
 
 Unofficial project, not affiliated with or endorsed by Maia Chess / the University of Toronto,
-Stockfish or Lichess. Their names belong to their owners. Provided without any warranty.
+Stockfish, Lichess or Chess.com. Their names belong to their owners. Provided without any warranty.
 
 ## License
 [AGPL-3.0-or-later](LICENSE). Copyright © 2026 José Luis Cuadros.

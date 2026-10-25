@@ -65,8 +65,8 @@ export const es = {
   'credits.model.html': 'Modelo <a href="https://github.com/CSSLab/maia3" target="_blank" rel="noopener">Maia-3</a> (CSSLab, AGPL-3.0). Investigación: <a href="https://arxiv.org/abs/2605.19091" target="_blank" rel="noopener">Maia-3</a> (ICLR 2026), <a href="https://www.cs.toronto.edu/~ashton/pubs/maia2-neurips2024.pdf" target="_blank" rel="noopener">Maia-2</a> (NeurIPS 2024), <a href="https://arxiv.org/abs/2006.01855" target="_blank" rel="noopener">Maia</a> (KDD 2020).',
   'credits.design': 'El diseño del panel de análisis, el código de colores y la forma de ejecutar Maia en el navegador están tomados de maiachess.com.',
   'credits.stockfish.html': '<a href="https://stockfishchess.org" target="_blank" rel="noopener">Stockfish</a> (GPL-3.0) con redes <a href="https://github.com/official-stockfish/networks" target="_blank" rel="noopener">NNUE</a> (CC0), compilado para web por Lichess: <a href="https://github.com/lichess-org/lila-stockfish-web" target="_blank" rel="noopener">lila-stockfish-web</a> (GPL-3.0).',
-  'credits.libs.html': 'Tablero <a href="https://github.com/lichess-org/chessground" target="_blank" rel="noopener">chessground</a> (GPL-3.0) con piezas <a href="https://en.wikipedia.org/wiki/User:Cburnett" target="_blank" rel="noopener">cburnett</a> (Colin M.L. Burnett, GPLv2+), reglas <a href="https://github.com/jhlywa/chess.js" target="_blank" rel="noopener">chess.js</a> (BSD-2), <a href="https://github.com/microsoft/onnxruntime" target="_blank" rel="noopener">onnxruntime-web</a> (MIT). Partidas y tablas de finales: <a href="https://lichess.org/api" target="_blank" rel="noopener">API pública de Lichess</a>.',
-  'credits.notice.html': 'Proyecto no oficial: sin relación con Maia Chess, la Universidad de Toronto, Stockfish ni Lichess; sus nombres pertenecen a sus dueños. Se ofrece sin ninguna garantía. <a href="licenses.txt" target="_blank" rel="noopener">Textos completos de las licencias</a>.',
+  'credits.libs.html': 'Tablero <a href="https://github.com/lichess-org/chessground" target="_blank" rel="noopener">chessground</a> (GPL-3.0) con piezas <a href="https://en.wikipedia.org/wiki/User:Cburnett" target="_blank" rel="noopener">cburnett</a> (Colin M.L. Burnett, GPLv2+), reglas <a href="https://github.com/jhlywa/chess.js" target="_blank" rel="noopener">chess.js</a> (BSD-2), <a href="https://github.com/microsoft/onnxruntime" target="_blank" rel="noopener">onnxruntime-web</a> (MIT). Partidas y tablas de finales: <a href="https://lichess.org/api" target="_blank" rel="noopener">API pública de Lichess</a> y la de <a href="https://www.chess.com/news/view/published-data-api" target="_blank" rel="noopener">Chess.com</a>.',
+  'credits.notice.html': 'Proyecto no oficial: sin relación con Maia Chess, la Universidad de Toronto, Stockfish, Lichess ni Chess.com; sus nombres pertenecen a sus dueños. Se ofrece sin ninguna garantía. <a href="licenses.txt" target="_blank" rel="noopener">Textos completos de las licencias</a>.',
   'credits.link': 'Ver créditos: ⚙ > Créditos y licencias',
 
   // --- Panel ------------------------------------------------------------------
@@ -143,9 +143,10 @@ export const es = {
 
   // --- Lichess games (📂) ------------------------------------------------------
   'btn.games': 'Partidas de Lichess',
-  'games.title': 'Partidas de Lichess',
+  'games.title': 'Partidas',
   'games.close': 'Cerrar',
   'games.user': 'Usuario de Lichess',
+  'games.userChesscom': 'Usuario de Chess.com',
   'games.load': 'Cargar',
   'games.tab.recent': 'Recientes',
   'games.tab.favorites': '⭐ Favoritas',
@@ -159,13 +160,14 @@ export const es = {
   'games.more': 'Cargar más',
   'games.loading': 'Descargando partidas…',
   'games.empty': 'No hay partidas con estos filtros.',
+  'games.emptySoFar': 'Ninguna partida con estos filtros en los últimos meses revisados: toca «Cargar más» para seguir buscando.',
   'games.noFavorites': 'Aún no tienes favoritas: toca ☆ en una partida.',
-  'games.needUser': 'Escribe tu usuario de Lichess.',
-  'games.err.notFound': 'No existe el usuario «{user}» en Lichess.',
-  'games.err.rateLimited': 'Lichess pide esperar un minuto antes de seguir.',
-  'games.err.network': 'No se pudieron descargar las partidas ({detail}). Si has descargado muchas seguidas, Lichess hace esperar un minuto: vuelve a intentarlo después.',
+  'games.needUser': 'Escribe tu usuario de {site}.',
+  'games.err.notFound': 'No existe el usuario «{user}» en {site}.',
+  'games.err.rateLimited': '{site} pide esperar un minuto antes de seguir.',
+  'games.err.network': 'No se pudieron descargar las partidas ({detail}). Si has descargado muchas seguidas, {site} hace esperar un minuto: vuelve a intentarlo después.',
   'games.favorite': 'Añadir a favoritas',
   'games.unfavorite': 'Quitar de favoritas',
   'games.casual': 'amistosa',
-  'help.games.html': '<b>📂 Partidas de Lichess</b>: escribe tu usuario una vez y verás tus partidas, de la más reciente a la más antigua, con filtros por ritmo y fecha. Toca una para analizarla (empieza en la posición inicial, con el tablero de tu color). La ☆ la guarda en favoritas (en este dispositivo).',
+  'help.games.html': '<b>📂 Partidas</b> de Lichess o de Chess.com (elige arriba): escribe tu usuario una vez y verás tus partidas, de la más reciente a la más antigua, con filtros por ritmo y fecha (Chess.com no tiene «Clásica»; su «Diaria» es «Correspondencia»). Toca una para analizarla (empieza en la posición inicial, con el tablero de tu color). La ☆ la guarda en favoritas (en este dispositivo).',
 } as const

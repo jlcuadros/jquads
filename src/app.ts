@@ -27,7 +27,7 @@ import { StockfishClient, type StockfishVariant } from './stockfish/stockfishCli
 import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analyzer'
 import { openEditor, retranslateEditor } from './ui/editor'
 import { openGames, retranslateGames } from './ui/gamesPanel'
-import { userColor } from './lichess/games'
+import { siteOf, userColor, type Site } from './games/common'
 import { setViewOptions, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
@@ -54,6 +54,7 @@ const DEFAULTS: AppSettings = {
   tablebase: true, // Lichess online endgame tables when ≤ 7 pieces (José: on by default)
   lang: detectLang(), // device language if supported, otherwise English (José, 2026-10-25)
   lichessUser: '', // ⚙ / 📂: the board faces this player when opening their Lichess games
+  chesscomUser: '', // same for Chess.com
 }
 
 /** Bumped when a default changes and saved settings must be migrated (see loadSettings). */
@@ -72,6 +73,7 @@ interface AppSettings extends Omit<Settings, 'threats'> {
   evalBar: boolean // show the vertical evaluation bar
   lang: Lang // UI language (⚙)
   lichessUser: string // Lichess username (⚙ and 📂 panel)
+  chesscomUser: string // Chess.com username (⚙ and 📂 panel)
 }
 
 function loadSettings(): AppSettings {
@@ -292,22 +294,28 @@ function setupControls() {
   $<HTMLSelectElement>('notation').value = settings.notation
   $<HTMLInputElement>('evalBar').checked = settings.evalBar
   $<HTMLInputElement>('tablebase').checked = settings.tablebase
-  // Lichess username (also editable in the 📂 panel; same saved value).
-  $<HTMLInputElement>('lichessUserSetting').value = settings.lichessUser
-  $('lichessUserSetting').onchange = (ev) => {
-    settings.lichessUser = (ev.target as HTMLInputElement).value.trim()
-    saveSettings()
+  // Usernames per site (also editable in the 📂 panel; same saved values).
+  const USER_SETTING: Record<Site, { key: 'lichessUser' | 'chesscomUser'; input: string }> = {
+    lichess: { key: 'lichessUser', input: 'lichessUserSetting' },
+    chesscom: { key: 'chesscomUser', input: 'chesscomUserSetting' },
   }
-  // 📂 Lichess games: open one at the initial position, board facing the user
-  // whose username is set (José: "always oriented for that player").
+  for (const { key, input } of Object.values(USER_SETTING)) {
+    $<HTMLInputElement>(input).value = settings[key]
+    $(input).onchange = (ev) => {
+      settings[key] = (ev.target as HTMLInputElement).value.trim()
+      saveSettings()
+    }
+  }
+  // 📂 Lichess / Chess.com games: open one at the initial position, board facing
+  // the user whose username is set (José: "always oriented for that player").
   $('gamesBtn').onclick = () => {
     $('settings').hidden = true
     analyzer.cancel()
     openGames({
-      getUser: () => settings.lichessUser,
-      setUser: (name) => {
-        settings.lichessUser = name
-        $<HTMLInputElement>('lichessUserSetting').value = name
+      getUser: (site) => settings[USER_SETTING[site].key],
+      setUser: (site, name) => {
+        settings[USER_SETTING[site].key] = name
+        $<HTMLInputElement>(USER_SETTING[site].input).value = name
         saveSettings()
       },
       onPick: (game) => {
@@ -317,7 +325,7 @@ function setupControls() {
           alert(t('msg.invalidFen'))
           return
         }
-        orientation = userColor(game, settings.lichessUser) ?? 'white'
+        orientation = userColor(game, settings[USER_SETTING[siteOf(game)].key]) ?? 'white'
         positionChanged()
         renderEvalBar()
       },

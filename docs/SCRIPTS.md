@@ -35,7 +35,7 @@ Development and testing scripts only; none of them ships with the app.
 | [copy-vendor.mjs](../scripts/copy-vendor.mjs) | List `FILES` of source → destination |
 | [export-docs.mjs](../scripts/export-docs.mjs) | Generates `docs/ARCHITECTURE.md` and `docs/SCRIPTS.md` (public) from `app.md` and this note: Obsidian links → text, no images or emails. Run before each commit |
 | [smoke-test.mjs](../scripts/smoke-test.mjs) | Playwright test of the engines (`proto.html`); variants via `SF_VARIANTS` |
-| [games-test.mjs](../scripts/games-test.mjs) | Playwright test of the **📂 Lichess games** against the real API (user Ousland): order, Blitz filter, "Cargar más", dates, favourites, a game with Black → board towards Black. Don't run it many times in a row: Lichess limits requests |
+| [games-test.mjs](../scripts/games-test.mjs) | Playwright test of the **📂 games** against the real APIs of **Lichess and Chess.com** (user Ousland on both), 20 checks: Lichess order, Blitz filter, "Cargar más", dates, favourites, a game with Black → board towards Black; Chess.com list, no "Clásica" chip, username in ⚙, "Rápida" filter across months, "Cargar más", favourites from both sites labelled, a game with Black, back to Lichess keeps its user. Don't run it many times in a row: Lichess limits requests |
 | [i18n-test.mjs](../scripts/i18n-test.mjs) | Playwright test of the **7 languages**: a French device → French; for each language, texts in ⚙, columns, explanatory text and editor, with no horizontal overflow; screenshots per language |
 | [tablebase-test.mjs](../scripts/tablebase-test.mjs) | Playwright test of the **endgame tables**: 0 requests from the start, K+R vs K ("TB +M12", column, bar, colours, text, threats), cache, option off → Stockfish; counts the requests to the API |
 | [editor-test.mjs](../scripts/editor-test.mjs) | Playwright test of the **position editor** with touch taps (iPhone 13): validation, placing pieces, castling, Analizar; 3 screenshots |
@@ -47,6 +47,8 @@ Development and testing scripts only; none of them ships with the app.
 - `smoke-test.mjs` passed in WebKit and Chromium with sf17 and sfhce (2026-10-24).
 - `ui-test.mjs` passed in WebKit/iPhone 13 (2026-10-25): full analysis in 12.7 s on the first visit, going back via the cache in 54 ms.
 - `credits-test.mjs` passed **in production** 5/5 (2026-10-25).
+- `games-test.mjs` (Lichess + Chess.com) passed **in production** 20/20 (2026-10-25).
+- `curl` against the Chess.com API needs a `User-Agent` header, or Cloudflare answers 403 (browsers always send one).
 - `ui-test`, `editor-test`, `tablebase-test` and `credits-test` run with a **Spanish device** (`locale: 'es-ES'`) because they look for Spanish texts; `i18n-test` covers the other languages.
 - `ui-test.mjs` uses a **persistent WebKit profile** in `$TMPDIR/maia-ui-test-webkit-profile` (or `UI_TEST_PROFILE`), so the models stay cached between runs. To simulate a "first visit", delete that folder. It also saves `03-settings.png` (⚙ panel open) and, since iteration 3, checks the threats *Only moves* mode (no bar) and the number of rows per engine. Since iteration 4: the default is *Only moves* (`04-threats-only-moves.png`), it checks *Bar and moves* (`05-threats-bar.png`) and leaves the profile at the default. Since 3.5: waits for `data-done="true"` on the bar blocks (complete analysis), measures the time after a move and **fails if any move in the legends has no colour**.
 
@@ -60,7 +62,7 @@ node scripts/smoke-test.mjs http://localhost:4173 webkit,chromium
 SF_VARIANTS=sfhce node scripts/smoke-test.mjs http://localhost:4173 webkit
 # interface (iPhone emulation) + screenshots:
 node scripts/ui-test.mjs http://localhost:4173 <screenshots-folder>
-# Lichess games (real API; leave a minute between runs):
+# Lichess + Chess.com games (real APIs; leave a minute between runs):
 node scripts/games-test.mjs http://localhost:4173 <screenshots-folder>
 # languages:
 node scripts/i18n-test.mjs http://localhost:4173 <screenshots-folder>

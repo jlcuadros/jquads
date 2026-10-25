@@ -40,6 +40,7 @@
             <label><span data-i18n="set.lang">Idioma</span> <select id="lang"></select></label>
             <!-- Same value as the field in the 📂 panel: the board faces this player in their games -->
             <label><span data-i18n="games.user">Usuario de Lichess</span> <input id="lichessUserSetting" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" /></label>
+            <label><span data-i18n="games.userChesscom">Usuario de Chess.com</span> <input id="chesscomUserSetting" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" /></label>
             <label><span data-i18n="set.elo">Elo de Maia</span> <select id="elo"></select></label>
             <label><span data-i18n="set.depth">Profundidad Stockfish</span> <select id="depth"></select></label>
             <label><span data-i18n="set.threatDepth">Profundidad amenazas</span> <select id="threatDepth"></select></label>
@@ -99,8 +100,8 @@
               <li data-i18n-html="credits.model.html">Modelo <a href="https://github.com/CSSLab/maia3" target="_blank" rel="noopener">Maia-3</a> (CSSLab, AGPL-3.0). Investigación: <a href="https://arxiv.org/abs/2605.19091" target="_blank" rel="noopener">Maia-3</a> (ICLR 2026), <a href="https://www.cs.toronto.edu/~ashton/pubs/maia2-neurips2024.pdf" target="_blank" rel="noopener">Maia-2</a> (NeurIPS 2024), <a href="https://arxiv.org/abs/2006.01855" target="_blank" rel="noopener">Maia</a> (KDD 2020).</li>
               <li data-i18n="credits.design">El diseño del panel de análisis, el código de colores y la forma de ejecutar Maia en el navegador están tomados de maiachess.com.</li>
               <li data-i18n-html="credits.stockfish.html"><a href="https://stockfishchess.org" target="_blank" rel="noopener">Stockfish</a> (GPL-3.0) con redes <a href="https://github.com/official-stockfish/networks" target="_blank" rel="noopener">NNUE</a> (CC0), compilado para web por Lichess: <a href="https://github.com/lichess-org/lila-stockfish-web" target="_blank" rel="noopener">lila-stockfish-web</a> (GPL-3.0).</li>
-              <li data-i18n-html="credits.libs.html">Tablero <a href="https://github.com/lichess-org/chessground" target="_blank" rel="noopener">chessground</a> (GPL-3.0) con piezas <a href="https://en.wikipedia.org/wiki/User:Cburnett" target="_blank" rel="noopener">cburnett</a> (Colin M.L. Burnett, GPLv2+), reglas <a href="https://github.com/jhlywa/chess.js" target="_blank" rel="noopener">chess.js</a> (BSD-2), <a href="https://github.com/microsoft/onnxruntime" target="_blank" rel="noopener">onnxruntime-web</a> (MIT). Partidas y tablas de finales: <a href="https://lichess.org/api" target="_blank" rel="noopener">API pública de Lichess</a>.</li>
-              <li data-i18n-html="credits.notice.html">Proyecto no oficial: sin relación con Maia Chess, la Universidad de Toronto, Stockfish ni Lichess; sus nombres pertenecen a sus dueños. Se ofrece sin ninguna garantía. <a href="licenses.txt" target="_blank" rel="noopener">Textos completos de las licencias</a>.</li>
+              <li data-i18n-html="credits.libs.html">Tablero <a href="https://github.com/lichess-org/chessground" target="_blank" rel="noopener">chessground</a> (GPL-3.0) con piezas <a href="https://en.wikipedia.org/wiki/User:Cburnett" target="_blank" rel="noopener">cburnett</a> (Colin M.L. Burnett, GPLv2+), reglas <a href="https://github.com/jhlywa/chess.js" target="_blank" rel="noopener">chess.js</a> (BSD-2), <a href="https://github.com/microsoft/onnxruntime" target="_blank" rel="noopener">onnxruntime-web</a> (MIT). Partidas y tablas de finales: <a href="https://lichess.org/api" target="_blank" rel="noopener">API pública de Lichess</a> y la de <a href="https://www.chess.com/news/view/published-data-api" target="_blank" rel="noopener">Chess.com</a>.</li>
+              <li data-i18n-html="credits.notice.html">Proyecto no oficial: sin relación con Maia Chess, la Universidad de Toronto, Stockfish, Lichess ni Chess.com; sus nombres pertenecen a sus dueños. Se ofrece sin ninguna garantía. <a href="licenses.txt" target="_blank" rel="noopener">Textos completos de las licencias</a>.</li>
             </ul>
           </details>
         </div>
@@ -144,14 +145,19 @@
       </div>
     </div>
 
-    <!-- Lichess games panel: full screen (src/ui/gamesPanel.ts) -->
+    <!-- Games panel (Lichess / Chess.com): full screen (src/ui/gamesPanel.ts) -->
     <div id="games" class="editor games" hidden>
       <div class="editor-inner">
         <header class="editor-top">
-          <b data-i18n="games.title">Partidas de Lichess</b>
+          <b data-i18n="games.title">Partidas</b>
           <span class="spacer"></span>
           <button id="gamesClose" data-i18n="games.close">Cerrar</button>
         </header>
+        <!-- Site selector (José, 2026-10-25): each site keeps its own username -->
+        <div class="games-tabs games-sites">
+          <button id="site-lichess" class="tab">Lichess</button>
+          <button id="site-chesscom" class="tab">Chess.com</button>
+        </div>
         <div class="games-user">
           <input id="gamesUser" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" data-i18n-aria="games.user" />
           <button id="gamesLoad" class="primary" data-i18n="games.load">Cargar</button>
