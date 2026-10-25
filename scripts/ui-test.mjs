@@ -58,6 +58,11 @@ const evalBar = await page.evaluate(() => {
 })
 await iter4(evalBar.visible && evalBar.white && evalBar.maia, `vertical eval bar: ${JSON.stringify(evalBar)}`)
 
+// The page must never be wider than the screen: otherwise it can shift sideways
+// after a move and hide the eval bar (bug reported by José on 2026-10-25).
+const widths = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth }))
+await iter4(widths.doc <= widths.viewport, `no horizontal overflow: page ${widths.doc} px vs screen ${widths.viewport} px`)
+
 // Hide moves (👁): moves become "--", evaluations stay, nothing playable, no arrows.
 await page.tap('#hideMoves')
 const hidden = await page.evaluate(() => ({

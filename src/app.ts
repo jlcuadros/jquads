@@ -226,7 +226,15 @@ function renderMoveStrip() {
   setViewOptions({ notation: settings.notation, hideMoves })
   const el = $('moves')
   el.innerHTML = renderMoves(tree)
-  el.querySelector('.current')?.scrollIntoView({ block: 'nearest', inline: 'center' })
+  // Centre the current move by scrolling ONLY the strip. scrollIntoView() also
+  // scrolled the whole page sideways on the iPhone (the eval bar went off screen,
+  // José 2026-10-25), so it is not used here.
+  const cur = el.querySelector<HTMLElement>('.current')
+  if (cur) {
+    const strip = el.getBoundingClientRect()
+    const r = cur.getBoundingClientRect()
+    el.scrollLeft += r.left + r.width / 2 - (strip.left + strip.width / 2)
+  }
 }
 
 /** Called after every move / navigation / settings change. */

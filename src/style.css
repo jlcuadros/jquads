@@ -206,3 +206,14 @@ html, body { touch-action: manipulation; }
    that draw them well (Apple Symbols on iOS/macOS). */
 .fig { font-family: "Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", "DejaVu Sans", sans-serif; font-size: 1.3em; line-height: 1; vertical-align: -0.08em; }
 
+/* --- Nothing may overflow sideways (José, 2026-10-25) --------------------- */
+/* chessground puts the file letters (A–H) 24 px to the right, so "H" stuck out
+   of the board and the page became 18 px wider than the iPhone screen: after a
+   move it could shift left and hide the eval bar. Letters now sit inside the
+   bottom-right corner of each square (as on Lichess), and horizontal overflow
+   is clipped as a safety net. */
+.cg-wrap coords.files { left: 0; }
+.cg-wrap coords.files coord { text-align: right; padding-right: 3px; }
+html, body { overflow-x: hidden; }
+.app { overflow-x: clip; }
+
