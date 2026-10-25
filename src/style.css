@@ -171,3 +171,38 @@ button:disabled { opacity: 0.45; cursor: default; }
 .editor-actions { display: flex; gap: 6px; margin-top: 8px; }
 .editor-error { color: var(--meter-blunder); font-size: 0.85rem; min-height: 1.2em; }
 
+
+/* --- No zoom (iteration 4) ------------------------------------------------ */
+/* Disables double-tap zoom (and the 300 ms tap delay); pinch is blocked in app.ts. */
+html, body { touch-action: manipulation; }
+
+/* --- Vertical evaluation bar (iteration 4, optional) ---------------------- */
+/* Very thin so the board stays as big as possible. --white-pos = Stockfish's
+   expected score for White, --maia-pos = Maia's win probability for White. */
+.board-row { display: flex; gap: 3px; align-items: stretch; }
+.board-row .board-wrap { flex: 1; min-width: 0; }
+.evalbar {
+  position: relative; flex: 0 0 7px; border-radius: 2px; overflow: visible;
+  background: linear-gradient(to top, #f2f2f2 var(--white-pos, 50%), #3a3a3a var(--white-pos, 50%));
+  outline: 1px solid #0003;
+}
+.evalbar.black-bottom { background: linear-gradient(to bottom, #f2f2f2 var(--white-pos, 50%), #3a3a3a var(--white-pos, 50%)); }
+.evalbar[hidden] { display: none; }
+.evalbar .fill { display: none; } /* the gradient above draws the fill */
+/* Maia marker: a red tick across the bar with a small triangle pointing at the board */
+.evalbar .maia-mark {
+  position: absolute; left: -1px; right: -1px; height: 2px; background: var(--maia);
+  bottom: var(--maia-pos, -100%); transition: bottom 0.3s;
+}
+.evalbar.black-bottom .maia-mark { bottom: auto; top: var(--maia-pos, -100%); transition: top 0.3s; }
+.evalbar .maia-mark::after {
+  content: ''; position: absolute; left: 100%; top: -3px;
+  border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 5px solid var(--maia);
+}
+.evalbar, .evalbar .maia-mark { transition: background 0.3s; }
+
+/* --- Figurine notation (iteration 4) -------------------------------------- */
+/* Chess symbols render small in the system font: enlarge them and use fonts
+   that draw them well (Apple Symbols on iOS/macOS). */
+.fig { font-family: "Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", "DejaVu Sans", sans-serif; font-size: 1.3em; line-height: 1; vertical-align: -0.08em; }
+

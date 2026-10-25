@@ -47,6 +47,32 @@ console.log('numbers:', await page.textContent('#numbers'))
 console.log('text   :', await page.textContent('#text'))
 await page.screenshot({ path: `${outDir}/01-start.png`, fullPage: true })
 
+// Iteration 4 checks: figurines, "Maia: NN%" without "blancas", vertical eval bar.
+const iter4 = async (ok, msg) => { console.log(`${ok ? 'OK  ' : 'FAIL'} ${msg}`); if (!ok) process.exitCode = 1 }
+const maiaColText = await page.textContent('#maiaCol')
+await iter4(/[♔♕♖♗♘♚♛♜♝♞]/.test(maiaColText), `figurine notation in Maia column: ${maiaColText.replace(/\s+/g, ' ').slice(0, 60)}`)
+await iter4(!(await page.textContent('#numbers')).includes('blancas'), `top line without "blancas": ${await page.textContent('#numbers')}`)
+const evalBar = await page.evaluate(() => {
+  const el = document.getElementById('evalBarEl')
+  return { visible: !el.hidden && el.offsetWidth > 0, width: el.offsetWidth, white: el.style.getPropertyValue('--white-pos'), maia: el.style.getPropertyValue('--maia-pos') }
+})
+await iter4(evalBar.visible && evalBar.white && evalBar.maia, `vertical eval bar: ${JSON.stringify(evalBar)}`)
+
+// Hide moves (👁): moves become "--", evaluations stay, nothing playable, no arrows.
+await page.tap('#hideMoves')
+const hidden = await page.evaluate(() => ({
+  maia: document.getElementById('maiaCol').textContent,
+  sf: document.getElementById('sfCol').textContent,
+  text: document.getElementById('text').textContent,
+  playable: document.querySelectorAll('.panel-col [data-move]').length,
+  arrows: document.querySelectorAll('#board svg.cg-shapes g g, #board .cg-shapes line').length,
+}))
+await iter4(hidden.maia.includes('--') && hidden.sf.includes('--') && /[+−]\d/.test(hidden.sf) && hidden.playable === 0,
+  `hidden moves: maia="${hidden.maia.replace(/\s+/g, ' ').slice(0, 50)}" sf="${hidden.sf.replace(/\s+/g, ' ').slice(0, 50)}" playable=${hidden.playable} arrows=${hidden.arrows}`)
+await iter4(!/[a-h][1-8]/.test(hidden.text), `hidden moves also in the text: "${hidden.text.slice(0, 80)}"`)
+await page.screenshot({ path: `${outDir}/06-hidden-moves.png`, fullPage: true })
+await page.tap('#hideMoves')
+
 // Tap Maia's most likely move.
 const first = await page.textContent('#maiaCol tr[data-move] .move-chip')
 const tMove = Date.now()
@@ -84,6 +110,15 @@ await page.screenshot({ path: `${outDir}/05-threats-bar.png`, fullPage: true })
 // Back to the default so the persistent test profile keeps it.
 await page.click('#menu')
 await page.selectOption('#threatsMode', 'moves')
+await page.click('#menu')
+
+// Export PGN: intercept the share sheet and check the text.
+await page.evaluate(() => { window.__shared = null; navigator.share = async (d) => { window.__shared = d.text } })
+await page.click('#menu')
+await page.click('#exportPgn')
+await page.waitForFunction(() => window.__shared !== null, null, { timeout: 5000 }).catch(() => {})
+const pgn = await page.evaluate(() => window.__shared)
+console.log(`${pgn && pgn.includes('[Site "https://jquads.pages.dev"]') && /1\. e4/.test(pgn) ? 'OK  ' : 'FAIL'} export PGN: ${JSON.stringify((pgn ?? '').split('\n').pop() || pgn)}`)
 await page.click('#menu')
 
 // Back to the start: should come from the cache (instant).

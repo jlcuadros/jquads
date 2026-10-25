@@ -11,21 +11,47 @@ import { formatScore, type MoveClass } from '../analysis/classify'
 import { describePosition } from '../analysis/describe'
 import type { EngineLine } from '../stockfish/stockfishClient'
 import type { GameTree } from '../game/tree'
+import { formatSan, type Notation } from '../game/notation'
 
-/** UCI → SAN in `fen` (falls back to UCI if something is off). */
+/**
+ * Display options set by app.ts before rendering (iteration 4):
+ *  - notation: figurine (♘f3, default) or letters (Nf3);
+ *  - hideMoves: training mode — every suggested move becomes "--" (and is not
+ *    clickable) while evaluations and percentages stay visible.
+ */
+const view: { notation: Notation; hideMoves: boolean } = { notation: 'figurine', hideMoves: false }
+export function setViewOptions(options: Partial<typeof view>) {
+  Object.assign(view, options)
+}
+
+/**
+ * Wraps chess figurines in <span class="fig"> so CSS can enlarge them: in the
+ * system font they render much smaller than letters (seen on iOS, iteration 4).
+ */
+const figHtml = (text: string) => text.replace(/[♔♕♖♗♘♚♛♜♝♞]/g, (c) => `<span class="fig">${c}</span>`)
+
+/** What replaces a move when moves are hidden. */
+const HIDDEN = '--'
+
+/** UCI → SAN in `fen`, in the chosen notation (falls back to UCI if something is off). */
 export function sanOf(fen: string, uci: string): string {
   try {
-    return new Chess(fen).move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] }).san
+    const san = new Chess(fen).move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] }).san
+    return formatSan(san, fen.split(' ')[1] === 'w', view.notation)
   } catch {
     return uci
   }
 }
 
-/** A move with its colour-code dot; clickable (plays the move). */
+/** A move with its colour-code marker; clickable (plays the move). Hidden → "--", not clickable. */
 function chip(uci: string, san: string, color?: string): string {
   const style = color ? ` style="--chip:${color}"` : ''
-  return `<span class="move-chip${color ? '' : ' plain'}" data-move="${uci}"${style}>${san}</span>`
+  if (view.hideMoves) return `<span class="move-chip${color ? '' : ' plain'}"${style}>${HIDDEN}</span>`
+  return `<span class="move-chip${color ? '' : ' plain'}" data-move="${uci}"${style}>${figHtml(san)}</span>`
 }
+
+/** `data-move` attribute for a table row, omitted when moves are hidden. */
+const rowMove = (uci: string) => (view.hideMoves ? '' : ` data-move="${uci}"`)
 
 const pct = (p: number) => `${(p * 100).toFixed(1)}%`
 
@@ -34,7 +60,8 @@ const pct = (p: number) => `${(p * 100).toFixed(1)}%`
 /** Line above the board: Maia's win % and Stockfish's eval as numbers. */
 export function renderNumbers(a: PositionAnalysis | undefined): string {
   const m = a?.main
-  const maia = m?.maia ? `Maia: blancas ${Math.round(m.maia.whiteWinProb * 100)}%` : 'Maia: …'
+  // "blancas" dropped to make room for the hide-moves button (iteration 4).
+  const maia = m?.maia ? `Maia: ${Math.round(m.maia.whiteWinProb * 100)}%` : 'Maia: …'
   const best = m?.lines[0]
   const sf = best ? `SF ${formatScore(lineScoreOf(best))} · d${m.depth}` : 'SF: …'
   return `<span class="maia">${maia}</span><span class="sf">${sf}</span>`
@@ -80,7 +107,7 @@ export function renderMoves(tree: GameTree): string {
       const { number, whiteMove } = tree.moveNumber(n)
       const num = whiteMove ? `<span class="num">${number}.</span>` : i === 0 ? `<span class="num">${number}…</span>` : ''
       const cur = n === tree.current ? ' current' : ''
-      return `${num}<span class="mv${cur}" data-node="${n.id}">${n.san}</span>`
+      return `${num}<span class="mv${cur}" data-node="${n.id}">${figHtml(formatSan(n.san, whiteMove, view.notation))}</span>`
     })
     .join('')
 }
@@ -92,7 +119,7 @@ export function renderMaiaCol(side: SideAnalysis | undefined, elo: number, count
         .slice(0, count)
         .map((p) => {
           const c = side.classified.get(p.uci)
-          return `<tr data-move="${p.uci}"><td>${chip(p.uci, sanOf(side.fen, p.uci), c?.color)}</td><td>${pct(p.prob)}</td></tr>`
+          return `<tr${rowMove(p.uci)}><td>${chip(p.uci, sanOf(side.fen, p.uci), c?.color)}</td><td>${pct(p.prob)}</td></tr>`
         })
         .join('')
     : '<tr><td colspan="2">calculando…</td></tr>'
@@ -107,7 +134,7 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
         .map((l) => {
           const uci = l.pv[0]
           const c = side.classified.get(uci)
-          return `<tr data-move="${uci}"><td>${chip(uci, sanOf(side.fen, uci), c?.color)}</td><td>${formatScore(lineScoreOf(l))}</td></tr>`
+          return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), c?.color)}</td><td>${formatScore(lineScoreOf(l))}</td></tr>`
         })
         .join('')
     : '<tr><td colspan="2">calculando…</td></tr>'

@@ -2,10 +2,20 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- No zoom (José, iteration 4): maximum-scale/user-scalable stop most zooming; iOS Safari ignores
+         user-scalable for accessibility, so app.ts also blocks pinch gestures and CSS uses touch-action. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <!-- Home-screen web app: name "jquads" and José's icon (iteration 4) -->
+    <meta name="apple-mobile-web-app-title" content="jquads" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#161512" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#f4f4f4" media="(prefers-color-scheme: light)" />
-    <title>Análisis Maia + Stockfish</title>
+    <title>jquads</title>
   </head>
   <body>
     <!-- Layout: see the task note, Investigation 3 (interface design) and 3.2 (iteration 2). -->
@@ -14,6 +24,8 @@
         <!-- One line: Maia win % + SF eval (numbers) + actions. Engine settings live in ⚙. -->
         <header class="infobar">
           <span id="numbers" class="numbers"></span>
+          <!-- Hide moves (training): moves become "--", evaluations stay (iteration 4) -->
+          <button id="hideMoves" title="Ocultar jugadas" aria-label="Ocultar jugadas" aria-pressed="false">👁</button>
           <button id="flip" title="Girar tablero" aria-label="Girar tablero">⇅</button>
           <button id="lichess" title="Abrir en Lichess" aria-label="Abrir en Lichess">↗Li</button>
           <button id="menu" title="Ajustes y ayuda" aria-label="Ajustes y ayuda">⚙</button>
@@ -40,21 +52,31 @@
                 <option value="off">No calcular</option>
               </select>
             </label>
+            <label>Notación
+              <select id="notation">
+                <option value="figurine">Figuras (♘f3)</option>
+                <option value="letters">Letras (Nf3)</option>
+              </select>
+            </label>
+            <label class="check"><input type="checkbox" id="evalBar" /> Barra de evaluación junto al tablero</label>
           </div>
           <label class="fen">FEN <input id="fenInput" type="text" spellcheck="false" autocapitalize="off" /></label>
           <div class="settings-actions">
             <button id="editPosition">Introducir posición</button>
             <button id="loadFen">Cargar FEN</button>
             <button id="newGame">Nueva partida</button>
+            <button id="exportPgn">Exportar PGN</button>
           </div>
           <details class="help">
             <summary>Cómo se lee la pantalla</summary>
             <ul>
-              <li><b>Línea de arriba</b>: probabilidad de que ganen las blancas según Maia (rojo) y evaluación de Stockfish con su profundidad (azul).</li>
+              <li><b>Línea de arriba</b>: probabilidad de que ganen las blancas según Maia (rojo) y evaluación de Stockfish con su profundidad (azul). <b>👁</b> oculta las jugadas (salen como «--») pero deja las evaluaciones, para entrenar; pulsa 🙈 para volver a verlas.</li>
               <li><b>Flechas</b>: roja = jugada más humana (Maia); azul = mejor jugada (Stockfish); naranja = amenaza (la mejor jugada del rival si le tocara mover). Si la roja y la azul coinciden, la roja va dentro de la azul.</li>
               <li><b>1ª barra — jugadas</b>: cómo se reparte la probabilidad de Maia (lo que jugaría un humano de ese Elo) entre jugadas buenas ✓, imprecisiones ?! y errores ??.</li>
               <li><b>2ª barra — amenazas</b>: lo mismo para el rival si le tocara mover a él (como si el bando que mueve pasara turno). No se calcula si hay jaque. Va marcada con un borde naranja (el color de la flecha de amenaza) y sus jugadas llevan triángulos de color en vez de círculos. En ajustes se puede ver como barra y jugadas, solo las jugadas, o no calcularla.</li>
               <li><b>Colores</b>: según cuánta probabilidad de ganar se pierde frente a la mejor jugada de Stockfish: verde &lt; 5 %, amarillo 5–10 %, rojo ≥ 10 %. Cuanto más oscuro el verde, mejor; cuanto más oscuro el rojo, peor.</li>
+              <li><b>Barra vertical</b> (opcional): blanco/negro según la evaluación de Stockfish; la marca roja es la probabilidad de victoria de las blancas según Maia.</li>
+              <li><b>Exportar PGN</b>: la partida con sus variantes; se puede copiar o enviar a otra app (para Lichess: pegarla en lichess.org/paste). <b>↗Li</b> abre la posición actual en Lichess.</li>
               <li><b>Memoria</b>: el hash de Stockfish sirve para el análisis y para las amenazas (es el mismo motor). La versión clásica ahorra unos 80 MB de redes neuronales; cambiarla recarga la página.</li>
             </ul>
           </details>
@@ -73,7 +95,12 @@
           </details>
         </div>
 
-        <div class="board-wrap"><div id="board"></div></div>
+        <!-- Optional thin evaluation bar (iteration 4): white/black fill = Stockfish,
+             red marker = Maia's win probability for White -->
+        <div class="board-row">
+          <div class="evalbar" id="evalBarEl" aria-hidden="true"><div class="fill"></div><div class="maia-mark"></div></div>
+          <div class="board-wrap"><div id="board"></div></div>
+        </div>
         <div class="status" id="status"></div>
       </div>
 

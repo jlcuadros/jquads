@@ -17,11 +17,14 @@ import './style.css'
 
 import { Chess } from 'chess.js'
 import { GameTree } from './game/tree'
+import { gamePgn } from './game/pgn'
+import type { Notation } from './game/notation'
+import { whiteWinProb } from './analysis/classify'
 import { MaiaClient } from './maia/maiaClient'
 import { StockfishClient, type StockfishVariant } from './stockfish/stockfishClient'
 import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analyzer'
 import { openEditor } from './ui/editor'
-import { renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
+import { setViewOptions, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 
@@ -42,6 +45,8 @@ const DEFAULTS: AppSettings = {
   threatsMode: 'moves', // José, iteration 3
   hashMb: 16,
   variant: 'sf17',
+  notation: 'figurine', // iteration 4: chess figurines by default
+  evalBar: true, // iteration 4: thin vertical evaluation bar beside the board
 }
 
 /** Bumped when a default changes and saved settings must be migrated (see loadSettings). */
@@ -56,6 +61,8 @@ interface AppSettings extends Omit<Settings, 'threats'> {
   threatsMode: ThreatsMode
   hashMb: number // Stockfish hash (shared by the main analysis and the threats)
   variant: StockfishVariant // changing it reloads the page
+  notation: Notation // move notation: figurine (♘f3) or letters (Nf3)
+  evalBar: boolean // show the vertical evaluation bar
 }
 
 function loadSettings(): AppSettings {
@@ -92,6 +99,7 @@ const settings = loadSettings()
 let tree = new GameTree()
 let orientation: 'white' | 'black' = 'white'
 let enginesReady = false
+let hideMoves = false // 👁 training mode (not saved: always starts visible)
 let analysis: PositionAnalysis | undefined // analysis of tree.current (may be partial)
 
 const maia = new MaiaClient()
@@ -137,6 +145,7 @@ function playMove(uci: string) {
 /** Arrows: red = Maia's most likely move, blue = Stockfish's best move, orange = threat. */
 function arrows(): DrawShape[] {
   const shapes: DrawShape[] = []
+  if (hideMoves) return shapes // arrows would give the moves away
   const m = analysis?.main
   const maiaTop = m?.maia?.policy[0]?.uci
   const sfTop = m?.lines[0]?.pv[0]
@@ -175,8 +184,28 @@ function updateBoard() {
 // Rendering
 // ---------------------------------------------------------------------------
 
+/**
+ * Vertical evaluation bar (optional): the white part's height = Stockfish's
+ * expected score for White; the red mark = Maia's win probability for White.
+ * White sits at the bottom when the board is seen from White's side.
+ */
+function renderEvalBar() {
+  const bar = $('evalBarEl')
+  bar.hidden = !settings.evalBar
+  if (!settings.evalBar) return
+  const m = analysis?.main
+  const best = m?.lines[0]
+  const sf = best ? whiteWinProb(best.mate !== undefined ? { mate: best.mate } : { cp: best.scoreCp }) : 0.5
+  const maiaWp = m?.maia?.whiteWinProb
+  bar.classList.toggle('black-bottom', orientation === 'black')
+  bar.style.setProperty('--white-pos', `${(sf * 100).toFixed(1)}%`)
+  bar.style.setProperty('--maia-pos', maiaWp === undefined ? '-100%' : `${(maiaWp * 100).toFixed(1)}%`)
+}
+
 function renderPanel() {
+  setViewOptions({ notation: settings.notation, hideMoves })
   $('numbers').innerHTML = renderNumbers(analysis)
+  renderEvalBar()
   $('meterMain').innerHTML = renderMeter(analysis?.main, '')
   // data-done marks a block whose analysis is complete (used by scripts/ui-test.mjs).
   $('meterMain').dataset.done = String(!!analysis?.main.done)
@@ -194,6 +223,7 @@ function renderPanel() {
 }
 
 function renderMoveStrip() {
+  setViewOptions({ notation: settings.notation, hideMoves })
   const el = $('moves')
   el.innerHTML = renderMoves(tree)
   el.querySelector('.current')?.scrollIntoView({ block: 'nearest', inline: 'center' })
@@ -242,6 +272,20 @@ function setupControls() {
   $<HTMLSelectElement>('variant').value = settings.variant
   fillSelect('lines', LINE_COUNTS, settings.lines, (v) => String(v))
   $<HTMLSelectElement>('threatsMode').value = settings.threatsMode
+  $<HTMLSelectElement>('notation').value = settings.notation
+  $<HTMLInputElement>('evalBar').checked = settings.evalBar
+  $('notation').onchange = (ev) => {
+    settings.notation = (ev.target as HTMLSelectElement).value as Notation
+    saveSettings()
+    renderMoveStrip()
+    renderPanel()
+  }
+  $('evalBar').onchange = (ev) => {
+    settings.evalBar = (ev.target as HTMLInputElement).checked
+    saveSettings()
+    renderEvalBar()
+    board.redrawAll() // the board width changes when the bar appears/disappears
+  }
 
   const onNumber = (key: 'elo' | 'depth' | 'threatDepth' | 'lines') => (ev: Event) => {
     settings[key] = Number((ev.target as HTMLSelectElement).value)
@@ -284,6 +328,30 @@ function setupControls() {
   $('flip').onclick = () => {
     orientation = orientation === 'white' ? 'black' : 'white'
     updateBoard()
+    renderEvalBar()
+  }
+  // 👁 / 🙈: hide the suggested moves (training) but keep the evaluations.
+  $('hideMoves').onclick = () => {
+    hideMoves = !hideMoves
+    $('hideMoves').textContent = hideMoves ? '🙈' : '👁'
+    $('hideMoves').setAttribute('aria-pressed', String(hideMoves))
+    renderPanel()
+  }
+  // Export the whole game with its variations: the iPhone share sheet
+  // (copy, Notes, Mail, other apps…) or, where not available, the clipboard.
+  $('exportPgn').onclick = async () => {
+    const pgn = gamePgn(tree)
+    try {
+      if (navigator.share) await navigator.share({ title: 'Partida (jquads)', text: pgn })
+      else {
+        await navigator.clipboard.writeText(pgn)
+        alert('PGN copiado al portapapeles')
+      }
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return // user closed the share sheet
+      await navigator.clipboard.writeText(pgn).catch(() => undefined)
+      alert('PGN copiado al portapapeles')
+    }
   }
   // Same URL format as task_01: FEN with "_" instead of spaces.
   $('lichess').onclick = () =>
@@ -365,6 +433,12 @@ async function loadEngines() {
   } catch (e) {
     status.textContent = `Error cargando los motores: ${e instanceof Error ? e.message : e}`
   }
+}
+
+// No zoom (iteration 4): iOS Safari ignores user-scalable=no, so block its pinch
+// gestures here; double-tap zoom is disabled with `touch-action: manipulation` (CSS).
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(type, (e) => e.preventDefault(), { passive: false })
 }
 
 setupControls()
