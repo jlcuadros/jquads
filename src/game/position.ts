@@ -4,6 +4,7 @@
  * result before it is analysed. The UI is in ui/editor.ts.
  */
 import { Chess } from 'chess.js'
+import { t } from '../i18n/i18n'
 
 export type Turn = 'w' | 'b'
 export type CastlingRights = { K: boolean; Q: boolean; k: boolean; q: boolean }
@@ -56,29 +57,29 @@ export function buildFen(board: string, turn: Turn, wanted: CastlingRights): str
 
 /**
  * Checks that the edited position can be analysed. Returns an error message
- * in Spanish (shown to the user) or null if the position is valid.
+ * in the selected language (shown to the user) or null if the position is valid.
  */
 export function validatePosition(fen: string): string | null {
   const [board, turn] = fen.split(' ')
   const pieces = [...boardSquares(board)]
   const count = (p: string) => pieces.filter(([, piece]) => piece === p).length
 
-  if (count('K') !== 1) return 'Tiene que haber exactamente un rey blanco.'
-  if (count('k') !== 1) return 'Tiene que haber exactamente un rey negro.'
+  if (count('K') !== 1) return t('ed.err.whiteKing')
+  if (count('k') !== 1) return t('ed.err.blackKing')
   if (pieces.some(([sq, p]) => (p === 'P' || p === 'p') && (sq[1] === '1' || sq[1] === '8'))) {
-    return 'No puede haber peones en la primera ni en la última fila.'
+    return t('ed.err.pawnRank')
   }
-  if (count('P') > 8 || count('p') > 8) return 'No puede haber más de 8 peones de un color.'
+  if (count('P') > 8 || count('p') > 8) return t('ed.err.pawnCount')
 
   // The side that is NOT to move cannot be in check (it would be capturable).
   const other = turn === 'w' ? 'b' : 'w'
   try {
     if (new Chess(`${board} ${other} - - 0 1`).inCheck()) {
-      return `El rey ${turn === 'w' ? 'negro' : 'blanco'} está en jaque pero le toca mover a las ${turn === 'w' ? 'blancas' : 'negras'}.`
+      return t(turn === 'w' ? 'ed.err.blackInCheck' : 'ed.err.whiteInCheck')
     }
     new Chess(fen) // final check by chess.js (throws on anything else invalid)
   } catch (e) {
-    return `Posición no válida: ${e instanceof Error ? e.message : e}`
+    return t('ed.err.invalid', { detail: e instanceof Error ? e.message : String(e) })
   }
   return null
 }

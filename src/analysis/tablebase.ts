@@ -14,6 +14,7 @@
  * draw → 0.00, loss → being mated.
  */
 import type { Score } from './classify'
+import { t } from '../i18n/i18n'
 
 export const TABLEBASE_URL = 'https://tablebase.lichess.org/standard'
 export const MAX_TB_PIECES = 7
@@ -125,11 +126,11 @@ export function parseTablebase(json: TbJson, fen: string): TbResult | null {
   return { outcome, mateIn, moves }
 }
 
-/** Short Spanish label for a move or position: "Gana M12", "Tablas", "Pierde M7". */
+/** Short label for a move, in the selected language: "Gana M12", "Tablas", "Pierde M7"… */
 export function tbLabel(outcome: TbOutcome, mateIn?: number, cursed = false): string {
-  if (cursed) return 'Tablas (50 j.)'
-  if (outcome === 'draw') return 'Tablas'
-  const word = outcome === 'win' ? 'Gana' : 'Pierde'
+  if (cursed) return t('tb.label.draw50')
+  if (outcome === 'draw') return t('tb.label.draw')
+  const word = t(outcome === 'win' ? 'tb.label.win' : 'tb.label.loss')
   return mateIn !== undefined ? `${word} M${mateIn}` : word
 }
 

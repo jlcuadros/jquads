@@ -8,6 +8,7 @@
  *   variations in parentheses, as in any chess program.
  */
 import { GameTree, START_FEN, type MoveNode } from './tree'
+import { t } from '../i18n/i18n'
 
 /** "1. e4", "1... e5" or just "e5", following PGN numbering rules. */
 function moveText(tree: GameTree, node: MoveNode, forceNumber: boolean): string {
@@ -40,7 +41,7 @@ function lineFrom(tree: GameTree, parent: MoveNode, forceNumber: boolean): strin
 export function gamePgn(tree: GameTree, date = new Date()): string {
   const d = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
   const headers = [
-    ['Event', 'Análisis'],
+    ['Event', t('pgn.event')],
     ['Site', 'https://jquads.pages.dev'],
     ['Date', d],
     ['White', '?'],

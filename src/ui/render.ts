@@ -13,6 +13,7 @@ import type { EngineLine } from '../stockfish/stockfishClient'
 import type { GameTree } from '../game/tree'
 import { formatSan, type Notation } from '../game/notation'
 import { tbLabel, type TbResult } from '../analysis/tablebase'
+import { t } from '../i18n/i18n'
 
 /**
  * Display options set by app.ts before rendering (iteration 4):
@@ -75,10 +76,10 @@ export function renderNumbers(a: PositionAnalysis | undefined): string {
  * not fit next to the buttons on the iPhone.)
  */
 function tbPositionLabel(tb: TbResult, fen: string): string {
-  if (tb.outcome === 'draw') return 'tablas'
+  if (tb.outcome === 'draw') return t('tb.draw')
   const whiteToMove = fen.split(' ')[1] === 'w'
   const sign = (tb.outcome === 'win') === whiteToMove ? '+' : '−'
-  return tb.mateIn !== undefined ? `${sign}M${tb.mateIn}` : `${sign}gana`
+  return tb.mateIn !== undefined ? `${sign}M${tb.mateIn}` : `${sign}${t('tb.win')}`
 }
 
 const lineScoreOf = (l: EngineLine) => (l.mate !== undefined ? { mate: l.mate } : { cp: l.scoreCp })
@@ -97,7 +98,7 @@ export function renderMeter(side: SideAnalysis | null | undefined, emptyMsg: str
   const bar = (html: string) => (showBar ? `<div class="meter">${html}</div>` : '')
   if (side === null) return `${bar('')}<div class="meter-legend"><span>${emptyMsg}</span></div>`
   if (!side?.meter || !side.maia) {
-    return `${bar('')}<div class="meter-legend"><span>calculando…</span></div>`
+    return `${bar('')}<div class="meter-legend"><span>${t('panel.calculating')}</span></div>`
   }
   const { good, ok, blunder } = side.meter
   const seg = (cls: MoveClass, frac: number, label: string) =>
@@ -115,7 +116,7 @@ export function renderMeter(side: SideAnalysis | null | undefined, emptyMsg: str
 /** The move list in a single horizontal row; the current move highlighted. */
 export function renderMoves(tree: GameTree): string {
   const line = tree.displayLine()
-  if (!line.length) return '<span class="empty">Mueve una pieza para empezar</span>'
+  if (!line.length) return `<span class="empty">${t('panel.noMoves')}</span>`
   return line
     .map((n, i) => {
       const { number, whiteMove } = tree.moveNumber(n)
@@ -136,9 +137,9 @@ export function renderMaiaCol(side: SideAnalysis | undefined, elo: number, count
           return `<tr${rowMove(p.uci)}><td>${chip(p.uci, sanOf(side.fen, p.uci), c?.color)}</td><td>${pct(p.prob)}</td></tr>`
         })
         .join('')
-    : '<tr><td colspan="2">calculando…</td></tr>'
+    : `<tr><td colspan="2">${t('panel.calculating')}</td></tr>`
   // The header row is also the title: "Maia 1500 | prob".
-  return `<table><tr><th>Maia ${elo}</th><th>prob</th></tr>${rows}</table>`
+  return `<table><tr><th>Maia ${elo}</th><th>${t('panel.prob')}</th></tr>${rows}</table>`
 }
 
 /** Right column: Stockfish's best lines — or the endgame tables' exact results. */
@@ -153,7 +154,7 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
         return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), side.classified.get(uci)?.color)}</td><td>${label}</td></tr>`
       })
       .join('')
-    return `<table><tr><th>Tablas <small>Syzygy</small></th><th>resultado</th></tr>${rows}</table>`
+    return `<table><tr><th>${t('panel.tablebase')} <small>Syzygy</small></th><th>${t('panel.result')}</th></tr>${rows}</table>`
   }
   const rows = side?.lines.length
     ? side.lines
@@ -163,10 +164,10 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
           return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), c?.color)}</td><td>${formatScore(lineScoreOf(l))}</td></tr>`
         })
         .join('')
-    : '<tr><td colspan="2">calculando…</td></tr>'
+    : `<tr><td colspan="2">${t('panel.calculating')}</td></tr>`
   // The header row is also the title: "Stockfish 17 d18 | eval".
   const depth = side?.depth ? ` <small>d${side.depth}</small>` : ''
-  return `<table><tr><th>${engineName}${depth}</th><th>eval</th></tr>${rows}</table>`
+  return `<table><tr><th>${engineName}${depth}</th><th>${t('panel.eval')}</th></tr>${rows}</table>`
 }
 
 /** Explanatory text under the columns (only when the analysis is complete). */
@@ -182,5 +183,5 @@ export function renderText(a: PositionAnalysis | undefined, elo: number): string
     san: (uci) => sanOf(m.fen, uci),
   })
   const body = segs.map((s) => ('text' in s ? s.text : chip(s.move, s.san, s.color))).join('')
-  return m.tb ? `<b>Tablas de finales (resultado exacto):</b> ${body}` : body
+  return m.tb ? `<b>${t('panel.tbExact')}</b> ${body}` : body
 }

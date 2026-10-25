@@ -21,10 +21,11 @@ import { gamePgn } from './game/pgn'
 import type { Notation } from './game/notation'
 import { whiteWinProb } from './analysis/classify'
 import { TablebaseClient } from './analysis/tablebase'
+import { LANGUAGES, applyStaticTranslations, detectLang, setLang, t, type Lang } from './i18n/i18n'
 import { MaiaClient } from './maia/maiaClient'
 import { StockfishClient, type StockfishVariant } from './stockfish/stockfishClient'
 import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analyzer'
-import { openEditor } from './ui/editor'
+import { openEditor, retranslateEditor } from './ui/editor'
 import { setViewOptions, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
@@ -49,6 +50,7 @@ const DEFAULTS: AppSettings = {
   notation: 'figurine', // iteration 4: chess figurines by default
   evalBar: true, // iteration 4: thin vertical evaluation bar beside the board
   tablebase: true, // Lichess online endgame tables when ≤ 7 pieces (José: on by default)
+  lang: detectLang(), // device language if supported, otherwise English (José, 2026-10-25)
 }
 
 /** Bumped when a default changes and saved settings must be migrated (see loadSettings). */
@@ -65,6 +67,7 @@ interface AppSettings extends Omit<Settings, 'threats'> {
   variant: StockfishVariant // changing it reloads the page
   notation: Notation // move notation: figurine (♘f3) or letters (Nf3)
   evalBar: boolean // show the vertical evaluation bar
+  lang: Lang // UI language (⚙)
 }
 
 function loadSettings(): AppSettings {
@@ -215,11 +218,11 @@ function renderPanel() {
   $('meterThreats').hidden = settings.threatsMode === 'off'
   $('meterThreats').innerHTML = renderMeter(
     analysis?.threats,
-    'Amenazas: no se calculan con el rey en jaque',
+    t('panel.threatsInCheck'),
     settings.threatsMode === 'bar', // 'moves' → only the legend line, no bar
   )
   $('maiaCol').innerHTML = renderMaiaCol(analysis?.main, settings.elo, settings.lines)
-  $('sfCol').innerHTML = renderSfCol(analysis?.main, settings.variant === 'sf17' ? 'Stockfish 17' : 'SF clásico') // or the endgame tables
+  $('sfCol').innerHTML = renderSfCol(analysis?.main, settings.variant === 'sf17' ? 'Stockfish 17' : t('panel.sfClassic')) // or the endgame tables
   $('text').innerHTML = renderText(analysis, settings.elo)
   board.setAutoShapes(arrows())
 }
@@ -254,7 +257,7 @@ function runAnalysis() {
   const fen = tree.current.fen
   const chess = new Chess(fen)
   if (chess.isGameOver()) {
-    $('text').textContent = chess.isCheckmate() ? 'Jaque mate.' : 'Tablas.'
+    $('text').textContent = t(chess.isCheckmate() ? 'panel.checkmate' : 'panel.draw')
     return
   }
   void analyzer.analyse(fen, analysisSettings(), (a) => {
@@ -285,6 +288,20 @@ function setupControls() {
   $<HTMLSelectElement>('notation').value = settings.notation
   $<HTMLInputElement>('evalBar').checked = settings.evalBar
   $<HTMLInputElement>('tablebase').checked = settings.tablebase
+  // Language: re-translate the static texts and redraw everything generated in code.
+  $<HTMLSelectElement>('lang').innerHTML = LANGUAGES.map((l) => `<option value="${l.code}">${l.name}</option>`).join('')
+  $<HTMLSelectElement>('lang').value = settings.lang
+  $('lang').onchange = (ev) => {
+    settings.lang = (ev.target as HTMLSelectElement).value as Lang
+    saveSettings()
+    setLang(settings.lang)
+    applyStaticTranslations()
+    $('hideMoves').title = t(hideMoves ? 'btn.show' : 'btn.hide')
+    $('hideMoves').setAttribute('aria-label', $('hideMoves').title)
+    retranslateEditor()
+    renderMoveStrip()
+    renderPanel()
+  }
   $('tablebase').onchange = (ev) => {
     settings.tablebase = (ev.target as HTMLInputElement).checked
     saveSettings()
@@ -352,7 +369,7 @@ function setupControls() {
     hideMoves = !hideMoves
     const btn = $('hideMoves')
     btn.textContent = hideMoves ? '💡' : '🙈'
-    const label = hideMoves ? 'Mostrar jugadas' : 'Ocultar jugadas'
+    const label = t(hideMoves ? 'btn.show' : 'btn.hide')
     btn.title = label
     btn.setAttribute('aria-label', label)
     btn.setAttribute('aria-pressed', String(hideMoves))
@@ -363,7 +380,7 @@ function setupControls() {
   $('exportPgn').onclick = async () => {
     const pgn = gamePgn(tree)
     try {
-      if (navigator.share) await navigator.share({ title: 'Partida (jquads)', text: pgn })
+      if (navigator.share) await navigator.share({ title: t('pgn.title'), text: pgn })
       else {
         await navigator.clipboard.writeText(pgn)
         alert('PGN copiado al portapapeles')
@@ -406,7 +423,7 @@ function setupControls() {
       $('settings').hidden = true
       positionChanged()
     } catch {
-      alert('FEN no válido')
+      alert(t('msg.invalidFen'))
     }
   }
   $('newGame').onclick = () => {
@@ -439,7 +456,7 @@ async function loadEngines() {
     // Weighted by download size (classic Stockfish downloads nothing extra).
     const sfMb = settings.variant === 'sf17' ? 78.4 : 0
     const total = (progress.maia * 45.7 + progress.sf * sfMb) / (45.7 + sfMb)
-    status.innerHTML = `Cargando motores… ${Math.round(total * 100)}% <progress value="${total}"></progress>`
+    status.innerHTML = `${t('msg.loading', { pct: Math.round(total * 100) })} <progress value="${total}"></progress>`
   }
   show()
   const threads = Math.min(4, navigator.hardwareConcurrency || 1)
@@ -452,7 +469,7 @@ async function loadEngines() {
     enginesReady = true
     runAnalysis()
   } catch (e) {
-    status.textContent = `Error cargando los motores: ${e instanceof Error ? e.message : e}`
+    status.textContent = t('msg.loadError', { detail: e instanceof Error ? e.message : String(e) })
   }
 }
 
@@ -462,6 +479,8 @@ for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
   document.addEventListener(type, (e) => e.preventDefault(), { passive: false })
 }
 
+setLang(settings.lang)
+applyStaticTranslations()
 setupControls()
 positionChanged()
 void loadEngines()

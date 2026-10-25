@@ -22,7 +22,7 @@ mkdirSync(outDir, { recursive: true })
 // Persistent browser profile (outside the vault) so the ~125 MB of models stay
 // cached in IndexedDB between runs: faster, and less exposed to network drops.
 const profileDir = process.env.UI_TEST_PROFILE ?? join(tmpdir(), 'maia-ui-test-webkit-profile')
-const browser = await webkit.launchPersistentContext(profileDir, { ...devices['iPhone 13'] })
+const browser = await webkit.launchPersistentContext(profileDir, { ...devices['iPhone 13'], locale: 'es-ES' } /* Spanish device: these checks look for Spanish texts */)
 const page = await browser.newPage()
 page.on('pageerror', (e) => console.log('pageerror:', e.message))
 page.on('console', (m) => m.type() === 'error' && console.log('console.error:', m.text()))

@@ -18,7 +18,7 @@ const base = process.argv[2] ?? 'http://localhost:4173'
 const outDir = process.argv[3] ?? '.'
 mkdirSync(outDir, { recursive: true })
 const profileDir = process.env.UI_TEST_PROFILE ?? join(tmpdir(), 'maia-ui-test-webkit-profile')
-const ctx = await webkit.launchPersistentContext(profileDir, { ...devices['iPhone 13'] })
+const ctx = await webkit.launchPersistentContext(profileDir, { ...devices['iPhone 13'], locale: 'es-ES' } /* Spanish device: these checks look for Spanish texts */)
 const page = await ctx.newPage()
 page.on('pageerror', (e) => console.log('pageerror:', e.message))
 let failed = false

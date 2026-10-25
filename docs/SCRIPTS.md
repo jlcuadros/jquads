@@ -33,6 +33,7 @@ Development and testing scripts only; none of them ships with the app.
 | [copy-vendor.mjs](../scripts/copy-vendor.mjs) | List `FILES` of source → destination |
 | [export-docs.mjs](../scripts/export-docs.mjs) | Generates `docs/ARCHITECTURE.md` and `docs/SCRIPTS.md` (public) from `app.md` and this note: Obsidian links → text, no images or emails. Run before each commit |
 | [smoke-test.mjs](../scripts/smoke-test.mjs) | Playwright test of the engines (`proto.html`); variants via `SF_VARIANTS` |
+| [i18n-test.mjs](../scripts/i18n-test.mjs) | Playwright test of the **7 languages**: a French device → French; for each language, texts in ⚙, columns, explanatory text and editor, with no horizontal overflow; screenshots per language |
 | [tablebase-test.mjs](../scripts/tablebase-test.mjs) | Playwright test of the **endgame tables**: 0 requests from the start, K+R vs K ("TB +M12", column, bar, colours, text, threats), cache, option off → Stockfish; counts the requests to the API |
 | [editor-test.mjs](../scripts/editor-test.mjs) | Playwright test of the **position editor** with touch taps (iPhone 13): validation, placing pieces, castling, Analizar; 3 screenshots |
 | [ui-test.mjs](../scripts/ui-test.mjs) | Playwright test of the interface, iPhone emulation; screenshots to the folder given as an argument |
@@ -40,6 +41,7 @@ Development and testing scripts only; none of them ships with the app.
 ## Facts
 - `smoke-test.mjs` passed in WebKit and Chromium with sf17 and sfhce (2026-10-24).
 - `ui-test.mjs` passed in WebKit/iPhone 13 (2026-10-25): full analysis in 12.7 s on the first visit, going back via the cache in 54 ms.
+- `ui-test`, `editor-test` and `tablebase-test` run with a **Spanish device** (`locale: 'es-ES'`) because they look for Spanish texts; `i18n-test` covers the other languages.
 - `ui-test.mjs` uses a **persistent WebKit profile** in `$TMPDIR/maia-ui-test-webkit-profile` (or `UI_TEST_PROFILE`), so the models stay cached between runs. To simulate a "first visit", delete that folder. It also saves `03-settings.png` (⚙ panel open) and, since iteration 3, checks the threats *Only moves* mode (no bar) and the number of rows per engine. Since iteration 4: the default is *Only moves* (`04-threats-only-moves.png`), it checks *Bar and moves* (`05-threats-bar.png`) and leaves the profile at the default. Since 3.5: waits for `data-done="true"` on the bar blocks (complete analysis), measures the time after a move and **fails if any move in the legends has no colour**.
 
 ## Notes
@@ -52,6 +54,8 @@ node scripts/smoke-test.mjs http://localhost:4173 webkit,chromium
 SF_VARIANTS=sfhce node scripts/smoke-test.mjs http://localhost:4173 webkit
 # interface (iPhone emulation) + screenshots:
 node scripts/ui-test.mjs http://localhost:4173 <screenshots-folder>
+# languages:
+node scripts/i18n-test.mjs http://localhost:4173 <screenshots-folder>
 # endgame tables:
 node scripts/tablebase-test.mjs http://localhost:4173 <screenshots-folder>
 # position editor (touch taps):

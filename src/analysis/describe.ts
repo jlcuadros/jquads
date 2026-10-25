@@ -1,5 +1,5 @@
 /**
- * Explanatory text for a position, in Spanish (pure function).
+ * Explanatory text for a position, in the selected language (i18n: keys "d.*").
  *
  * Inspired by maiachess' templated descriptions (useDescriptionGenerator.ts,
  * see the task note, Investigation 1.1) but simplified and deterministic:
@@ -14,6 +14,7 @@
  */
 import type { ClassifiedMove, Score } from './classify'
 import { formatScore } from './classify'
+import { t, type MessageKey } from '../i18n/i18n'
 
 export type Segment = { text: string } | { move: string; san: string; color: string }
 
@@ -35,7 +36,7 @@ const pct = (p: number) => `${Math.round(p * 100)} %`
 function moveList(moves: ClassifiedMove[], input: DescribeInput): Segment[] {
   const out: Segment[] = []
   moves.forEach((m, i) => {
-    if (i > 0) out.push({ text: i === moves.length - 1 ? ' y ' : ', ' })
+    if (i > 0) out.push({ text: i === moves.length - 1 ? t('d.and') : ', ' })
     out.push({ move: m.uci, san: input.san(m.uci), color: m.color })
   })
   return out
@@ -45,19 +46,17 @@ function moveList(moves: ClassifiedMove[], input: DescribeInput): Segment[] {
 function outcome(input: DescribeInput): string {
   const { best } = input
   if (best.mate !== undefined) {
-    const side = best.mate > 0 ? 'las blancas' : 'las negras'
-    return `Hay mate en ${Math.abs(best.mate)} para ${side}.`
+    return t(best.mate > 0 ? 'd.mate.white' : 'd.mate.black', { n: Math.abs(best.mate) })
   }
   const cp = best.cp ?? 0
-  const side = cp > 0 ? 'las blancas' : 'las negras'
+  const side = cp > 0 ? 'white' : 'black'
   const abs = Math.abs(cp)
-  if (abs <= 35) return 'La posición está equilibrada.'
-  if (abs <= 150) return `${cap(side)} tienen una ligera ventaja (${formatScore(best)}).`
-  if (abs <= 300) return `${cap(side)} tienen una ventaja clara (${formatScore(best)}).`
-  return `${cap(side)} tienen una ventaja decisiva (${formatScore(best)}).`
+  if (abs <= 35) return t('d.balanced')
+  const level = abs <= 150 ? 'slight' : abs <= 300 ? 'clear' : 'decisive'
+  // One full sentence per side and level: the verb agrees differently in each
+  // language ("Las blancas tienen" / "White has" / "Les Blancs ont"…).
+  return t(`d.${level}.${side}` as MessageKey, { score: formatScore(best) })
 }
-
-const cap = (s: string) => s[0].toUpperCase() + s.slice(1)
 
 export function describePosition(input: DescribeInput): Segment[] {
   const segs: Segment[] = [{ text: outcome(input) + ' ' }]
@@ -67,13 +66,11 @@ export function describePosition(input: DescribeInput): Segment[] {
 
   // Sentence 2 + 3: good moves and how findable they are at this Elo.
   const goodMass = input.policy.filter((p) => input.classified.get(p.uci)?.cls === 'good').reduce((a, p) => a + p.prob, 0)
-  if (good.length === 1) segs.push({ text: 'Solo hay una jugada buena: ' })
-  else segs.push({ text: 'Las jugadas buenas son ' })
+  const number = good.length === 1 ? 'one' : 'many' // grammar: "la" / "las", "it" / "them"…
+  segs.push({ text: t(`d.good.${number}`) })
   segs.push(...moveList(good, input))
-  const who = `un jugador de ${input.elo}`
-  if (goodMass >= 0.7) segs.push({ text: `, y ${who} la${good.length > 1 ? 's' : ''} encontraría sin problema (${pct(goodMass)}). ` })
-  else if (goodMass >= 0.3) segs.push({ text: `, aunque no son evidentes: ${who} acertaría el ${pct(goodMass)} de las veces. ` })
-  else segs.push({ text: `, pero son difíciles de ver: ${who} solo acertaría el ${pct(goodMass)} de las veces. ` })
+  const findability = goodMass >= 0.7 ? 'easy' : goodMass >= 0.3 ? 'medium' : 'hard'
+  segs.push({ text: t(`d.${findability}.${number}` as MessageKey, { elo: input.elo, pct: pct(goodMass) }) })
 
   // Sentence 4: tempting mistakes (likely for a human, but bad).
   const tempting = input.policy
@@ -81,9 +78,9 @@ export function describePosition(input: DescribeInput): Segment[] {
     .map((p) => ({ p, c: input.classified.get(p.uci) }))
     .filter((x): x is { p: (typeof input.policy)[number]; c: ClassifiedMove } => !!x.c && x.c.cls !== 'good')
   for (const { p, c } of tempting) {
-    segs.push({ text: 'Cuidado con ' }, { move: c.uci, san: input.san(c.uci), color: c.color })
-    const kind = c.cls === 'blunder' ? 'es un error grave' : 'es una imprecisión'
-    segs.push({ text: `: la jugaría el ${pct(p.prob)} pero ${kind} (${formatScore(c.score)}). ` })
+    segs.push({ text: t('d.careful') }, { move: c.uci, san: input.san(c.uci), color: c.color })
+    const kind = c.cls === 'blunder' ? 'd.tempting.blunder' : 'd.tempting.ok'
+    segs.push({ text: t(kind, { pct: pct(p.prob), score: formatScore(c.score) }) })
   }
   return segs
 }

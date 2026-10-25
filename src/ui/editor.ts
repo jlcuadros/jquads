@@ -19,6 +19,7 @@ import { dragNewPiece } from 'chessground/drag'
 import type { Color, Key, Piece, Role } from 'chessground/types'
 import { buildFen, possibleCastling, validatePosition, EMPTY_BOARD, type CastlingRights, type Turn } from '../game/position'
 import { START_FEN } from '../game/tree'
+import { t, type MessageKey } from '../i18n/i18n'
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 
@@ -52,6 +53,13 @@ export function openEditor(fen: string, orientation: Color, apply: (fen: string)
   $<HTMLSelectElement>('edTurn').value = turn
   for (const c of CASTLING_KEYS) $<HTMLInputElement>(`ed${c}`).checked = castling.includes(c)
   setTool({ kind: 'move' })
+  refresh()
+}
+
+/** Re-applies the current language to the texts generated in code (hint, error). */
+export function retranslateEditor() {
+  if (!board) return
+  setTool(tool)
   refresh()
 }
 
@@ -120,23 +128,19 @@ function renderPalette(id: string, color: Color, extra: Tool, extraLabel: string
 // Interaction
 // ---------------------------------------------------------------------------
 
-function setTool(t: Tool) {
-  tool = t
+function setTool(tl: Tool) {
+  tool = tl
   // Highlight the active palette button.
   for (const btn of document.querySelectorAll<HTMLButtonElement>('#editor button.pal')) {
     const active =
-      (t.kind === 'piece' && btn.dataset.role === t.piece.role && btn.dataset.color === t.piece.color) ||
-      (t.kind !== 'piece' && btn.dataset.tool === t.kind)
+      (tl.kind === 'piece' && btn.dataset.role === tl.piece.role && btn.dataset.color === tl.piece.color) ||
+      (tl.kind !== 'piece' && btn.dataset.tool === tl.kind)
     btn.classList.toggle('active', active)
   }
   // Pieces can only be dragged around with the move tool.
-  board?.set({ movable: { color: t.kind === 'move' ? 'both' : undefined } })
-  const hints: Record<Tool['kind'], string> = {
-    move: 'Arrastra las piezas. Sácalas del tablero para quitarlas.',
-    piece: 'Toca casillas para poner la pieza (o arrástrala desde aquí).',
-    erase: 'Toca piezas para quitarlas.',
-  }
-  $('edHint').textContent = hints[t.kind]
+  board?.set({ movable: { color: tl.kind === 'move' ? 'both' : undefined } })
+  const hints: Record<Tool['kind'], MessageKey> = { move: 'ed.hint.move', piece: 'ed.hint.piece', erase: 'ed.hint.erase' }
+  $('edHint').textContent = t(hints[tl.kind])
 }
 
 /** Square tapped: place or erase depending on the tool. */
