@@ -25,7 +25,8 @@ page.on('pageerror', (e) => console.log('pageerror:', e.message))
 let failed = false
 const check = (ok, msg) => { console.log(`${ok ? 'OK  ' : 'FAIL'} ${msg}`); if (!ok) failed = true }
 const rows = () => page.$$eval('#gamesList li', (lis) => lis.map((li) => ({ id: li.dataset.id, created: Number(li.dataset.created), me: li.dataset.me, meta: li.querySelector('.meta').textContent, fav: li.querySelector('.fav').textContent })))
-const listReady = () => page.waitForFunction(() => !document.getElementById('gamesStatus').textContent.includes('Descargando'), null, { timeout: 60_000 })
+// Filter changes are debounced (400 ms) before the download starts: wait for that first.
+const listReady = async () => { await page.waitForTimeout(600); await page.waitForFunction(() => !document.getElementById('gamesStatus').textContent.includes('Descargando'), null, { timeout: 60_000 }) }
 const newestFirst = (r) => r.every((x, i) => i === 0 || r[i - 1].created >= x.created)
 
 await page.goto(base)
@@ -80,7 +81,8 @@ await page.click(`#gamesList li[data-id="${first.id}"] .fav`) // clean up
 await page.click('#tabRecent')
 
 // 5. Open a game where the user had black (clear the date filter to find one quickly).
-await page.fill('#gamesFrom', ''); await page.dispatchEvent('#gamesFrom', 'change'); await listReady()
+// Both dates cleared quickly: with the debounce this makes ONE request.
+await page.fill('#gamesFrom', ''); await page.dispatchEvent('#gamesFrom', 'change')
 await page.fill('#gamesTo', ''); await page.dispatchEvent('#gamesTo', 'change'); await listReady()
 r = await rows()
 // The most recent page may have only games with White: look further if needed.

@@ -135,12 +135,21 @@ function setTab(next: typeof tab) {
   render()
 }
 
+/**
+ * Filter changes wait FILTER_DEBOUNCE_MS before asking Lichess, so several quick
+ * changes (e.g. clearing both dates) make a single request: Lichess limits
+ * requests and, when it does, answers without CORS headers (2026-10-25).
+ */
+const FILTER_DEBOUNCE_MS = 400
+let filterTimer: ReturnType<typeof setTimeout> | undefined
+
 function onFilterChange(change: () => void) {
   change()
   saveFilters()
   renderFilters()
-  if (tab === 'recent') void reload()
-  else render()
+  if (tab !== 'recent') return render()
+  clearTimeout(filterTimer)
+  filterTimer = setTimeout(() => void reload(), FILTER_DEBOUNCE_MS)
 }
 
 // ---------------------------------------------------------------------------
