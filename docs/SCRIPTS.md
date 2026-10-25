@@ -31,6 +31,7 @@ Development and testing scripts only; none of them ships with the app.
 | File | What it is |
 | ---- | ---------- |
 | [copy-vendor.mjs](../scripts/copy-vendor.mjs) | List `FILES` of source → destination |
+| [export-docs.mjs](../scripts/export-docs.mjs) | Generates `docs/ARCHITECTURE.md` and `docs/SCRIPTS.md` (public) from `app.md` and this note: Obsidian links → text, no images or emails. Run before each commit |
 | [smoke-test.mjs](../scripts/smoke-test.mjs) | Playwright test of the engines (`proto.html`); variants via `SF_VARIANTS` |
 | [editor-test.mjs](../scripts/editor-test.mjs) | Playwright test of the **position editor** with touch taps (iPhone 13): validation, placing pieces, castling, Analizar; 3 screenshots |
 | [ui-test.mjs](../scripts/ui-test.mjs) | Playwright test of the interface, iPhone emulation; screenshots to the folder given as an argument |
