@@ -7,6 +7,7 @@
  * - Movetext: main line = first child at each node; other children are
  *   variations in parentheses, as in any chess program.
  */
+import { Chess } from 'chess.js'
 import { GameTree, START_FEN, type MoveNode } from './tree'
 import { t } from '../i18n/i18n'
 
@@ -51,4 +52,21 @@ export function gamePgn(tree: GameTree, date = new Date()): string {
   if (tree.root.fen !== START_FEN) headers.push(['SetUp', '1'], ['FEN', tree.root.fen])
   const moves = lineFrom(tree, tree.root, true)
   return `${headers.map(([k, v]) => `[${k} "${v}"]`).join('\n')}\n\n${[...moves, '*'].join(' ')}\n`
+}
+
+/**
+ * PGN → GameTree with the game's moves as the main line, positioned at the
+ * start (José: games open at the initial position). Uses the [FEN] header when
+ * the game did not start from the initial position. Throws on invalid PGN.
+ */
+export function treeFromPgn(pgn: string): GameTree {
+  const chess = new Chess()
+  chess.loadPgn(pgn)
+  const fen = chess.getHeaders().FEN
+  const tree = new GameTree(fen || START_FEN)
+  for (const m of chess.history({ verbose: true })) {
+    if (!tree.play(m.from + m.to + (m.promotion ?? ''))) throw new Error(`Illegal move in PGN: ${m.san}`)
+  }
+  tree.toStart()
+  return tree
 }

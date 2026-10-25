@@ -17,7 +17,7 @@ import './style.css'
 
 import { Chess } from 'chess.js'
 import { GameTree } from './game/tree'
-import { gamePgn } from './game/pgn'
+import { gamePgn, treeFromPgn } from './game/pgn'
 import type { Notation } from './game/notation'
 import { whiteWinProb } from './analysis/classify'
 import { TablebaseClient } from './analysis/tablebase'
@@ -26,6 +26,8 @@ import { MaiaClient } from './maia/maiaClient'
 import { StockfishClient, type StockfishVariant } from './stockfish/stockfishClient'
 import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analyzer'
 import { openEditor, retranslateEditor } from './ui/editor'
+import { openGames, retranslateGames } from './ui/gamesPanel'
+import { userColor } from './lichess/games'
 import { setViewOptions, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
@@ -51,6 +53,7 @@ const DEFAULTS: AppSettings = {
   evalBar: true, // iteration 4: thin vertical evaluation bar beside the board
   tablebase: true, // Lichess online endgame tables when ≤ 7 pieces (José: on by default)
   lang: detectLang(), // device language if supported, otherwise English (José, 2026-10-25)
+  lichessUser: '', // ⚙ / 📂: the board faces this player when opening their Lichess games
 }
 
 /** Bumped when a default changes and saved settings must be migrated (see loadSettings). */
@@ -68,6 +71,7 @@ interface AppSettings extends Omit<Settings, 'threats'> {
   notation: Notation // move notation: figurine (♘f3) or letters (Nf3)
   evalBar: boolean // show the vertical evaluation bar
   lang: Lang // UI language (⚙)
+  lichessUser: string // Lichess username (⚙ and 📂 panel)
 }
 
 function loadSettings(): AppSettings {
@@ -288,6 +292,38 @@ function setupControls() {
   $<HTMLSelectElement>('notation').value = settings.notation
   $<HTMLInputElement>('evalBar').checked = settings.evalBar
   $<HTMLInputElement>('tablebase').checked = settings.tablebase
+  // Lichess username (also editable in the 📂 panel; same saved value).
+  $<HTMLInputElement>('lichessUserSetting').value = settings.lichessUser
+  $('lichessUserSetting').onchange = (ev) => {
+    settings.lichessUser = (ev.target as HTMLInputElement).value.trim()
+    saveSettings()
+  }
+  // 📂 Lichess games: open one at the initial position, board facing the user
+  // whose username is set (José: "always oriented for that player").
+  $('gamesBtn').onclick = () => {
+    $('settings').hidden = true
+    analyzer.cancel()
+    openGames({
+      getUser: () => settings.lichessUser,
+      setUser: (name) => {
+        settings.lichessUser = name
+        $<HTMLInputElement>('lichessUserSetting').value = name
+        saveSettings()
+      },
+      onPick: (game) => {
+        try {
+          tree = treeFromPgn(game.pgn)
+        } catch {
+          alert(t('msg.invalidFen'))
+          return
+        }
+        orientation = userColor(game, settings.lichessUser) ?? 'white'
+        positionChanged()
+        renderEvalBar()
+      },
+    })
+  }
+
   // Language: re-translate the static texts and redraw everything generated in code.
   $<HTMLSelectElement>('lang').innerHTML = LANGUAGES.map((l) => `<option value="${l.code}">${l.name}</option>`).join('')
   $<HTMLSelectElement>('lang').value = settings.lang
@@ -299,6 +335,7 @@ function setupControls() {
     $('hideMoves').title = t(hideMoves ? 'btn.show' : 'btn.hide')
     $('hideMoves').setAttribute('aria-label', $('hideMoves').title)
     retranslateEditor()
+    retranslateGames()
     renderMoveStrip()
     renderPanel()
   }

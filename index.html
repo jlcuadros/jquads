@@ -25,6 +25,8 @@
         <header class="infobar">
           <span id="numbers" class="numbers"></span>
           <!-- Hide moves (training): moves become "--", evaluations stay (iteration 4) -->
+          <!-- Lichess games (José, 2026-10-25): list, filters, favourites -->
+          <button id="gamesBtn" data-i18n-title="btn.games" data-i18n-aria="btn.games">📂</button>
           <button id="hideMoves" data-i18n-title="btn.hide" data-i18n-aria="btn.hide" aria-pressed="false">🙈</button>
           <button id="flip" data-i18n-title="btn.flip" data-i18n-aria="btn.flip">⇅</button>
           <button id="lichess" data-i18n-title="btn.lichess" data-i18n-aria="btn.lichess">↗Li</button>
@@ -36,6 +38,8 @@
           <div class="settings-grid">
             <!-- Language (José, 2026-10-25); default = device language -->
             <label><span data-i18n="set.lang">Idioma</span> <select id="lang"></select></label>
+            <!-- Same value as the field in the 📂 panel: the board faces this player in their games -->
+            <label><span data-i18n="games.user">Usuario de Lichess</span> <input id="lichessUserSetting" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" /></label>
             <label><span data-i18n="set.elo">Elo de Maia</span> <select id="elo"></select></label>
             <label><span data-i18n="set.depth">Profundidad Stockfish</span> <select id="depth"></select></label>
             <label><span data-i18n="set.threatDepth">Profundidad amenazas</span> <select id="threatDepth"></select></label>
@@ -80,6 +84,7 @@
               <li data-i18n-html="help.colors.html"><b>Colores</b>: según cuánta probabilidad de ganar se pierde frente a la mejor jugada de Stockfish: verde &lt; 5 %, amarillo 5–10 %, rojo ≥ 10 %. Cuanto más oscuro el verde, mejor; cuanto más oscuro el rojo, peor.</li>
               <li data-i18n-html="help.tablebase.html"><b>Tablas de finales</b>: con 7 piezas o menos (reyes incluidos) y sin enroques, el resultado exacto viene de las tablas Syzygy de Lichess en vez de Stockfish: arriba «TB: …» y la columna derecha «Tablas Syzygy» con «Gana M12» (mate en 12), «Tablas» o «Pierde». Se puede desactivar en esta pantalla; si fallan o no hay conexión, se usa Stockfish.</li>
               <li data-i18n-html="help.evalBar.html"><b>Barra vertical</b> (opcional): blanco/negro según la evaluación de Stockfish; la marca roja es la probabilidad de victoria de las blancas según Maia.</li>
+              <li data-i18n-html="help.games.html"></li>
               <li data-i18n-html="help.pgn.html"><b>Exportar PGN</b>: la partida con sus variantes; se puede copiar o enviar a otra app (para Lichess: pegarla en lichess.org/paste). <b>↗Li</b> abre la posición actual en Lichess.</li>
               <li data-i18n-html="help.memory.html"><b>Memoria</b>: el hash de Stockfish sirve para el análisis y para las amenazas (es el mismo motor). La versión clásica ahorra unos 80 MB de redes neuronales; cambiarla recarga la página.</li>
             </ul>
@@ -135,6 +140,35 @@
         <footer class="credits">
           <a href="#" id="openCredits" class="credits-link" data-i18n="credits.link">Ver créditos: ⚙ &gt; Créditos y licencias</a>
         </footer>
+      </div>
+    </div>
+
+    <!-- Lichess games panel: full screen (src/ui/gamesPanel.ts) -->
+    <div id="games" class="editor games" hidden>
+      <div class="editor-inner">
+        <header class="editor-top">
+          <b data-i18n="games.title">Partidas de Lichess</b>
+          <span class="spacer"></span>
+          <button id="gamesClose" data-i18n="games.close">Cerrar</button>
+        </header>
+        <div class="games-user">
+          <input id="gamesUser" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" data-i18n-aria="games.user" />
+          <button id="gamesLoad" class="primary" data-i18n="games.load">Cargar</button>
+        </div>
+        <div class="games-tabs">
+          <button id="tabRecent" class="tab active" data-i18n="games.tab.recent">Recientes</button>
+          <button id="tabFavorites" class="tab" data-i18n="games.tab.favorites">⭐ Favoritas</button>
+        </div>
+        <div class="games-filters" id="gamesFilters">
+          <div class="chips" id="speedChips"></div>
+          <div class="dates">
+            <label><span data-i18n="games.from">Desde</span> <input type="date" id="gamesFrom" /></label>
+            <label><span data-i18n="games.to">Hasta</span> <input type="date" id="gamesTo" /></label>
+          </div>
+        </div>
+        <div class="games-status" id="gamesStatus"></div>
+        <ul class="games-list" id="gamesList"></ul>
+        <button id="gamesMore" class="games-more" data-i18n="games.more" hidden>Cargar más</button>
       </div>
     </div>
 

@@ -33,6 +33,7 @@ Development and testing scripts only; none of them ships with the app.
 | [copy-vendor.mjs](../scripts/copy-vendor.mjs) | List `FILES` of source → destination |
 | [export-docs.mjs](../scripts/export-docs.mjs) | Generates `docs/ARCHITECTURE.md` and `docs/SCRIPTS.md` (public) from `app.md` and this note: Obsidian links → text, no images or emails. Run before each commit |
 | [smoke-test.mjs](../scripts/smoke-test.mjs) | Playwright test of the engines (`proto.html`); variants via `SF_VARIANTS` |
+| [games-test.mjs](../scripts/games-test.mjs) | Playwright test of the **📂 Lichess games** against the real API (user Ousland): order, Blitz filter, "Cargar más", dates, favourites, a game with Black → board towards Black. Don't run it many times in a row: Lichess limits requests |
 | [i18n-test.mjs](../scripts/i18n-test.mjs) | Playwright test of the **7 languages**: a French device → French; for each language, texts in ⚙, columns, explanatory text and editor, with no horizontal overflow; screenshots per language |
 | [tablebase-test.mjs](../scripts/tablebase-test.mjs) | Playwright test of the **endgame tables**: 0 requests from the start, K+R vs K ("TB +M12", column, bar, colours, text, threats), cache, option off → Stockfish; counts the requests to the API |
 | [editor-test.mjs](../scripts/editor-test.mjs) | Playwright test of the **position editor** with touch taps (iPhone 13): validation, placing pieces, castling, Analizar; 3 screenshots |
@@ -54,6 +55,8 @@ node scripts/smoke-test.mjs http://localhost:4173 webkit,chromium
 SF_VARIANTS=sfhce node scripts/smoke-test.mjs http://localhost:4173 webkit
 # interface (iPhone emulation) + screenshots:
 node scripts/ui-test.mjs http://localhost:4173 <screenshots-folder>
+# Lichess games (real API; leave a minute between runs):
+node scripts/games-test.mjs http://localhost:4173 <screenshots-folder>
 # languages:
 node scripts/i18n-test.mjs http://localhost:4173 <screenshots-folder>
 # endgame tables:

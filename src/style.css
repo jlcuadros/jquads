@@ -51,7 +51,8 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 }
 
 .infobar { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
-.infobar button { padding: 2px 8px; }
+/* Narrow side padding: with 5 buttons (📂 🙈 ⇅ ↗Li ⚙) the numbers need the room (2026-10-25) */
+.infobar button { padding: 2px 5px; }
 /* Maia win % and SF eval as numbers (instead of maiachess' vertical gauges) */
 .numbers { flex: 1; display: flex; gap: 10px; font-size: 0.9rem; white-space: nowrap; overflow: hidden; }
 .numbers .maia { color: var(--maia); font-weight: 600; }
@@ -216,4 +217,30 @@ html, body { touch-action: manipulation; }
 .cg-wrap coords.files coord { text-align: right; padding-right: 3px; }
 html, body { overflow-x: hidden; }
 .app { overflow-x: clip; }
+
+/* --- Lichess games panel (José, 2026-10-25) ------------------------------- */
+.games .games-user { display: flex; gap: 6px; margin-bottom: 8px; }
+.games .games-user input { flex: 1; min-width: 0; padding: 6px; }
+.games-tabs { display: flex; gap: 6px; margin-bottom: 6px; }
+.games-tabs .tab { flex: 1; }
+.games-tabs .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.games-filters .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.games-filters .chip { padding: 3px 8px; border-radius: 12px; font-size: 0.85rem; }
+.games-filters .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.games-filters .dates { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; margin-bottom: 6px; }
+.games-filters .dates input { max-width: 9.5em; }
+.games-status { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; margin: 4px 0; }
+.games-status:empty { display: none; }
+.games-list { list-style: none; margin: 0; padding: 0; }
+.games-list li { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.games-list .res { flex: 0 0 auto; width: 2.6em; text-align: center; font-weight: 700; font-size: 0.8rem; border-radius: 4px; padding: 2px 0; color: #fff; }
+.games-list .res.win { background: var(--meter-good); }
+.games-list .res.loss { background: var(--meter-blunder); }
+.games-list .res.draw { background: #8a8a8a; }
+.games-list .info { flex: 1; min-width: 0; }
+.games-list .players { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.games-list .players .me { font-weight: 700; }
+.games-list .meta { font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.games-list .fav { flex: 0 0 auto; background: none; border: none; font-size: 1.3rem; padding: 2px 4px; color: #e0a800; }
+.games-more { width: 100%; margin: 8px 0 20px; padding: 8px; }
 
