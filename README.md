@@ -46,19 +46,27 @@ Browser end-to-end tests (Playwright, WebKit emulating an iPhone) are described 
 
 ## Credits
 - [Maia Chess](https://www.maiachess.com) by the CSSLab, University of Toronto
-  ([source](https://github.com/CSSLab/maia-platform-frontend), GPL-3.0): the Maia-3 model,
-  the analysis-panel design, the colour code and the in-browser inference approach.
-  The move encoding (`src/maia/encoding.ts`) and `src/maia/all_moves_maia3.json` are ported/copied
-  from it. Papers: [Maia-3](https://arxiv.org/abs/2605.19091) (ICLR 2026),
+  ([source](https://github.com/CSSLab/maia-platform-frontend), GPL-3.0): the analysis-panel design,
+  the colour code and the in-browser inference approach. The move encoding (`src/maia/encoding.ts`)
+  and `src/maia/all_moves_maia3.json` are ported/copied from it (GPL-3.0, combined here under
+  AGPL-3.0 as GPL-3.0 section 13 allows).
+- [Maia-3](https://github.com/CSSLab/maia3) model (CSSLab, AGPL-3.0), downloaded at run time.
+  Papers: [Maia-3](https://arxiv.org/abs/2605.19091) (ICLR 2026),
   [Maia-2](https://www.cs.toronto.edu/~ashton/pubs/maia2-neurips2024.pdf) (NeurIPS 2024),
   [Maia](https://arxiv.org/abs/2006.01855) (KDD 2020).
-- [Stockfish](https://stockfishchess.org) (GPL-3.0), WebAssembly build by Lichess:
-  [lila-stockfish-web](https://github.com/lichess-org/lila-stockfish-web) (AGPL-3.0).
-- [chessground](https://github.com/lichess-org/chessground) (GPL-3.0),
-  [chess.js](https://github.com/jhlywa/chess.js) (BSD-2),
+- [Stockfish](https://stockfishchess.org) (GPL-3.0) with its
+  [NNUE networks](https://github.com/official-stockfish/networks) (CC0), WebAssembly build by Lichess:
+  [lila-stockfish-web](https://github.com/lichess-org/lila-stockfish-web) (GPL-3.0).
+- [chessground](https://github.com/lichess-org/chessground) (GPL-3.0) with the cburnett pieces
+  (Colin M.L. Burnett, GPL-2.0-or-later), [chess.js](https://github.com/jhlywa/chess.js) (BSD-2),
   [onnxruntime-web](https://github.com/microsoft/onnxruntime) (MIT).
+- [Lichess public API](https://lichess.org/api): a user's games and the Syzygy endgame tablebase.
 
-Unofficial project, not affiliated with Maia Chess, Stockfish or Lichess.
+The full licence texts of the shipped components are generated into `licenses.txt`
+(`scripts/third-party-licenses.mjs`), linked from ⚙ → Credits and licences.
+
+Unofficial project, not affiliated with or endorsed by Maia Chess / the University of Toronto,
+Stockfish or Lichess. Their names belong to their owners. Provided without any warranty.
 
 ## License
 [AGPL-3.0-or-later](LICENSE). Copyright © 2026 José Luis Cuadros.

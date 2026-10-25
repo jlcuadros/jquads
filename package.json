@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "copy-vendor": "node scripts/copy-vendor.mjs",
+    "copy-vendor": "node scripts/copy-vendor.mjs && node scripts/third-party-licenses.mjs",
     "dev": "npm run copy-vendor && vite --host",
     "build": "npm run copy-vendor && tsc --noEmit && vite build",
     "preview": "vite preview --host",
