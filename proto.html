@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prototipo 0 · Maia + Stockfish</title>
+    <style>
+      :root { color-scheme: light dark; font-family: -apple-system, system-ui, sans-serif; }
+      body { margin: 0 auto; padding: 16px; max-width: 760px; line-height: 1.4; }
+      h1 { font-size: 1.2rem; }
+      fieldset { border: 1px solid #8884; border-radius: 8px; margin: 0 0 12px; }
+      label { display: inline-block; margin: 4px 12px 4px 0; }
+      input[type=text] { width: 100%; box-sizing: border-box; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+      button { font-size: 1rem; padding: 8px 12px; margin: 4px 4px 4px 0; border-radius: 6px; }
+      table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+      td, th { text-align: left; padding: 2px 8px 2px 0; }
+      .ok { color: #1a9850; } .bad { color: #d73027; }
+      progress { width: 100%; }
+      #log { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 0.75rem; background: #8881; padding: 8px; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <h1>Prototipo 0 · Maia-3 + Stockfish en el navegador</h1>
+
+    <fieldset>
+      <legend>Diagnóstico</legend>
+      <table id="diag"></table>
+    </fieldset>
+
+    <fieldset>
+      <legend>Configuración</legend>
+      <label>FEN <input id="fen" type="text" /></label>
+      <label>Elo Maia <select id="elo"></select></label>
+      <label>Stockfish
+        <select id="variant">
+          <option value="sf17">SF 17 NNUE (~78 MB)</option>
+          <option value="sfhce">SF clásico (sin NNUE)</option>
+        </select>
+      </label>
+      <label>Hilos <input id="threads" type="number" min="1" max="16" style="width:3em" /></label>
+      <label>Profundidad <input id="depth" type="number" min="1" max="30" value="18" style="width:3em" /></label>
+      <label>Hash MB <input id="hash" type="number" min="1" max="512" value="16" style="width:4em" /></label>
+      <div>
+        <button id="loadMaia">1 · Cargar Maia</button>
+        <button id="loadSf">2 · Cargar Stockfish</button>
+        <button id="analyse">3 · Analizar</button>
+        <button id="clear">Borrar caché</button>
+        <button id="copy">Copiar resultados</button>
+      </div>
+      <progress id="progress" value="0" max="1" hidden></progress>
+    </fieldset>
+
+    <fieldset>
+      <legend>Maia</legend>
+      <div id="maia">—</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Stockfish</legend>
+      <div id="sf">—</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Registro</legend>
+      <div id="log"></div>
+    </fieldset>
+
+    <script type="module" src="/src/proto.ts"></script>
+  </body>
+</html>

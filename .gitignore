@@ -1,0 +1,13 @@
+# Generated
+node_modules/
+dist/
+public/vendor/
+.wrangler/
+
+# macOS
+.DS_Store
+
+# Obsidian vault notes (they contain wikilinks to private notes and personal data).
+# Their cleaned, public versions are generated into docs/ by scripts/export-docs.mjs.
+app.md
+scripts/scripts.md

@@ -1,0 +1,28 @@
+{
+  "name": "maia-stockfish-analysis",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "copy-vendor": "node scripts/copy-vendor.mjs",
+    "dev": "npm run copy-vendor && vite --host",
+    "build": "npm run copy-vendor && tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name jquads --branch main --commit-dirty=true"
+  },
+  "dependencies": {
+    "chess.js": "1.4.0",
+    "chessground": "9.2.1",
+    "lila-stockfish-web": "0.0.7",
+    "onnxruntime-web": "1.23.0"
+  },
+  "devDependencies": {
+    "playwright": "1.64.1",
+    "typescript": "5.9.3",
+    "vite": "6.4.5",
+    "vitest": "3.2.7",
+    "wrangler": "4.152.0"
+  },
+  "license": "AGPL-3.0-or-later"
+}

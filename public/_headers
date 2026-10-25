@@ -1,0 +1,5 @@
+# Cloudflare Pages response headers (https://developers.cloudflare.com/pages/configuration/headers/)
+# Cross-origin isolation: required for SharedArrayBuffer (multi-threaded Stockfish and onnxruntime).
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp

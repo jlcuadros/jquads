@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#161512" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f4f4f4" media="(prefers-color-scheme: light)" />
+    <title>Análisis Maia + Stockfish</title>
+  </head>
+  <body>
+    <!-- Layout: see the task note, Investigation 3 (interface design) and 3.2 (iteration 2). -->
+    <div class="app">
+      <div class="board-col">
+        <!-- One line: Maia win % + SF eval (numbers) + actions. Engine settings live in ⚙. -->
+        <header class="infobar">
+          <span id="numbers" class="numbers"></span>
+          <button id="flip" title="Girar tablero" aria-label="Girar tablero">⇅</button>
+          <button id="lichess" title="Abrir en Lichess" aria-label="Abrir en Lichess">↗Li</button>
+          <button id="menu" title="Ajustes y ayuda" aria-label="Ajustes y ayuda">⚙</button>
+        </header>
+
+        <!-- Settings + help (hidden until ⚙ is tapped) -->
+        <div id="settings" class="settings" hidden>
+          <div class="settings-grid">
+            <label>Elo de Maia <select id="elo"></select></label>
+            <label>Profundidad Stockfish <select id="depth"></select></label>
+            <label>Profundidad amenazas <select id="threatDepth"></select></label>
+            <label>Memoria Stockfish (hash) <select id="hashMb"></select></label>
+            <label>Versión Stockfish
+              <select id="variant">
+                <option value="sf17">17 NNUE (más fuerte, ~80 MB)</option>
+                <option value="sfhce">Clásico (ligero, menos preciso)</option>
+              </select>
+            </label>
+            <label>Jugadas por motor <select id="lines"></select></label>
+            <label>Amenazas
+              <select id="threatsMode">
+                <option value="bar">Barra y jugadas</option>
+                <option value="moves">Solo jugadas</option>
+                <option value="off">No calcular</option>
+              </select>
+            </label>
+          </div>
+          <label class="fen">FEN <input id="fenInput" type="text" spellcheck="false" autocapitalize="off" /></label>
+          <div class="settings-actions">
+            <button id="editPosition">Introducir posición</button>
+            <button id="loadFen">Cargar FEN</button>
+            <button id="newGame">Nueva partida</button>
+          </div>
+          <details class="help">
+            <summary>Cómo se lee la pantalla</summary>
+            <ul>
+              <li><b>Línea de arriba</b>: probabilidad de que ganen las blancas según Maia (rojo) y evaluación de Stockfish con su profundidad (azul).</li>
+              <li><b>Flechas</b>: roja = jugada más humana (Maia); azul = mejor jugada (Stockfish); naranja = amenaza (la mejor jugada del rival si le tocara mover). Si la roja y la azul coinciden, la roja va dentro de la azul.</li>
+              <li><b>1ª barra — jugadas</b>: cómo se reparte la probabilidad de Maia (lo que jugaría un humano de ese Elo) entre jugadas buenas ✓, imprecisiones ?! y errores ??.</li>
+              <li><b>2ª barra — amenazas</b>: lo mismo para el rival si le tocara mover a él (como si el bando que mueve pasara turno). No se calcula si hay jaque. Va marcada con un borde naranja (el color de la flecha de amenaza) y sus jugadas llevan triángulos de color en vez de círculos. En ajustes se puede ver como barra y jugadas, solo las jugadas, o no calcularla.</li>
+              <li><b>Colores</b>: según cuánta probabilidad de ganar se pierde frente a la mejor jugada de Stockfish: verde &lt; 5 %, amarillo 5–10 %, rojo ≥ 10 %. Cuanto más oscuro el verde, mejor; cuanto más oscuro el rojo, peor.</li>
+              <li><b>Memoria</b>: el hash de Stockfish sirve para el análisis y para las amenazas (es el mismo motor). La versión clásica ahorra unos 80 MB de redes neuronales; cambiarla recarga la página.</li>
+            </ul>
+          </details>
+          <!-- Required attribution / source availability (GPL/AGPL components). See app.md → Decision. -->
+          <details class="help" id="creditsDetails">
+            <summary>Créditos y licencias</summary>
+            <ul>
+              <li><b>Código fuente</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/maia-stockfish-analysis" target="_blank" rel="noopener">github.com/jlcuadros/maia-stockfish-analysis</a></li>
+              <li><b>Creado por José Luis Cuadros.</b> ¿Ideas, fallos o te apetece jugar? Mándame una solicitud de amistad en <a href="https://lichess.org/@/Ousland" target="_blank" rel="noopener">Lichess (Ousland)</a> o contáctame por <a href="https://www.linkedin.com/in/jose-luis-cuadros-fernandez/" target="_blank" rel="noopener">LinkedIn</a>.</li>
+              <li>Uso personal, no oficial. Basado en <a href="https://www.maiachess.com" target="_blank" rel="noopener">maiachess.com</a> (<a href="https://github.com/CSSLab/maia-platform-frontend" target="_blank" rel="noopener">código</a>, GPL-3.0) del CSSLab de la Universidad de Toronto.</li>
+              <li>Modelo <a href="https://github.com/CSSLab/maia3" target="_blank" rel="noopener">Maia-3</a> (CSSLab). Investigación: <a href="https://arxiv.org/abs/2605.19091" target="_blank" rel="noopener">Maia-3</a> (ICLR 2026), <a href="https://www.cs.toronto.edu/~ashton/pubs/maia2-neurips2024.pdf" target="_blank" rel="noopener">Maia-2</a> (NeurIPS 2024), <a href="https://arxiv.org/abs/2006.01855" target="_blank" rel="noopener">Maia</a> (KDD 2020).</li>
+              <li>El diseño del panel de análisis, el código de colores y la forma de ejecutar Maia en el navegador están tomados de maiachess.com.</li>
+              <li><a href="https://stockfishchess.org" target="_blank" rel="noopener">Stockfish</a> (GPL-3.0), compilado para web por Lichess: <a href="https://github.com/lichess-org/lila-stockfish-web" target="_blank" rel="noopener">lila-stockfish-web</a> (AGPL-3.0).</li>
+              <li>Tablero <a href="https://github.com/lichess-org/chessground" target="_blank" rel="noopener">chessground</a> (GPL-3.0), reglas <a href="https://github.com/jhlywa/chess.js" target="_blank" rel="noopener">chess.js</a> (BSD-2), <a href="https://github.com/microsoft/onnxruntime" target="_blank" rel="noopener">onnxruntime-web</a> (MIT).</li>
+            </ul>
+          </details>
+        </div>
+
+        <div class="board-wrap"><div id="board"></div></div>
+        <div class="status" id="status"></div>
+      </div>
+
+      <div class="panel-col">
+        <!-- Bar 1: Maia's probability split by move quality; bar 2: same for the opponent (threats) -->
+        <section class="meter-block" id="meterMain" title="Jugadas según Maia"></section>
+        <section class="meter-block" id="meterThreats" title="Amenazas (si moviera el rival)"></section>
+
+        <nav class="nav">
+          <button id="first" aria-label="Inicio">⏮</button>
+          <button id="prev" aria-label="Anterior">◀</button>
+          <button id="next" aria-label="Siguiente">▶</button>
+          <button id="last" aria-label="Final">⏭</button>
+        </nav>
+
+        <!-- Move list in one horizontal row -->
+        <div class="moves" id="moves"></div>
+
+        <div class="cols">
+          <div class="col maia" id="maiaCol"></div>
+          <div class="col sf" id="sfCol"></div>
+        </div>
+
+        <p class="text" id="text"></p>
+
+        <!-- Only a pointer to the credits on the main page (José, 2026-10-25): the author
+             and Maia Chess credits live in ⚙ → "Créditos y licencias". Tapping it opens them. -->
+        <footer class="credits">
+          <a href="#" id="openCredits" class="credits-link">Ver créditos: ⚙ &gt; Créditos y licencias</a>
+        </footer>
+      </div>
+    </div>
+
+    <!-- Position editor: full screen (José, 2026-10-25). Logic in src/ui/editor.ts. -->
+    <div id="editor" class="editor" hidden>
+      <div class="editor-inner">
+        <header class="editor-top">
+          <b>Introducir posición</b>
+          <span class="spacer"></span>
+          <button id="edCancel">Cancelar</button>
+          <button id="edApply" class="primary">Analizar</button>
+        </header>
+        <!-- Palettes: tap a piece then tap squares to place it (or drag it onto the board) -->
+        <div class="palette cg-wrap" id="paletteBlack"></div>
+        <div class="editor-board-wrap"><div id="editorBoard"></div></div>
+        <div class="palette cg-wrap" id="paletteWhite"></div>
+        <p class="editor-hint" id="edHint"></p>
+        <div class="editor-options">
+          <label>Turno
+            <select id="edTurn">
+              <option value="w">Blancas</option>
+              <option value="b">Negras</option>
+            </select>
+          </label>
+          <span class="castling">Enroques:
+            <label><input type="checkbox" id="edK" /> O-O ♔</label>
+            <label><input type="checkbox" id="edQ" /> O-O-O ♔</label>
+            <label><input type="checkbox" id="edk" /> O-O ♚</label>
+            <label><input type="checkbox" id="edq" /> O-O-O ♚</label>
+          </span>
+        </div>
+        <div class="editor-actions">
+          <button id="edStart">Posición inicial</button>
+          <button id="edClear">Vaciar</button>
+          <button id="edFlip">Girar</button>
+        </div>
+        <p class="editor-error" id="edError"></p>
+      </div>
+    </div>
+
+    <script type="module" src="/src/app.ts"></script>
+  </body>
+</html>
