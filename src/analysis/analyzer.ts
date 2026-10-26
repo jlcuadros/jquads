@@ -71,6 +71,9 @@ export interface PositionAnalysis {
 
 const lineScore = (l: EngineLine): Score => (l.mate !== undefined ? { mate: l.mate } : { cp: l.scoreCp })
 
+/** Cache key: the position and every setting that changes the result. */
+const cacheKey = (fen: string, s: Settings) => `${fen}|${s.elo}|${s.depth}|${s.threatDepth}|${s.lines}|${s.tablebase}`
+
 export class Analyzer {
   private generation = 0
   private cache = new Map<string, PositionAnalysis>()
@@ -87,6 +90,11 @@ export class Analyzer {
     this.stockfish.stop()
   }
 
+  /** The analysis of `fen` with these settings, if it was done (or started) before. No engine work. */
+  cached(fen: string, s: Settings): PositionAnalysis | undefined {
+    return this.cache.get(cacheKey(fen, s))
+  }
+
   /**
    * Analyses `fen`. `onUpdate` receives the (partial) analysis every time
    * something new is known. Resolves when everything is done or cancelled.
@@ -94,7 +102,7 @@ export class Analyzer {
   async analyse(fen: string, s: Settings, onUpdate: (a: PositionAnalysis) => void): Promise<void> {
     this.cancel()
     const gen = this.generation
-    const key = `${fen}|${s.elo}|${s.depth}|${s.threatDepth}|${s.lines}|${s.tablebase}`
+    const key = cacheKey(fen, s)
     const alive = () => gen === this.generation
 
     // Reuse what was already finished for this position (main and/or threats);

@@ -8,7 +8,8 @@
 import { Chess } from 'chess.js'
 import { shownMaiaMoves, type PositionAnalysis, type SideAnalysis } from '../analysis/analyzer'
 import { bestScore, deltaEval, formatScore, type MoveClass } from '../analysis/classify'
-import { describePosition } from '../analysis/describe'
+import { describePosition, type Segment } from '../analysis/describe'
+import { describePreviousMove } from '../analysis/previousMove'
 import type { EngineLine } from '../stockfish/stockfishClient'
 import type { GameTree } from '../game/tree'
 import { formatSan, type Notation } from '../game/notation'
@@ -211,9 +212,55 @@ export function renderBookLine(fen: string, a: PositionAnalysis | undefined): st
   return `<div class="book-line">📖 <b>${t('book.title')}</b> <small>(${t('book.desc')})</small>: ${items} — ${count}</div>`
 }
 
-/** Explanatory text under the columns: the book line (if any), then the engines' text when the analysis is complete. */
-export function renderText(a: PositionAnalysis | undefined, elo: number, fen: string): string {
-  return renderBookLine(fen, a) + renderEnginesText(a, elo)
+/**
+ * First icon of each paragraph of the text, to tell at a glance what it is
+ * about (José, 2026-10-26): 📖 the book, ♙ White, ♟ Black. U+FE0E asks for the
+ * text glyph: iOS can otherwise draw ♟ as an emoji.
+ */
+const sideIcon = (white: boolean) => `<span class="fig side-icon">${white ? '♙' : '♟'}\uFE0E</span> `
+
+/** The move that led to the current position, and the previous position's analysis if it was done. */
+export interface PreviousMoveRef {
+  fen: string // position before the move
+  uci: string
+  number: string // "12." or "12…"
+  whiteMoved: boolean
+  analysis?: PositionAnalysis
+}
+
+/**
+ * A move already played (the previous move): coloured like the others but
+ * never hidden by 🙈 (it is on the board already) and not clickable (it was
+ * played from the previous position).
+ */
+const playedChip = (san: string, color: string) => `<span class="move-chip" style="--chip:${color}">${figHtml(san)}</span>`
+
+/** Summary of the previous move (José, 2026-10-26), the last paragraph of the text. */
+export function renderPreviousMove(ref: PreviousMoveRef | undefined, a: PositionAnalysis | undefined, elo: number): string {
+  if (!ref) return ''
+  const prev = ref.analysis?.main
+  const best = prev?.lines[0]
+  const current = a?.main.done ? a.main.lines[0] : undefined
+  const segs: Segment[] = describePreviousMove({
+    uci: ref.uci,
+    san: ref.number + sanOf(ref.fen, ref.uci),
+    whiteMoved: ref.whiteMoved,
+    elo,
+    inBook: !!view.book?.(ref.fen).some((m) => m.uci === ref.uci),
+    prev: prev && { classified: prev.classified, best: best && lineScoreOf(best), policy: prev.maia?.policy },
+    currentBest: current && lineScoreOf(current),
+  })
+  if (!segs.length) return ''
+  return `<div class="prev-move">${sideIcon(ref.whiteMoved)}${segs.map((s) => ('text' in s ? s.text : playedChip(s.san, s.color))).join('')}</div>`
+}
+
+/**
+ * Explanatory text under the columns, in this order (José, 2026-10-26): the
+ * book (if the position is in it), the position (always, once analysed), the
+ * previous move (when there is one and data for it).
+ */
+export function renderText(a: PositionAnalysis | undefined, elo: number, fen: string, previous?: PreviousMoveRef): string {
+  return renderBookLine(fen, a) + renderEnginesText(a, elo) + renderPreviousMove(previous, a, elo)
 }
 
 function renderEnginesText(a: PositionAnalysis | undefined, elo: number): string {
@@ -228,5 +275,7 @@ function renderEnginesText(a: PositionAnalysis | undefined, elo: number): string
     san: (uci) => sanOf(m.fen, uci),
   })
   const body = segs.map((s) => ('text' in s ? s.text : chip(s.move, s.san, s.color))).join('')
-  return m.tb ? `<b>${t('panel.tbExact')}</b> ${body}` : body
+  // About the side to move: its pawn first.
+  const icon = sideIcon(m.fen.split(' ')[1] === 'w')
+  return `<div class="side-text">${icon}${m.tb ? `<b>${t('panel.tbExact')}</b> ${body}` : body}</div>`
 }

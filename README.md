@@ -20,7 +20,9 @@ or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
   (the mate comes later / sooner), "⇵−M6" / "⇵+0.4" when a mate appears, disappears or changes side
   (the same for Stockfish's mates and the endgame tables'). In the Stockfish column, Maia's % of each move.
 - **Threats**: the same analysis as if the opponent were to move (orange arrow, triangles).
-- Explanatory text generated from both engines (in the selected language).
+- Explanatory text generated from both engines (in the selected language), in paragraphs with a
+  first icon (📖 book, ♙ White, ♟ Black), including a summary of the previous move (best / good /
+  inaccuracy / mistake, evaluation before → after, typical or rare for the chosen rating).
 - **Position editor** (full screen), FEN loading, PGN export, "open in Lichess".
 - **Online endgame tables** (Lichess Syzygy, ≤ 7 pieces): exact results ("+M12" / "−M20") instead of Stockfish.
 - **Your games from Lichess or Chess.com** (no login, just the username): newest first, filters by

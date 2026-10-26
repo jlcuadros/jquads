@@ -76,7 +76,8 @@ await iter4(iconBefore === '🙈' && iconHidden === '💡', `hide button icon: v
 const hidden = await page.evaluate(() => ({
   maia: document.getElementById('maiaCol').textContent,
   sf: document.getElementById('sfCol').textContent,
-  text: document.getElementById('text').textContent,
+  // The engines' paragraph (the previous-move summary shows the move already played on purpose).
+  text: document.querySelector('#text .side-text')?.textContent ?? '',
   playable: document.querySelectorAll('.panel-col [data-move]').length,
   arrows: document.querySelectorAll('#board svg.cg-shapes g g, #board .cg-shapes line').length,
 }))
@@ -98,6 +99,13 @@ console.log('text   :', await page.textContent('#text'))
 await page.waitForFunction(() => document.getElementById('meterThreats').dataset.done === 'true', null, { timeout: 120_000 })
 console.log('threats:', await page.textContent('#meterThreats'))
 console.log(`full analysis after the move (incl. threats) in ${((Date.now() - tMove) / 1000).toFixed(1)} s`)
+// Summary of the previous move (2026-10-26): White's pawn first (who it is about), and Maia's
+// first suggestion from the start is a good move.
+const prevMove = (await page.textContent('#text .prev-move').catch(() => '')) ?? ''
+// Order of the paragraphs (José, 2026-10-26): book, position, previous move.
+const order = await page.$$eval('#text > div', (ds) => ds.map((d) => d.className))
+console.log(`${order.join(',') === 'book-line,side-text,prev-move' ? 'OK  ' : 'FAIL'} text paragraphs in order: ${order.join(', ')}`)
+console.log(`${/^♙\uFE0E? 1\.\S+ fue (la mejor|buena) jugada \([+−]?\d\.\d → [+−]?\d\.\d\)\./.test(prevMove) ? 'OK  ' : 'FAIL'} previous move summary: "${prevMove}"`)
 // Every move shown in the bar legends must have been evaluated (coloured dot).
 const uncoloured = await page.locator('.meter-legend .move-chip.plain').allTextContents()
 console.log('legend moves without colour:', uncoloured.length ? uncoloured.join(' ') : 'none')
@@ -171,9 +179,21 @@ await page.click('#prev')
 await page.waitForFunction(() => document.getElementById('text').textContent.length > 20)
 console.log(`back to start (cached) in ${Date.now() - t1} ms`)
 
+/**
+ * Opens ⚙ and makes sure it opened: in WebKit's iPhone emulation a tap on ⚙ is
+ * sometimes delivered without a click (see i18n-test.mjs; traced 2026-10-26), so
+ * it retries after a pause. A person would simply tap again.
+ */
+async function openSettings() {
+  for (let i = 0; i < 3 && (await page.isHidden('#settings')); i++) {
+    if (i) await page.waitForTimeout(700)
+    await page.click('#menu')
+  }
+}
+
 // Δ eval with mates (José, 2026-10-26): Scholar's mate position, Qxf7# = +M1.
 // The mating move shows "0.0"; moves that give the mate away show "⇵" + their eval.
-await page.click('#menu')
+await openSettings()
 await page.fill('#fenInput', 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4')
 await page.click('#loadFen')
 await page.waitForFunction(() => document.getElementById('meterMain').dataset.done === 'true', null, { timeout: 120_000 })
@@ -181,7 +201,7 @@ const mateRows = await page.$$eval('#maiaCol tr[data-move]', (trs) => trs.map((t
 const qxf7 = mateRows.find(([m]) => m === 'h5f7')
 console.log(`${qxf7?.[1] === '0.0' && mateRows.some(([m, d]) => m !== 'h5f7' && /^⇵[+−]?\d+\.\d$/.test(d)) ? 'OK  ' : 'FAIL'} Δ eval with a mate: ${JSON.stringify(mateRows)}`)
 await page.screenshot({ path: `${outDir}/07-delta-mate.png`, fullPage: true })
-await page.click('#menu'); await page.click('#newGame'); await page.click('#menu')
+await openSettings(); await page.click('#newGame')
 
 
 await browser.close()

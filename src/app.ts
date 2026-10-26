@@ -30,7 +30,7 @@ import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analy
 import { openEditor, retranslateEditor } from './ui/editor'
 import { openGames, ownerName, retranslateGames } from './ui/gamesPanel'
 import { userColor, type OnlineSite } from './games/common'
-import { setViewOptions, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
+import { setViewOptions, type PreviousMoveRef, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 
@@ -238,6 +238,20 @@ function renderEvalBar() {
   bar.style.setProperty('--maia-pos', maiaWp === undefined ? '-100%' : `${(maiaWp * 100).toFixed(1)}%`)
 }
 
+/** The move that led here and the previous position's analysis, if it was done (for the text). */
+function previousMove(): PreviousMoveRef | undefined {
+  const node = tree.current
+  if (!node.parent) return undefined
+  const { number, whiteMove } = tree.moveNumber(node)
+  return {
+    fen: node.parent.fen,
+    uci: node.uci,
+    number: whiteMove ? `${number}.` : `${number}…`,
+    whiteMoved: whiteMove,
+    analysis: analyzer.cached(node.parent.fen, analysisSettings()),
+  }
+}
+
 function renderPanel() {
   setViewOptions({
     notation: settings.notation,
@@ -262,7 +276,7 @@ function renderPanel() {
   )
   $('maiaCol').innerHTML = renderMaiaCol(analysis?.main, settings.elo, settings.lines)
   $('sfCol').innerHTML = renderSfCol(analysis?.main, settings.variant === 'sf17' ? 'SF' : t('panel.sfClassic')) // or the endgame tables
-  $('text').innerHTML = renderText(analysis, settings.elo, tree.current.fen)
+  $('text').innerHTML = renderText(analysis, settings.elo, tree.current.fen, previousMove())
   board.setAutoShapes(arrows())
 }
 

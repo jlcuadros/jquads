@@ -260,3 +260,8 @@ html, body { overflow-x: hidden; }
 .book-mark { font-size: 0.7em; margin-left: 2px; vertical-align: 1px; }
 .book-line { margin-bottom: 6px; }
 .book-line small { color: var(--muted); }
+
+/* Summary of the previous move (2026-10-26), between the book line and the engines' text */
+.prev-move { margin-bottom: 6px; }
+.side-icon { margin-right: 1px; }
+.side-text { margin-bottom: 6px; }

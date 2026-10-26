@@ -69,7 +69,8 @@ for (const [lang, exp] of Object.entries(EXPECT)) {
     evalHeader: await page.textContent('#sfCol th:last-child'),
     // The opening book line (iteration 6) comes first; the engines' text follows it.
     book: (await page.textContent('#text .book-line').catch(() => '')) ?? '',
-    text: (await page.evaluate(() => [...document.getElementById('text').childNodes].filter((n) => !(n instanceof Element && n.classList.contains('book-line'))).map((n) => n.textContent).join(''))).trim(),
+    // The engines' paragraph (about the side to move), without its first icon (♙/♟, 2026-10-26).
+    text: ((await page.textContent('#text .side-text').catch(() => '')) ?? '').replace(/^[♙♟]\uFE0E?\s*/, '').trim(),
     htmlLang: await page.getAttribute('html', 'lang'),
   }
   const widths = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, vp: document.documentElement.clientWidth, top: document.getElementById('numbers').scrollWidth <= document.getElementById('numbers').clientWidth }))
