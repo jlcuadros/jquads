@@ -41,8 +41,10 @@ await page.waitForFunction(() => document.querySelector('#text .book-line'), nul
 
 // 1–2. Starting position.
 let s = await state()
-const head = await page.request.head(new URL('book/lichess-2300-slow-v1.bin', page.url()).href)
-check(head.ok() && Number(head.headers()['content-length']) > 1e6, `book file served: ${head.status()}, ${head.headers()['content-length']} bytes`)
+// GET, not HEAD: Cloudflare's HEAD answer has no content-length (seen in production 2026-10-26).
+const file = await page.request.get(new URL('book/lichess-2300-slow-v1.bin', page.url()).href)
+const size = (await file.body()).length
+check(file.ok() && size > 1e6 && size % 16 === 0, `book file served: ${file.status()}, ${size} bytes (16-byte entries)`)
 check(s.textStart === '📖' && /^📖 Libro \(2300\+, rápidas y clásicas\): e4 \d+% · d4 \d+%/.test(s.bookLine) && /— [\d.]+ partidas$/.test(s.bookLine), `book line: "${s.bookLine}"`)
 check(s.maiaMarks >= 2 && s.sfMarks >= 2, `📖 marks: Maia ${s.maiaMarks}, SF ${s.sfMarks}`)
 check(!s.overflow, 'no horizontal overflow with the 📖 marks')
