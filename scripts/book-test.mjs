@@ -45,7 +45,7 @@ let s = await state()
 const file = await page.request.get(new URL('book/lichess-2300-slow-v1.bin', page.url()).href)
 const size = (await file.body()).length
 check(file.ok() && size > 1e6 && size % 16 === 0, `book file served: ${file.status()}, ${size} bytes (16-byte entries)`)
-check(s.textStart === '📖' && /^📖 Libro \(2300\+, rápidas y clásicas\): e4 \d+% · d4 \d+%/.test(s.bookLine) && /— [\d.]+ partidas$/.test(s.bookLine), `book line: "${s.bookLine}"`)
+check(s.textStart === '📖' && /^📖 Libro: e4 \d+% · d4 \d+%/.test(s.bookLine) && /— [\d.]+ partidas$/.test(s.bookLine), `book line: "${s.bookLine}"`)
 check(s.maiaMarks >= 2 && s.sfMarks >= 2, `📖 marks: Maia ${s.maiaMarks}, SF ${s.sfMarks}`)
 check(!s.overflow, 'no horizontal overflow with the 📖 marks')
 await page.screenshot({ path: `${outDir}/book-01-start.png`, fullPage: true })

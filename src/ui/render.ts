@@ -195,7 +195,9 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
 
 /**
  * Opening book line at the start of the explanatory text (José, iteration 6):
- * "📖 Libro (2300+, rápidas y clásicas): e4 56% · d4 28% … — 72.599 partidas".
+ * "📖 Libro: e4 56% · d4 28% … — 72.599 partidas". (Which book it is — 2300+,
+ * rapid and classical — is said in ⚙ and the help; José, 2026-10-26: it took
+ * room without adding much.)
  * Moves with at least BOOK_MIN_SHARE of the games, coloured like the rest if
  * Stockfish already evaluated them. Empty when the position isn't in the book.
  */
@@ -209,7 +211,7 @@ export function renderBookLine(fen: string, a: PositionAnalysis | undefined): st
     .map((m) => `${chip(m.uci, sanOf(fen, m.uci), classified?.get(m.uci)?.color)} ${Math.round(m.share * 100)}%`)
     .join(' · ')
   const count = t('book.games', { n: games.toLocaleString(getLang()) })
-  return `<div class="book-line">📖 <b>${t('book.title')}</b> <small>(${t('book.desc')})</small>: ${items} — ${count}</div>`
+  return `<div class="book-line">📖 <b>${t('book.title')}</b>: ${items} — ${count}</div>`
 }
 
 /**

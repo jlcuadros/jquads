@@ -41,7 +41,6 @@ export const fr: Messages = {
   'set.tablebase': 'Tables de finales en ligne (Lichess, ≤ 7 pièces)',
   'set.book': 'Livre d’ouvertures (Lichess 2300+, rapides et classiques)',
   'book.title': 'Livre',
-  'book.desc': '2300+, rapides et classiques',
   'book.games': '{n} parties',
   'help.book.html': '<b>📖 Livre d’ouvertures</b> : si la position est dans le livre, le texte commence par ses coups et le % de parties où ils ont été joués, et les coups du livre portent 📖 dans les colonnes. Construit à partir de parties Lichess où les deux joueurs ont 2300 ou plus (rapides et classiques, sans bullet ni blitz), jusqu’au 15e coup, avec au moins 12 parties par position et 3 par coup : là où s’arrête la théorie courante, il n’apparaît plus. Désactivable ici.',
   'credits.book.html': '<b>Livre d’ouvertures</b> : créé pour jquads à partir de parties de la <a href="https://database.lichess.org/" target="_blank" rel="noopener">base de données Lichess</a> (CC0) de joueurs de 2300+, rapides et classiques ; format Polyglot. Le livre est aussi CC0.',
