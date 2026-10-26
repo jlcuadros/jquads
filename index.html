@@ -77,6 +77,7 @@
             <label class="check"><input type="checkbox" id="evalBar" /> <span data-i18n="set.evalBar">Barra de evaluación junto al tablero</span></label>
             <label class="check"><input type="checkbox" id="showDeltaCol" /> <span data-i18n="set.deltaCol">Columna «Δ eval» en Maia</span></label>
             <label class="check"><input type="checkbox" id="showMaiaCol" /> <span data-i18n="set.maiaCol">Columna «Maia» en Stockfish</span></label>
+            <label class="check"><input type="checkbox" id="book" /> <span data-i18n="set.book">Libro de aperturas (Lichess 2300+, rápidas y clásicas)</span></label>
             <label class="check"><input type="checkbox" id="tablebase" /> <span data-i18n="set.tablebase">Tablas de finales en línea (Lichess, ≤ 7 piezas)</span></label>
           </div>
           <label class="fen">FEN <input id="fenInput" type="text" spellcheck="false" autocapitalize="off" /></label>
@@ -94,6 +95,7 @@
               <li data-i18n-html="help.bar1.html"><b>1ª barra — jugadas</b>: cómo se reparte la probabilidad de Maia (lo que jugaría un humano de ese Elo) entre jugadas buenas ✓, imprecisiones ?! y errores ??.</li>
               <li data-i18n-html="help.bar2.html"><b>2ª barra — amenazas</b>: lo mismo para el rival si le tocara mover a él (como si el bando que mueve pasara turno). No se calcula si hay jaque. Va marcada con un borde naranja (el color de la flecha de amenaza) y sus jugadas llevan triángulos de color en vez de círculos. En ajustes se puede ver como barra y jugadas, solo las jugadas, o no calcularla.</li>
               <li data-i18n-html="help.colors.html"><b>Colores</b>: según cuánta probabilidad de ganar se pierde frente a la mejor jugada de Stockfish: verde &lt; 5 %, amarillo 5–10 %, rojo ≥ 10 %. Cuanto más oscuro el verde, mejor; cuanto más oscuro el rojo, peor.</li>
+              <li data-i18n-html="help.book.html"></li>
               <li data-i18n-html="help.tablebase.html"><b>Tablas de finales</b>: con 7 piezas o menos (reyes incluidos) y sin enroques, el resultado exacto viene de las tablas Syzygy de Lichess en vez de Stockfish: arriba «TB: …» y la columna derecha «Tablas Syzygy» con «Gana M12» (mate en 12), «Tablas» o «Pierde». Se puede desactivar en esta pantalla; si fallan o no hay conexión, se usa Stockfish.</li>
               <li data-i18n-html="help.columns.html"></li>
               <li data-i18n-html="help.evalBar.html"><b>Barra vertical</b> (opcional): blanco/negro según la evaluación de Stockfish; la marca roja es la probabilidad de victoria de las blancas según Maia.</li>
@@ -113,6 +115,7 @@
               <li data-i18n="credits.design">El diseño del panel de análisis, el código de colores y la forma de ejecutar Maia en el navegador están tomados de maiachess.com.</li>
               <li data-i18n-html="credits.stockfish.html"><a href="https://stockfishchess.org" target="_blank" rel="noopener">Stockfish</a> (GPL-3.0) con redes <a href="https://github.com/official-stockfish/networks" target="_blank" rel="noopener">NNUE</a> (CC0), compilado para web por Lichess: <a href="https://github.com/lichess-org/lila-stockfish-web" target="_blank" rel="noopener">lila-stockfish-web</a> (GPL-3.0).</li>
               <li data-i18n-html="credits.libs.html">Tablero <a href="https://github.com/lichess-org/chessground" target="_blank" rel="noopener">chessground</a> (GPL-3.0) con piezas <a href="https://en.wikipedia.org/wiki/User:Cburnett" target="_blank" rel="noopener">cburnett</a> (Colin M.L. Burnett, GPLv2+), reglas <a href="https://github.com/jhlywa/chess.js" target="_blank" rel="noopener">chess.js</a> (BSD-2), <a href="https://github.com/microsoft/onnxruntime" target="_blank" rel="noopener">onnxruntime-web</a> (MIT). Partidas y tablas de finales: <a href="https://lichess.org/api" target="_blank" rel="noopener">API pública de Lichess</a> y la de <a href="https://www.chess.com/news/view/published-data-api" target="_blank" rel="noopener">Chess.com</a>.</li>
+              <li data-i18n-html="credits.book.html"></li>
               <li data-i18n-html="credits.notice.html">Proyecto no oficial: sin relación con Maia Chess, la Universidad de Toronto, Stockfish, Lichess ni Chess.com; sus nombres pertenecen a sus dueños. Se ofrece sin ninguna garantía. <a href="licenses.txt" target="_blank" rel="noopener">Textos completos de las licencias</a>.</li>
             </ul>
           </details>

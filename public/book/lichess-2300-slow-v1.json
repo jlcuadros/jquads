@@ -1,0 +1,366 @@
+{
+  "book": "lichess-2300-slow-v1.bin",
+  "built": "2026-10-26T10:09:02Z",
+  "source": "Lichess rated games (Lichess game database, CC0)",
+  "licence": "CC0-1.0",
+  "games": {
+    "filter": "rated standard games from the initial position, both players rated >= 2300, rapid or classical (base + 40 x increment >= 480 s)",
+    "games_read": 26358132,
+    "games_used": 1127240,
+    "rapid": 1087764,
+    "classical": 39476,
+    "unreadable": 0,
+    "observations": 33438552
+  },
+  "parameters": {
+    "min_elo": 2300,
+    "max_ply": 30,
+    "min_position_games": 12,
+    "min_move_games": 3
+  },
+  "polyglot": "weight = share of the position's games (1..65535); learn = games that played the move",
+  "book_statistics": {
+    "positions_seen": 12131886,
+    "positions_in_book": 147868,
+    "entries": 343239,
+    "bytes": 5491824
+  },
+  "inputs": [
+    {
+      "month": "2020-06",
+      "sha256": "8959b954329fc875126dfeeae7b7af21b00e1cec8042426e1990668a7c20005d",
+      "games_used": 2516
+    },
+    {
+      "month": "2020-07",
+      "sha256": "d8566270e3f67f60c7ad466dbc2be6f11ab9ff7aba8047de8b92e4b29a4ffdc7",
+      "games_used": 2725
+    },
+    {
+      "month": "2020-08",
+      "sha256": "8c6cfa7ba440ae6e7db603a78b33eed0a5d4cc4cbc990caf03f974663224741a",
+      "games_used": 3715
+    },
+    {
+      "month": "2020-09",
+      "sha256": "9ea612fd9a0cad39f65b93d67fef546497bc1fc8354b278b5a31eeae796b9cee",
+      "games_used": 3676
+    },
+    {
+      "month": "2020-10",
+      "sha256": "578fafa5a1dca672acdfc799c4e0c20cfcdc1b13a940aa9b86d84a05513ec3b4",
+      "games_used": 5351
+    },
+    {
+      "month": "2020-11",
+      "sha256": "5bcaac1d80639c037f9e209b83b75e578cadd8633b69d17455832696b8250278",
+      "games_used": 8486
+    },
+    {
+      "month": "2020-12",
+      "sha256": "d2a10747b48938e52609bc116d1205fdbf5f54796504cd5c1096949d4483c10b",
+      "games_used": 12212
+    },
+    {
+      "month": "2021-01",
+      "sha256": "1b7fcfb98f462acd4997a42d953cd562f8ef7be2ed9abf259a26cf11e2715b43",
+      "games_used": 17057
+    },
+    {
+      "month": "2021-02",
+      "sha256": "d4d7f1c2db28aa9879e0e9b3f4bb44dc15107fdd906e59b91ce4258d393b8bca",
+      "games_used": 17118
+    },
+    {
+      "month": "2021-03",
+      "sha256": "6a9dcf3dabb0ded04119b62b2164d8d4ceed4e9128dbea6ede3228d0890f6798",
+      "games_used": 22328
+    },
+    {
+      "month": "2021-04",
+      "sha256": "183188c657792786853794e153519f1f62fae5bd96dceac9b54f5cd90d2295bb",
+      "games_used": 26915
+    },
+    {
+      "month": "2021-05",
+      "sha256": "118c51d47302f8e38826fc057c24ec5249d848dd4d77fddaa6adf3615346bf6a",
+      "games_used": 31744
+    },
+    {
+      "month": "2021-06",
+      "sha256": "d84d0027b2a69e756f189a047ec0d399d8a53eb812682e5618b83f3db747152e",
+      "games_used": 35711
+    },
+    {
+      "month": "2021-07",
+      "sha256": "4d7f86d67f21a614b0920861e0ba630a54a1e75e321402a23498fe03aa71ce89",
+      "games_used": 44731
+    },
+    {
+      "month": "2021-08",
+      "sha256": "fe7b0acb7ef9cb00b77ed534d02074969f04d16abfb2b7fa8238b37c8cf8cf3e",
+      "games_used": 54383
+    },
+    {
+      "month": "2021-09",
+      "sha256": "3b2f30edfdbdb2d7cf752a8e60ab06842eb0d689c772f14e0394d326f58e687c",
+      "games_used": 55571
+    },
+    {
+      "month": "2021-10",
+      "sha256": "cf6284da3ddb594cb12558be294bc7d1b95ed0d9d1450fc8f9584ca58b85ac14",
+      "games_used": 56430
+    },
+    {
+      "month": "2021-11",
+      "sha256": "29677f8c3a45e4004354fcc2b455eafc6bfab4a342ff813e712bae2ae1e97281",
+      "games_used": 53670
+    },
+    {
+      "month": "2021-12",
+      "sha256": "042f6dea8ddf0fb039e0bba7840341b11ca82bbe907200b063ccaea80108ed1c",
+      "games_used": 21115
+    },
+    {
+      "month": "2022-01",
+      "sha256": "8f73947086a8d2bf9e57beeba51f8fcfbb2e411b4ff15f227d8e680618fac5e9",
+      "games_used": 19727
+    },
+    {
+      "month": "2022-02",
+      "sha256": "38290fed252477e82ba1488e3f3835479ae0cc9cde24ca48beae0c07a5f347b0",
+      "games_used": 16572
+    },
+    {
+      "month": "2022-03",
+      "sha256": "83d9b91a530e9a7447d938938764271d80c679c623e78b0b968f8cd6695dff1c",
+      "games_used": 15829
+    },
+    {
+      "month": "2022-04",
+      "sha256": "a42cdb6a533a273d5f6c21a0b2d2996d05dd7fbefdcf69c1ab14c8083ce49b0c",
+      "games_used": 14920
+    },
+    {
+      "month": "2022-05",
+      "sha256": "ad374c8fd9fb2fe5f03c1297aa1d47cbbce5caedf6e6e2d387ee816930afdb11",
+      "games_used": 16625
+    },
+    {
+      "month": "2022-06",
+      "sha256": "b2b42573a882a5efd838795a932cc4c0da335256915c05b8fd2866f651825a4b",
+      "games_used": 17455
+    },
+    {
+      "month": "2022-07",
+      "sha256": "b627979c15232435399daa48ca0cd4a9a935971d694ef57b6e0d3a45944825d9",
+      "games_used": 15910
+    },
+    {
+      "month": "2022-08",
+      "sha256": "6146816efc3bde4d3c8f34a6e6086bcb84dc0402eb3a068e4a0a1ad192f33504",
+      "games_used": 17417
+    },
+    {
+      "month": "2022-09",
+      "sha256": "d72560c703aaee6742b7be26fe26bfada374aa7e6a8dcd091eb622801759c5f1",
+      "games_used": 28110
+    },
+    {
+      "month": "2022-10",
+      "sha256": "84512f10b597a287beec0078f874bc1f434b0e92ecbd768910907a2bf1d9431f",
+      "games_used": 31652
+    },
+    {
+      "month": "2022-11",
+      "sha256": "41c66385859db6eabadb2e275b0c957d4d71db6316d653dc9857678dcab20509",
+      "games_used": 29313
+    },
+    {
+      "month": "2022-12",
+      "sha256": "36bd445b13787ed2f9eae27d2762b28c2f625a0c2fd9890a9ac7305d1fec4d21",
+      "games_used": 15734
+    },
+    {
+      "month": "2023-01",
+      "sha256": "624c6f45368e882f7cbe5e4aea5abc1f613a101c5b33534d43b7ef6468f75433",
+      "games_used": 16452
+    },
+    {
+      "month": "2023-02",
+      "sha256": "7930206efa17b98472187475fcc6e39f14fdab66c520106b3295f4dd1966f38b",
+      "games_used": 0
+    },
+    {
+      "month": "2023-03",
+      "sha256": "c3845db0733e2dc472d71c2bc382940c958c1888d771e6a44150a10441ea6feb",
+      "games_used": 0
+    },
+    {
+      "month": "2023-04",
+      "sha256": "584f67b06be2a94353d807a38763bede0c7b0db889db8bb946cd48b2facf4fce",
+      "games_used": 0
+    },
+    {
+      "month": "2023-05",
+      "sha256": "5386aa71165a631c483ac8f0d66158d60afd91e1fe9efc2c262dbe66498a759a",
+      "games_used": 0
+    },
+    {
+      "month": "2023-06",
+      "sha256": "de894222e079426761219009c4628284c709300defd1f50ebdd6ad150954cc97",
+      "games_used": 0
+    },
+    {
+      "month": "2023-07",
+      "sha256": "08f797d1de39937623a913555cf984c74afedbe9dff4ae987cf4f326ce4eb19a",
+      "games_used": 0
+    },
+    {
+      "month": "2023-08",
+      "sha256": "d42ee5bff5867c370fc21b45833b75a55e61f3f0b66af4f00de3bb969a15f523",
+      "games_used": 0
+    },
+    {
+      "month": "2023-09",
+      "sha256": "1209b537c1feb93d550e3da2018e5a4e905068d941af3ddfb7db6f35bb0a68cf",
+      "games_used": 0
+    },
+    {
+      "month": "2023-10",
+      "sha256": "994fd999fe94c338e26f1dd266d89c9e203294999153fb9f46c892e58f5d8cca",
+      "games_used": 0
+    },
+    {
+      "month": "2023-11",
+      "sha256": "3b7f9f4be16c0a358e22f108711a6b76d70c06c2feaa508f852cdffae5485b26",
+      "games_used": 0
+    },
+    {
+      "month": "2023-12",
+      "sha256": "c795543d0e0354e3b823aff567f6e10b47763e6e52d8e7d564c5217deaeb634f",
+      "games_used": 0
+    },
+    {
+      "month": "2024-01",
+      "sha256": "9d37dbbb972b0dece97885d699b508118511f23d8cbf8f2ac20a93b6229d1b84",
+      "games_used": 0
+    },
+    {
+      "month": "2024-02",
+      "sha256": "22fb5ea5143ccf701858cbf50991d860f4a16a52ef9611caf8ffa7a681ccc357",
+      "games_used": 0
+    },
+    {
+      "month": "2024-03",
+      "sha256": "55978563c51d9bff46bfb8ca456723acdcaf290f528830f92e01a119ba7e4f29",
+      "games_used": 16953
+    },
+    {
+      "month": "2024-04",
+      "sha256": "8eca2df5821c8ca81092f282c5276a6a999de8b1c07271a9b42b09d1e3072ef9",
+      "games_used": 18842
+    },
+    {
+      "month": "2024-05",
+      "sha256": "72daa44cbef2ac6045d00230c4ca2bcfcc36e4ffa6cac9af0273fbb6d17a1957",
+      "games_used": 16815
+    },
+    {
+      "month": "2024-06",
+      "sha256": "5d4f1011f370a20bb21995f9a4f091826ce9ef77ea00b8f552581e4634707aa8",
+      "games_used": 16640
+    },
+    {
+      "month": "2024-07",
+      "sha256": "343ada68d4e106b68aeb852432f1fbffe323d3e9e2b017809374ed2f7b4e4dbe",
+      "games_used": 15354
+    },
+    {
+      "month": "2024-08",
+      "sha256": "a14a9eda18124f81bc03a3d90fbd7bafd7c54af36ff9241c207712437910cc12",
+      "games_used": 15177
+    },
+    {
+      "month": "2024-09",
+      "sha256": "93f8da7f88f38d7922a59f24eeecd2b8443e15423ac4f1e769a112837f151942",
+      "games_used": 14818
+    },
+    {
+      "month": "2024-10",
+      "sha256": "c6425fce303661bf2d3afc4340238de247ac120214038499f9251070968167df",
+      "games_used": 16235
+    },
+    {
+      "month": "2024-11",
+      "sha256": "d1b7d42edc91dc1ec807e0c7825584311c87141d9312b218d933bcc4227817b8",
+      "games_used": 17082
+    },
+    {
+      "month": "2024-12",
+      "sha256": "da6822275bf917e620b67f0fd3643042bc471a491f41ef28cf5bd6b861ad9917",
+      "games_used": 18377
+    },
+    {
+      "month": "2025-01",
+      "sha256": "f2fa14565bcdaba7ad6de6a4f8f2348d0f9f8f262935c46e61925c5acce6f7b7",
+      "games_used": 18986
+    },
+    {
+      "month": "2025-02",
+      "sha256": "f52be39848def68b179b5f8b7d32db59058cbb84154bac3cfd91407229e84480",
+      "games_used": 16226
+    },
+    {
+      "month": "2025-03",
+      "sha256": "6ab16fdc53197f2e6977c2867e3d790aa0be6259ebd06ae1a4d88e9525ad3960",
+      "games_used": 23606
+    },
+    {
+      "month": "2025-04",
+      "sha256": "8a25af7e0f9c7f7d0d1bda2276785e7d31a3febdae817946519ca43422a0b987",
+      "games_used": 22935
+    },
+    {
+      "month": "2025-05",
+      "sha256": "fc38024b82ae326566d1b9b0fad676c145cd32938309424887c257a5711c3990",
+      "games_used": 27244
+    },
+    {
+      "month": "2025-06",
+      "sha256": "f07ea8f22bc2bc53696cbbde885ba83e78a93eb1187ed2d84942a85b252c46fe",
+      "games_used": 22822
+    },
+    {
+      "month": "2025-07",
+      "sha256": "359ede2617548a3dbb1c780549fdffab1f59cf174d4f8bb4f882b190847f3f4b",
+      "games_used": 22114
+    },
+    {
+      "month": "2025-08",
+      "sha256": "06a40ce151547b6a7322ce7407c47581e5d58baf83ae4960b5958bcf4a45dbd3",
+      "games_used": 20717
+    },
+    {
+      "month": "2025-09",
+      "sha256": "81e554084af620c1b5822b7d776f4f06b4dee5a50c68727df912329af2a51b48",
+      "games_used": 18943
+    },
+    {
+      "month": "2025-10",
+      "sha256": "b1679464608a8fdc1185fdc52a5cce1de454330d73d346bf734ded70461a7cf9",
+      "games_used": 18242
+    },
+    {
+      "month": "2025-11",
+      "sha256": "1ffa577aa0a1352fa04c9a890a6706049a3a79edc52810b136758d1e2a1a2eab",
+      "games_used": 17942
+    }
+  ],
+  "tools": {
+    "python": "3.9.6",
+    "python-chess": "1.11.2",
+    "numpy": "2.0.2"
+  },
+  "seconds": 37.2
+}

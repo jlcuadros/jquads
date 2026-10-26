@@ -13,7 +13,9 @@ import type { EngineLine } from '../stockfish/stockfishClient'
 import type { GameTree } from '../game/tree'
 import { formatSan, type Notation } from '../game/notation'
 import { tbLabel, tbPositionScore } from '../analysis/tablebase'
-import { t } from '../i18n/i18n'
+import { getLang, t } from '../i18n/i18n'
+import type { BookMove } from '../book/polyglot'
+import { BOOK_MIN_SHARE } from '../book/openingBook'
 
 /**
  * Display options set by app.ts before rendering (iteration 4):
@@ -21,13 +23,20 @@ import { t } from '../i18n/i18n'
  *  - hideMoves: training mode — every suggested move becomes "--" (and is not
  *    clickable) while evaluations and percentages stay visible;
  *  - deltaCol / maiaCol: the middle columns of the Maia ("Δ eval") and
- *    Stockfish ("Maia") panels, each can be hidden in ⚙ (José, iteration 5).
+ *    Stockfish ("Maia") panels, each can be hidden in ⚙ (José, iteration 5);
+ *  - book: the opening book's moves of a position (iteration 6), or undefined
+ *    while it isn't loaded or when it is turned off in ⚙.
  */
-const view: { notation: Notation; hideMoves: boolean; deltaCol: boolean; maiaCol: boolean } = {
+const view: { notation: Notation; hideMoves: boolean; deltaCol: boolean; maiaCol: boolean; book?: (fen: string) => BookMove[] } = {
   notation: 'figurine',
   hideMoves: false,
   deltaCol: true,
   maiaCol: true,
+}
+
+/** 📖 after a move that is in the opening book (Maia and Stockfish columns). */
+function bookMark(fen: string, uci: string): string {
+  return view.book?.(fen).some((m) => m.uci === uci) ? `<span class="book-mark" title="${t('book.title')}">📖</span>` : ''
 }
 
 /** A middle column cell (or header), only when that column is shown. */
@@ -138,7 +147,7 @@ export function renderMaiaCol(side: SideAnalysis | undefined, elo: number, count
         .map((p) => {
           const c = side.classified.get(p.uci)
           const delta = best && c ? deltaEval(best, c.score) : ''
-          return `<tr${rowMove(p.uci)}><td>${chip(p.uci, sanOf(side.fen, p.uci), c?.color)}</td>${midCell(view.deltaCol, delta)}<td class="num">${pct(p.prob)}</td></tr>`
+          return `<tr${rowMove(p.uci)}><td>${chip(p.uci, sanOf(side.fen, p.uci), c?.color)}${bookMark(side.fen, p.uci)}</td>${midCell(view.deltaCol, delta)}<td class="num">${pct(p.prob)}</td></tr>`
         })
         .join('')
     : `<tr><td colspan="3">${t('panel.calculating')}</td></tr>`
@@ -161,7 +170,7 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
         const uci = l.pv[0]
         const m = tb.moves.find((x) => x.uci === uci)
         const label = m ? tbLabel(m.score, m.outcome, m.cursed) : ''
-        return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), side.classified.get(uci)?.color)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${label}</td></tr>`
+        return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), side.classified.get(uci)?.color)}${bookMark(side.fen, uci)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${label}</td></tr>`
       })
       .join('')
     // "TB" (tablebase) instead of the long name, so the 3 columns fit (iteration 5).
@@ -172,7 +181,7 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
         .map((l) => {
           const uci = l.pv[0]
           const c = side.classified.get(uci)
-          return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), c?.color)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${formatScore(lineScoreOf(l), 1)}</td></tr>`
+          return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), c?.color)}${bookMark(side.fen, uci)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${formatScore(lineScoreOf(l), 1)}</td></tr>`
         })
         .join('')
     : `<tr><td colspan="3">${t('panel.calculating')}</td></tr>`
@@ -183,8 +192,31 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
   return `<table><tr><th>${engineName}${depth}</th>${midCell(view.maiaCol, 'Maia', 'th')}<th class="num">${t('panel.eval')}</th></tr>${rows}</table>`
 }
 
-/** Explanatory text under the columns (only when the analysis is complete). */
-export function renderText(a: PositionAnalysis | undefined, elo: number): string {
+/**
+ * Opening book line at the start of the explanatory text (José, iteration 6):
+ * "📖 Libro (2300+, rápidas y clásicas): e4 56% · d4 28% … — 72.599 partidas".
+ * Moves with at least BOOK_MIN_SHARE of the games, coloured like the rest if
+ * Stockfish already evaluated them. Empty when the position isn't in the book.
+ */
+export function renderBookLine(fen: string, a: PositionAnalysis | undefined): string {
+  const moves = view.book?.(fen) ?? []
+  if (!moves.length) return ''
+  const classified = a?.main.fen === fen ? a.main.classified : undefined
+  const games = moves.reduce((s, m) => s + m.games, 0)
+  const items = moves
+    .filter((m) => m.share >= BOOK_MIN_SHARE)
+    .map((m) => `${chip(m.uci, sanOf(fen, m.uci), classified?.get(m.uci)?.color)} ${Math.round(m.share * 100)}%`)
+    .join(' · ')
+  const count = t('book.games', { n: games.toLocaleString(getLang()) })
+  return `<div class="book-line">📖 <b>${t('book.title')}</b> <small>(${t('book.desc')})</small>: ${items} — ${count}</div>`
+}
+
+/** Explanatory text under the columns: the book line (if any), then the engines' text when the analysis is complete. */
+export function renderText(a: PositionAnalysis | undefined, elo: number, fen: string): string {
+  return renderBookLine(fen, a) + renderEnginesText(a, elo)
+}
+
+function renderEnginesText(a: PositionAnalysis | undefined, elo: number): string {
   const m = a?.main
   if (!m?.done || !m.maia || !m.lines[0]) return ''
   const segs = describePosition({

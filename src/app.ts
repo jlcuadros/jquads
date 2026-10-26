@@ -17,6 +17,8 @@ import './style.css'
 
 import { Chess } from 'chess.js'
 import { GameTree } from './game/tree'
+import { loadBook } from './book/openingBook'
+import type { PolyglotBook } from './book/polyglot'
 import { gamePgn, parsePgnHeaders, treeFromPgn, type PgnHeaders } from './game/pgn'
 import type { Notation } from './game/notation'
 import { whiteWinProb } from './analysis/classify'
@@ -55,6 +57,7 @@ const DEFAULTS: AppSettings = {
   notation: 'figurine', // iteration 4: chess figurines by default
   evalBar: true, // iteration 4: thin vertical evaluation bar beside the board
   tablebase: true, // Lichess online endgame tables when ≤ 7 pieces (José: on by default)
+  book: true, // opening book (Lichess 2300+, rapid and classical; iteration 6)
   lang: detectLang(), // device language if supported, otherwise English (José, 2026-10-25)
   lichessUser: '', // ⚙ / 📂: the board faces this player when opening their Lichess games
   chesscomUser: '', // same for Chess.com
@@ -79,6 +82,7 @@ interface AppSettings extends Omit<Settings, 'threats'> {
   variant: StockfishVariant // changing it reloads the page
   notation: Notation // move notation: figurine (♘f3) or letters (Nf3)
   evalBar: boolean // show the vertical evaluation bar
+  book: boolean // use the opening book (📖)
   lang: Lang // UI language (⚙)
   lichessUser: string // Lichess username (⚙ and 📂 panel)
   chesscomUser: string // Chess.com username (⚙ and 📂 panel)
@@ -116,6 +120,8 @@ const settings = loadSettings()
 // ---------------------------------------------------------------------------
 
 let tree = new GameTree()
+// Opening book (iteration 6): loaded in the background after the engines; null until then or when off.
+let openingBook: PolyglotBook | null = null
 // PGN headers of the game on the board (from the PGN it was opened from; {} for
 // a game made here) and its favourite id if it was saved with 📂 → 💾 Guardar.
 let gameHeaders: PgnHeaders = {}
@@ -233,7 +239,13 @@ function renderEvalBar() {
 }
 
 function renderPanel() {
-  setViewOptions({ notation: settings.notation, hideMoves, deltaCol: settings.deltaCol, maiaCol: settings.maiaCol })
+  setViewOptions({
+    notation: settings.notation,
+    hideMoves,
+    deltaCol: settings.deltaCol,
+    maiaCol: settings.maiaCol,
+    book: settings.book && openingBook ? (fen) => openingBook!.lookup(fen) : undefined,
+  })
   $('numbers').innerHTML = renderNumbers(analysis)
   renderEvalBar()
   // Top bar: it's still computed when hidden (the columns and arrows need it).
@@ -250,7 +262,7 @@ function renderPanel() {
   )
   $('maiaCol').innerHTML = renderMaiaCol(analysis?.main, settings.elo, settings.lines)
   $('sfCol').innerHTML = renderSfCol(analysis?.main, settings.variant === 'sf17' ? 'SF' : t('panel.sfClassic')) // or the endgame tables
-  $('text').innerHTML = renderText(analysis, settings.elo)
+  $('text').innerHTML = renderText(analysis, settings.elo, tree.current.fen)
   board.setAutoShapes(arrows())
 }
 
@@ -327,6 +339,13 @@ function setupControls() {
     }
   }
   $<HTMLInputElement>('tablebase').checked = settings.tablebase
+  $<HTMLInputElement>('book').checked = settings.book
+  $('book').onchange = (ev) => {
+    settings.book = (ev.target as HTMLInputElement).checked
+    saveSettings()
+    if (settings.book) void loadOpeningBook()
+    renderPanel()
+  }
   // Usernames per site (also editable in the 📂 panel; same saved values).
   const USER_SETTING: Record<OnlineSite, { key: 'lichessUser' | 'chesscomUser'; input: string }> = {
     lichess: { key: 'lichessUser', input: 'lichessUserSetting' },
@@ -559,8 +578,23 @@ async function loadEngines() {
     status.textContent = ''
     enginesReady = true
     runAnalysis()
+    if (settings.book) void loadOpeningBook() // after the engines: they matter more on a first visit
   } catch (e) {
     status.textContent = t('msg.loadError', { detail: e instanceof Error ? e.message : String(e) })
+  }
+}
+
+/**
+ * Downloads the opening book once (then IndexedDB) and redraws. A failure only
+ * means no 📖: the analysis works the same without it.
+ */
+async function loadOpeningBook() {
+  if (openingBook) return
+  try {
+    openingBook = await loadBook()
+    renderPanel()
+  } catch (e) {
+    console.warn('opening book not available', e)
   }
 }
 

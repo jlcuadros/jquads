@@ -81,11 +81,12 @@ describe('formatScore decimals', () => {
 describe('deltaEval (Maia column, iteration 5)', () => {
   it('pawns with one decimal, absolute value', () => {
     expect(deltaEval({ cp: 35 }, { cp: -120 })).toBe('↓1.6')
-    expect(deltaEval({ cp: -50 }, { cp: -50 })).toBe('↓0.0')
+    expect(deltaEval({ cp: 30 }, { cp: 26 })).toBe('0.0') // rounds to zero: no arrow either
+    expect(deltaEval({ cp: -50 }, { cp: -50 })).toBe('0.0') // no arrow when nothing is lost
     expect(deltaEval({ cp: -300 }, { cp: -10 })).toBe('↓2.9') // Black to move: best is lower, still positive
   })
   it('mates: same side → 0.0, gaining or losing a mate → M', () => {
-    expect(deltaEval({ mate: 3 }, { mate: 7 })).toBe('↓0.0')
+    expect(deltaEval({ mate: 3 }, { mate: 7 })).toBe('0.0')
     expect(deltaEval({ mate: 3 }, { cp: 400 })).toBe('↓M')
     expect(deltaEval({ cp: 0 }, { mate: -2 })).toBe('↓M')
   })

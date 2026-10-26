@@ -23,7 +23,7 @@ await page.click('#openCredits')
 const credits = page.locator('#creditsDetails')
 check(await credits.evaluate((d) => d.open), 'footer link opens the credits')
 const text = await credits.innerText()
-const expected = ['AGPL-3.0', 'Maia-3', 'Stockfish', 'NNUE', 'CC0', 'lila-stockfish-web', 'chessground', 'cburnett', 'GPLv2+', 'chess.js', 'BSD-2', 'onnxruntime-web', 'MIT', 'Lichess', 'Chess.com']
+const expected = ['AGPL-3.0', 'Maia-3', 'Stockfish', 'NNUE', 'CC0', 'lila-stockfish-web', 'chessground', 'cburnett', 'GPLv2+', 'chess.js', 'BSD-2', 'onnxruntime-web', 'MIT', 'Lichess', 'Chess.com', 'Polyglot']
 const missing = expected.filter((w) => !text.includes(w))
 check(!missing.length, `components and licences named (missing: ${missing.join(', ') || 'none'})`)
 check(/sin relación con/.test(text) && /sin ninguna garantía/.test(text), 'not-affiliated and no-warranty notice')

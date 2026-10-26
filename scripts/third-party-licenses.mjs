@@ -35,6 +35,8 @@ const COMPONENTS = [
   ['cburnett piece set (in chessground)', 'Colin M.L. Burnett', 'GPL-2.0-or-later (used under GPL-3.0)', 'https://en.wikipedia.org/wiki/User:Cburnett', 'piece images'],
   ['chess.js', 'Jeff Hlywa', 'BSD-2-Clause', 'https://github.com/jhlywa/chess.js', 'chess rules (bundled)'],
   ['onnxruntime-web', 'Microsoft Corporation', 'MIT', 'https://github.com/microsoft/onnxruntime', 'runs Maia (bundled + vendor/ort/)'],
+  ['Opening book (book/lichess-2300-slow-v1.bin)', 'built for jquads (scripts/book/build_book.py) from Lichess games', 'CC0-1.0 (as its source, the Lichess game database)', 'https://database.lichess.org/', 'Polyglot book: rated games, both players 2300+, rapid and classical'],
+  ['Polyglot Random64 numbers (src/book/polyglotRandom.ts)', 'Polyglot book format; copied from python-chess', 'GPL-3.0 (python-chess)', 'https://github.com/niklasf/python-chess', 'position keys to look positions up in the book'],
 ]
 
 const SERVICES = [

@@ -124,14 +124,18 @@ export function formatScore(score: Score, decimals = 2): string {
 /**
  * "Δ eval" of the Maia column (José, iteration 5): how much worse a move is
  * than the best one, in pawns with one decimal — |eval(best) − eval(move)| —
- * after a down arrow: "↓1.6".
+ * after a down arrow: "↓1.6". Nothing lost → plain "0.0", no arrow (José,
+ * 2026-10-26).
  * Both scores from White's point of view, as Stockfish gives them.
- * With mates there is no pawn difference: "↓0.0" if both mate for the same side
+ * With mates there is no pawn difference: "0.0" if both mate for the same side
  * (only the distance changes), "↓M" if the move gains or loses a mate.
  */
 export function deltaEval(best: Score, move: Score): string {
-  if (best.mate === undefined && move.mate === undefined) return `↓${(Math.abs((best.cp ?? 0) - (move.cp ?? 0)) / 100).toFixed(1)}`
-  if (best.mate !== undefined && move.mate !== undefined && Math.sign(best.mate) === Math.sign(move.mate)) return '↓0.0'
+  if (best.mate === undefined && move.mate === undefined) {
+    const pawns = (Math.abs((best.cp ?? 0) - (move.cp ?? 0)) / 100).toFixed(1)
+    return pawns === '0.0' ? pawns : `↓${pawns}`
+  }
+  if (best.mate !== undefined && move.mate !== undefined && Math.sign(best.mate) === Math.sign(move.mate)) return '0.0'
   return '↓M'
 }
 

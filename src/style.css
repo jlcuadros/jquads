@@ -255,3 +255,8 @@ html, body { overflow-x: hidden; }
 #favDownload { margin: 0 0 6px; }
 /* Lichess | Chess.com | 💾: one line each, also "💾 Сохранить" (Russian wrapped to two lines) */
 .games-sites .tab { white-space: nowrap; padding-left: 2px; padding-right: 2px; }
+
+/* Opening book (iteration 6): 📖 next to book moves in the columns, and the book line at the start of the text */
+.book-mark { font-size: 0.7em; margin-left: 2px; vertical-align: 1px; }
+.book-line { margin-bottom: 6px; }
+.book-line small { color: var(--muted); }

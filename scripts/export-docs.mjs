@@ -19,6 +19,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const NOTES = [
   ['app.md', 'ARCHITECTURE.md', '../'],
   ['scripts/scripts.md', 'SCRIPTS.md', '../scripts/'],
+  ['scripts/book/book.md', 'BOOK.md', '../scripts/book/'],
 ]
 
 /** Anything that must never be published. */

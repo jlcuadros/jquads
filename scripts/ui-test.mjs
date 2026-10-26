@@ -135,7 +135,7 @@ const cols = () => page.evaluate(() => ({
   sfEval: [...document.querySelectorAll('#sfCol tr[data-move] td:last-child')].map((t) => t.textContent),
 }))
 let c = await cols()
-const colsOk = c.maiaHead[1] === 'Δ eval' && c.deltas.every((d) => /^↓(\d+\.\d|M)$/.test(d)) && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
+const colsOk = c.maiaHead[1] === 'Δ eval' && c.deltas.every((d) => /^(0\.0|↓(\d+\.\d|M))$/.test(d)) && !c.deltas.includes('↓0.0') && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
   c.sfHead[0].startsWith('SF') && c.sfHead[1] === 'Maia' && c.sfMid.every((p) => /^\d+%$/.test(p)) && c.sfEval.every((e) => /^([+−]?\d+\.\d|[+−]M\d+)$/.test(e))
 console.log(`${colsOk ? 'OK  ' : 'FAIL'} middle columns: ${JSON.stringify(c)}`)
 await page.click('#menu'); await page.uncheck('#showDeltaCol'); await page.uncheck('#showMaiaCol'); await page.click('#menu')

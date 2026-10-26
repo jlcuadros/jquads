@@ -22,6 +22,8 @@ or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
 - **Online endgame tables** (Lichess Syzygy, ≤ 7 pieces): exact results ("+M12" / "−M20") instead of Stockfish.
 - **Your games from Lichess or Chess.com** (no login, just the username): newest first, filters by
   speed and date, favourites on the device; a game opens with the board on your side.
+- **Opening book** (📖): what players rated 2300+ play on Lichess in rapid and classical games, with
+  percentages and number of games; built for this app (see [docs/BOOK.md](docs/BOOK.md)).
 - **Save the game on the board** in the favourites (editable PGN headers, variations kept);
   the favourites are kept as a PGN file and can be downloaded in one `.pgn`.
 - Settings: Maia rating, depths, hash memory, light classic Stockfish, number of lines.
@@ -67,6 +69,10 @@ Browser end-to-end tests (Playwright, WebKit emulating an iPhone) are described 
   [onnxruntime-web](https://github.com/microsoft/onnxruntime) (MIT).
 - [Lichess public API](https://lichess.org/api): a user's games and the Syzygy endgame tablebase.
 - [Chess.com published-data API](https://www.chess.com/news/view/published-data-api): a user's games.
+- Opening book: built for this app from games of the [Lichess database](https://database.lichess.org/)
+  (CC0) — both players rated 2300+, rapid and classical; the book is CC0 too ([docs/BOOK.md](docs/BOOK.md)).
+  Book lookups use the Polyglot format's Random64 numbers, taken from
+  [python-chess](https://github.com/niklasf/python-chess) (GPL-3.0).
 
 The full licence texts of the shipped components are generated into `licenses.txt`
 (`scripts/third-party-licenses.mjs`), linked from ⚙ → Credits and licences.

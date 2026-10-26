@@ -19,6 +19,8 @@ Node scripts for the app: **build helpers** (`copy-vendor` copies the engine fil
 | ------ | ------------ | -------------- |
 | [copy-vendor.mjs](../scripts/copy-vendor.mjs) | Copies `sf17-79.*`, `sfhce.*` (Stockfish) and `ort-wasm-simd-threaded.*` (onnxruntime) from `node_modules` into `public/vendor/` | Automatic with `npm run dev` / `npm run build` |
 | [third-party-licenses.mjs](../scripts/third-party-licenses.mjs) | Writes `public/licenses.txt`: components (author, licence, URL, use), online services and the full licence texts (AGPL-3.0, GPL-3.0, MIT, BSD-2), each once | Automatic with `npm run dev` / `npm run build` (after copy-vendor) |
+| [book-test.mjs](../scripts/book-test.mjs) | Tests the **opening book**: file served, text starting with "📖 Libro (2300+, rápidas y clásicas): e4 …% · d4 …% … — N partidas", 📖 marks in both columns, no overflow, no book out of the opening (FEN), ⚙ off/on, downloaded once. 8 checks | After changing the book or how it is shown |
+| [book/](../scripts/book/) | **Python**: builds the opening book from Lichess games → book | When the book must be rebuilt |
 | [save-test.mjs](../scripts/save-test.mjs) | Tests **📂 → 💾 Guardar** and **⬇ Descargar PGN** (no network): moves + variation by tapping squares, header form, save/update favourite, local PGN, share sheet (simulated) and plain download, reopening keeps headers and variation, new game → new favourite. 18 checks | After changing saving, favourites or PGN |
 | [credits-test.mjs](../scripts/credits-test.mjs) | Tests ⚙ → **Créditos y licencias**: footer link opens it, every component/licence named, not-affiliated/no-warranty notice, `licenses.txt` served with the 4 texts. 5 checks, screenshot `credits.png` | After changing the credits or the dependencies |
 | [ui-test.mjs](../scripts/ui-test.mjs) | Tests **the app** (`index.html`) in WebKit emulating an **iPhone 13**: waits for the full analysis, plays Maia's first move, waits for the threats, goes back (checks the cache) and saves 2 screenshots. Fails straight away if the engines don't load. Since iteration 6 (2026-10-26): top bar modes (default "Solo barra", both, moves, off), middle columns ("↓x.x", Maia %, eval with one decimal) and hiding them — 13 checks | After changing the interface. The screenshots are copied to `__Attachment__` to document the design |
@@ -49,6 +51,7 @@ Development and testing scripts only; none of them ships with the app.
 - `ui-test.mjs` passed in WebKit/iPhone 13 (2026-10-25): full analysis in 12.7 s on the first visit, going back via the cache in 54 ms.
 - `credits-test.mjs` passed **in production** 5/5 (2026-10-25).
 - `games-test.mjs` (Lichess + Chess.com) passed **in production** 20/20 (2026-10-25).
+- `i18n-test.mjs` waits 0.7 s before each tap on ⚙: in WebKit's iPhone emulation a tap on ⚙ less than ~0.5 s after tapping the help's title fires no click (traced 2026-10-26). It also waits for the opening book's line before reading the texts.
 - `save-test.mjs` passed 18/18 (2026-10-25). Headless WebKit has `navigator.share` but no sheet to answer it: the test replaces `navigator.share` to capture the file, then disables it to test the download.
 - `curl` against the Chess.com API needs a `User-Agent` header, or Cloudflare answers 403 (browsers always send one).
 - `ui-test`, `editor-test`, `tablebase-test` and `credits-test` run with a **Spanish device** (`locale: 'es-ES'`) because they look for Spanish texts; `i18n-test` covers the other languages.
@@ -70,6 +73,8 @@ node scripts/games-test.mjs http://localhost:4173 <screenshots-folder>
 node scripts/i18n-test.mjs http://localhost:4173 <screenshots-folder>
 # endgame tables:
 node scripts/tablebase-test.mjs http://localhost:4173 <screenshots-folder>
+# opening book:
+node scripts/book-test.mjs http://localhost:4173 <screenshots-folder>
 # save the current game + download the favourites:
 node scripts/save-test.mjs http://localhost:4173 <screenshots-folder>
 # credits and licence texts:
