@@ -25,8 +25,9 @@ or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
   inaccuracy / mistake, evaluation before → after, typical or rare for the chosen rating).
 - **Position editor** (full screen), FEN loading, PGN export (variations and comments), "open in Lichess".
 - **Variations**: playing another move asks "new variation" or "overwrite"; ▶ asks which continuation to
-  follow; 📜 shows the whole game large (variations, comments) and jumps to a tapped move. Moves in the
-  list carry a mark: colour = quality, ● / ■ / ◆ = how hard the good move was to find. PGN comments are
+  follow; 📜 shows the whole game large (variations, comments) and jumps to a tapped move. Every move shown
+  carries the same code: colour = quality (Stockfish), shape = how likely it is for the chosen rating
+  (Maia: ● ≥ 25 %, ■ 10–25 %, ▲ < 10 %). PGN comments are
   shown with ✏️.
 - **Online endgame tables** (Lichess Syzygy, ≤ 7 pieces): exact results ("+M12" / "−M20") instead of Stockfish.
 - **Your games from Lichess or Chess.com** (no login, just the username): newest first, filters by

@@ -78,7 +78,8 @@ flowchart LR
 | [public/_headers](../public/_headers) | COOP/COEP headers for Cloudflare Pages (production: https://jquads.pages.dev) |
 | `public/vendor/` | Engine files copied from `node_modules` by `copy-vendor` (generated, not edited by hand) |
 | `public/book/lichess-2300-slow-v1.bin` / `.json` | **Opening book** (iteration 6): Polyglot, 5.49 MB, Lichess games with both players 2300+, rapid and classical; the JSON says how it was built. Made with `scripts/book/` → book |
-| [src/analysis/moveMarks.ts](../src/analysis/moveMarks.ts) | **Pure**: mark of a move in the strip / game view — colour = quality (`judgePreviousMove`), shape = findability of the good moves (● ≥ 70 %, ■ 30–70 %, ◆ < 30 %, `goodMoveFindability` in `describe.ts`) |
+| [src/analysis/likelihood.ts](../src/analysis/likelihood.ts) | **Icon code** used everywhere: shape = Maia's probability of the move — ● ≥ 25 %, ■ 10–25 %, ▲ < 10 % (`shapeOf`, `probOf`; the only place with these thresholds) |
+| [src/analysis/moveMarks.ts](../src/analysis/moveMarks.ts) | **Pure**: mark of a move in the strip / game view — colour = quality (`judgePreviousMove`), shape = how likely the played move was (`likelihood.ts`) |
 | [src/ui/choice.ts](../src/ui/choice.ts) | Small choice dialog (variations: new / overwrite / cancel; ▶ with several continuations) |
 | [src/ui/gameView.ts](../src/ui/gameView.ts) | 📜 full-screen view of the whole game (variations, comments, marks; tap a move to go there) |
 | [src/analysis/previousMove.ts](../src/analysis/previousMove.ts) | **Pure**: summary of the move that led to the position (best / good / inaccuracy / mistake / missed or allowed mate, "típico"/"raro" for the rating from Maia ≥ 10 % / < 2 %), from the previous position's cached analysis (`Analyzer.cached`) |

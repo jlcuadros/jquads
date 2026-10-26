@@ -1,22 +1,19 @@
 /**
- * Marks in the move strip (José, 2026-10-26): for every move whose previous
- * position was analysed, a small shape before the move —
+ * Marks in the move strip and the whole-game view (José, 2026-10-26): for
+ * every move whose previous position was analysed, a small marker before the
+ * move with the same code as everywhere else —
  *   - colour: the move's quality (the colour code, as in the columns);
- *   - shape: how findable the good moves were there for a player of the
- *     selected Elo — circle easy (≥ 70 %), square not obvious (30–70 %),
- *     diamond hard (< 30 %).
+ *   - shape: how likely Maia (selected Elo) was to play it there —
+ *     ● ≥ 25 %, ■ 10–25 %, ▲ < 10 % (analysis/likelihood.ts).
  * Only on screen: they are never written into the PGN.
  */
 import { judgePreviousMove } from './previousMove'
-import { goodMoveFindability, type Findability } from './describe'
+import { probOf, shapeOf, type Shape } from './likelihood'
 import type { ClassifiedMove, Score } from './classify'
-
-export type MarkShape = 'circle' | 'square' | 'diamond'
-const SHAPES: Record<Findability, MarkShape> = { easy: 'circle', medium: 'square', hard: 'diamond' }
 
 export interface MoveMark {
   color: string
-  shape: MarkShape
+  shape: Shape
 }
 
 /**
@@ -32,6 +29,5 @@ export function moveMark(
 ): MoveMark | undefined {
   const v = judgePreviousMove({ uci, san: '', whiteMoved, elo: 0, inBook: false, prev, currentBest })
   if (!v || !prev) return undefined
-  const shape = prev.policy?.length ? SHAPES[goodMoveFindability(prev.policy, prev.classified).level] : 'circle'
-  return { color: v.color, shape }
+  return { color: v.color, shape: shapeOf(probOf(prev.policy, uci)) ?? 'circle' }
 }

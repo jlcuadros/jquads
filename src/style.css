@@ -131,11 +131,14 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
   background: var(--chip, transparent); border: 1px solid #0003; margin-right: 3px; vertical-align: 0.05em;
 }
 .move-chip.plain::before { display: none; }
-/* Threats line: triangles instead of dots (José, 2026-10-25), so the two
-   lines are told apart at a glance. Drawn with the CSS border trick (a 0×0 box
-   whose bottom border is the colour) so that drop-shadow can outline it: the
-   palest yellow would otherwise vanish on a light background. */
-#meterThreats .move-chip::before {
+/* Shape = how likely the move is for the selected Elo (José, 2026-10-26):
+   ● circle (default) ≥ 25 %, ■ square 10–25 %, ▲ triangle < 10 %. The same code
+   for the move markers (::before) and the strip / game-view marks (.mark).
+   The triangle uses the CSS border trick (a 0×0 box whose bottom border is the
+   colour) so that drop-shadow can outline it: the palest yellow would
+   otherwise vanish on a light background (seen with the threats, 2026-10-25). */
+.move-chip.shape-square::before, .mark.shape-square { border-radius: 0; }
+.move-chip.shape-triangle::before, .mark.shape-triangle {
   width: 0; height: 0; background: none; border-radius: 0;
   border-left: 0.36em solid transparent;
   border-right: 0.36em solid transparent;
@@ -267,10 +270,8 @@ html, body { overflow-x: hidden; }
 .side-icon { margin-right: 1px; }
 .side-text { margin-bottom: 6px; }
 
-/* Move marks (strip and game view, 2026-10-26): colour = quality, shape = how findable the good moves were */
-.mark { display: inline-block; width: 0.5em; height: 0.5em; margin-right: 3px; vertical-align: 0.1em; background: var(--mark); border: 1px solid rgba(0, 0, 0, 0.3); }
-.mark-circle { border-radius: 50%; }
-.mark-diamond { transform: rotate(45deg) scale(0.85); }
+/* Move marks (strip and game view, 2026-10-26): colour = quality, shape = how likely (see the shapes above) */
+.mark { display: inline-block; width: 0.5em; height: 0.5em; margin-right: 3px; vertical-align: 0.1em; background: var(--chip); border: 1px solid rgba(0, 0, 0, 0.3); border-radius: 50%; }
 /* The whole game (📜) */
 .pgn-view { font-size: 1.15rem; line-height: 1.9; }
 .pgn-view .pv-about { color: var(--muted); font-size: 0.9rem; margin-bottom: 8px; }

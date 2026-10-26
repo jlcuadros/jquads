@@ -59,7 +59,7 @@ check(['first', 'gameViewBtn', 'last'].every((id) => w[id] < w.prev / 2), `⏮ �
 await page.tap('#positionBtn'); await page.tap('#newGame'); await analysed()
 await tapSquare('e2'); await tapSquare('e4'); await analysed()
 const mark = await page.evaluate(() => document.querySelector('#moves .mv .mark')?.className)
-check(/mark-(circle|square|diamond)/.test(mark ?? ''), `mark on 1.e4 in the strip: "${mark}"`)
+check(/shape-(circle|square|triangle)/.test(mark ?? ''), `mark on 1.e4 in the strip: "${mark}"`)
 await tapSquare('e7'); await tapSquare('e5'); await analysed()
 
 // 3. Back to after 1. e4 and play 1... c5 → "Variante nueva".

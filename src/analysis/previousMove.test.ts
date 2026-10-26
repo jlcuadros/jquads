@@ -20,26 +20,26 @@ function input(uci: string, scores: Record<string, Score>, extra: Partial<Previo
 }
 
 describe('describePreviousMove (José\'s short wording, 2026-10-26)', () => {
-  it('a mistake, typical of the rating (Maia ≥ 10 %)', () => {
+  it('a mistake, typical of the rating (Maia ≥ 25 %, ●)', () => {
     const i = input('f3e5', { d2d4: { cp: 50 }, f3e5: { cp: -300 } })
-    i.prev!.policy = [{ uci: 'f3e5', prob: 0.18 }]
+    i.prev!.policy = [{ uci: 'f3e5', prob: 0.3 }]
     expect(text(describePreviousMove(i))).toBe('Con [12.♘e5] las blancas cometieron un error: pasaron de +0.5 a −3.0. Un error típico de 1500.')
   })
-  it('a mistake by Black, rare for the rating (Maia < 2 %)', () => {
+  it('a mistake by Black, rare for the rating (Maia < 10 %, ▲)', () => {
     const i = input('d8h4', { e7e5: { cp: -30 }, d8h4: { cp: 210 } }, { san: '12…♛h4', whiteMoved: false })
     i.prev = { classified: classifyMoves(new Map(Object.entries({ e7e5: { cp: -30 }, d8h4: { cp: 210 } })), false), policy: [{ uci: 'd8h4', prob: 0.01 }] }
     expect(text(describePreviousMove(i))).toBe('Con [12…♛h4] las negras cometieron un error: pasaron de −0.3 a +2.1. Un error raro para 1500.')
   })
-  it('an inaccuracy; Maia between 2 and 10 % says nothing about the level', () => {
+  it('an inaccuracy; Maia between 10 and 25 % (■) says nothing about the level', () => {
     // (+0.6 → +0.2 would be "good": only ~4 % of win probability lost; an inaccuracy is 5–10 %.)
     const i = input('h2h3', { d2d4: { cp: 60 }, h2h3: { cp: -10 } }, { san: '8.h3' })
-    i.prev!.policy = [{ uci: 'h2h3', prob: 0.05 }]
+    i.prev!.policy = [{ uci: 'h2h3', prob: 0.15 }]
     expect(text(describePreviousMove(i))).toBe('Con [8.h3] las blancas cometieron una imprecisión: de +0.6 a −0.1.')
   })
   it('good, best, and book moves', () => {
     expect(text(describePreviousMove(input('f1e2', { d2d4: { cp: 40 }, f1e2: { cp: 30 } }, { san: '8.♗e2' })))).toBe('[8.♗e2] fue buena jugada (+0.4 → +0.3).')
     expect(text(describePreviousMove(input('f1e2', { f1e2: { cp: 40 }, d2d4: { cp: 30 } }, { san: '8.♗e2', inBook: true })))).toBe(
-      '[8.♗e2] fue la mejor jugada (+0.4 → +0.4). Jugada de libro 📖.',
+      '[8.♗e2] fue la mejor jugada (+0.4). Jugada de libro 📖.', // the best move: one evaluation
     )
   })
   it('mates, with the same rules as Δ eval', () => {

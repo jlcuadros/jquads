@@ -4,7 +4,8 @@
  * position), always (good moves too), short (José's wording). Examples (Spanish):
  *   "Con 12.♘e5 las blancas cometieron un error: pasaron de +0.5 a −3.0. Un error típico de 1500."
  *   "Con 8.h3 las blancas cometieron una imprecisión: de +0.6 a +0.2."
- *   "8.♗e2 fue la mejor jugada (+0.4 → +0.3). Jugada de libro 📖."
+ *   "8.♗e2 fue la mejor jugada (+0.4). Jugada de libro 📖." (the best move: one
+ *   evaluation, before = after — José, 2026-10-26)
  *
  * Data, only from what was already analysed (no extra engine work):
  *   - the previous position's analysis (cached when you go move by move):
@@ -20,6 +21,7 @@
  */
 import { bestScore, classify, formatScore, moverWinProb, PALETTE, type ClassifiedMove, type MoveClass, type Score } from './classify'
 import type { Segment } from './describe'
+import { LIKELY_PROB, POSSIBLE_PROB } from './likelihood'
 import { t, type MessageKey } from '../i18n/i18n'
 
 export interface PreviousMoveInput {
@@ -38,9 +40,12 @@ export interface PreviousMoveInput {
   currentBest?: Score
 }
 
-/** Maia probability thresholds for "typical" / "rare" at that rating (agreed with José). */
-export const TYPICAL_PROB = 0.1
-export const RARE_PROB = 0.02
+/**
+ * "Typical" / "rare" at that rating follow the icon code (José, 2026-10-26):
+ * typical = ● (Maia ≥ 25 %), rare = ▲ (< 10 %); in between (■) nothing is said.
+ */
+export const TYPICAL_PROB = LIKELY_PROB
+export const RARE_PROB = POSSIBLE_PROB
 
 export type PreviousMoveKind = 'best' | 'good' | 'ok' | 'blunder' | 'missedMate' | 'allowedMate'
 

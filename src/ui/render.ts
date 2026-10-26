@@ -14,6 +14,7 @@ import type { EngineLine } from '../stockfish/stockfishClient'
 import type { GameTree, MoveNode } from '../game/tree'
 import { movetextTokens, type PgnHeaders } from '../game/pgn'
 import { moveMark, type MoveMark } from '../analysis/moveMarks'
+import { probOf, shapeOf, type Shape } from '../analysis/likelihood'
 import { formatSan, type Notation } from '../game/notation'
 import { tbLabel, tbPositionScore } from '../analysis/tablebase'
 import { getLang, t } from '../i18n/i18n'
@@ -67,12 +68,21 @@ export function sanOf(fen: string, uci: string): string {
   }
 }
 
-/** A move with its colour-code marker; clickable (plays the move). Hidden → "--", not clickable. */
-function chip(uci: string, san: string, color?: string): string {
+/**
+ * A move with its marker: colour = quality (Stockfish), shape = how likely a
+ * player of the selected Elo is to play it (● ≥ 25 %, ■ 10–25 %, ▲ < 10 %;
+ * analysis/likelihood.ts, José 2026-10-26). Clickable (plays the move).
+ * Hidden → "--", not clickable.
+ */
+function chip(uci: string, san: string, color?: string, shape?: Shape): string {
   const style = color ? ` style="--chip:${color}"` : ''
-  if (view.hideMoves) return `<span class="move-chip${color ? '' : ' plain'}"${style}>${HIDDEN}</span>`
-  return `<span class="move-chip${color ? '' : ' plain'}" data-move="${uci}"${style}>${figHtml(san)}</span>`
+  const cls = `move-chip${color ? '' : ' plain'} shape-${shape ?? 'circle'}`
+  if (view.hideMoves) return `<span class="${cls}"${style}>${HIDDEN}</span>`
+  return `<span class="${cls}" data-move="${uci}"${style}>${figHtml(san)}</span>`
 }
+
+/** Shape of `uci` from a side's Maia list. */
+const shapeIn = (side: SideAnalysis | undefined, uci: string) => shapeOf(probOf(side?.maia?.policy, uci))
 
 /** `data-move` attribute for a table row, omitted when moves are hidden. */
 const rowMove = (uci: string) => (view.hideMoves ? '' : ` data-move="${uci}"`)
@@ -115,7 +125,7 @@ export function renderMeter(side: SideAnalysis | null | undefined, emptyMsg: str
     `<div class="${cls}" style="width:${(frac * 100).toFixed(1)}%">${frac >= 0.12 ? label : ''}</div>`
 
   // Same moves Stockfish was asked to evaluate (shownMaiaMoves), so all have a colour.
-  const items = shownMaiaMoves(side.maia.policy).map((p) => `<span>${chip(p.uci, sanOf(side.fen, p.uci), side.classified.get(p.uci)?.color)} ${Math.round(p.prob * 100)}%</span>`)
+  const items = shownMaiaMoves(side.maia.policy).map((p) => `<span>${chip(p.uci, sanOf(side.fen, p.uci), side.classified.get(p.uci)?.color, shapeOf(p.prob))} ${Math.round(p.prob * 100)}%</span>`)
 
   return (
     bar(`${seg('blunder', blunder, `?? ${Math.round(blunder * 100)}%`)}${seg('ok', ok, `?! ${Math.round(ok * 100)}%`)}${seg('good', good, `✓ ${Math.round(good * 100)}%`)}`) +
@@ -125,7 +135,7 @@ export function renderMeter(side: SideAnalysis | null | undefined, emptyMsg: str
 
 /** Mark of a move (strip and full game view): coloured circle / square / diamond, or nothing. */
 export type MarkOf = (node: MoveNode) => MoveMark | undefined
-const markHtml = (m?: MoveMark) => (m ? `<span class="mark mark-${m.shape}" style="--mark:${m.color}"></span>` : '')
+const markHtml = (m?: MoveMark) => (m ? `<span class="mark shape-${m.shape}" style="--chip:${m.color}"></span>` : '')
 
 /** The previous position's data as the move judges need it (shared by the summary and the marks). */
 const prevData = (side?: SideAnalysis) =>
@@ -204,7 +214,7 @@ export function renderMaiaCol(side: SideAnalysis | undefined, elo: number, count
         .map((p) => {
           const c = side.classified.get(p.uci)
           const delta = best && c ? deltaEval(best, c.score) : ''
-          return `<tr${rowMove(p.uci)}><td>${chip(p.uci, sanOf(side.fen, p.uci), c?.color)}${bookMark(side.fen, p.uci)}</td>${midCell(view.deltaCol, delta)}<td class="num">${pct(p.prob)}</td></tr>`
+          return `<tr${rowMove(p.uci)}><td>${chip(p.uci, sanOf(side.fen, p.uci), c?.color, shapeOf(p.prob))}${bookMark(side.fen, p.uci)}</td>${midCell(view.deltaCol, delta)}<td class="num">${pct(p.prob)}</td></tr>`
         })
         .join('')
     : `<tr><td colspan="3">${t('panel.calculating')}</td></tr>`
@@ -227,7 +237,7 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
         const uci = l.pv[0]
         const m = tb.moves.find((x) => x.uci === uci)
         const label = m ? tbLabel(m.score, m.outcome, m.cursed) : ''
-        return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), side.classified.get(uci)?.color)}${bookMark(side.fen, uci)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${label}</td></tr>`
+        return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), side.classified.get(uci)?.color, shapeIn(side, uci))}${bookMark(side.fen, uci)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${label}</td></tr>`
       })
       .join('')
     // "TB" (tablebase) instead of the long name, so the 3 columns fit (iteration 5).
@@ -238,7 +248,7 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
         .map((l) => {
           const uci = l.pv[0]
           const c = side.classified.get(uci)
-          return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), c?.color)}${bookMark(side.fen, uci)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${formatScore(lineScoreOf(l), 1)}</td></tr>`
+          return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), c?.color, shapeIn(side, uci))}${bookMark(side.fen, uci)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${formatScore(lineScoreOf(l), 1)}</td></tr>`
         })
         .join('')
     : `<tr><td colspan="3">${t('panel.calculating')}</td></tr>`
@@ -264,7 +274,7 @@ export function renderBookLine(fen: string, a: PositionAnalysis | undefined): st
   const games = moves.reduce((s, m) => s + m.games, 0)
   const items = moves
     .filter((m) => m.share >= BOOK_MIN_SHARE)
-    .map((m) => `${chip(m.uci, sanOf(fen, m.uci), classified?.get(m.uci)?.color)} ${Math.round(m.share * 100)}%`)
+    .map((m) => `${chip(m.uci, sanOf(fen, m.uci), classified?.get(m.uci)?.color, a?.main.fen === fen ? shapeIn(a.main, m.uci) : undefined)} ${Math.round(m.share * 100)}%`)
     .join(' · ')
   const count = t('book.games', { n: games.toLocaleString(getLang()) })
   return `<div class="book-line">📖 <b>${t('book.title')}</b>: ${items} — ${count}</div>`
@@ -291,7 +301,8 @@ export interface PreviousMoveRef {
  * never hidden by 🙈 (it is on the board already) and not clickable (it was
  * played from the previous position).
  */
-const playedChip = (san: string, color: string) => `<span class="move-chip" style="--chip:${color}">${figHtml(san)}</span>`
+const playedChip = (san: string, color: string, shape?: Shape) =>
+  `<span class="move-chip shape-${shape ?? 'circle'}" style="--chip:${color}">${figHtml(san)}</span>`
 
 /** Summary of the previous move (José, 2026-10-26), the last paragraph of the text. */
 export function renderPreviousMove(ref: PreviousMoveRef | undefined, a: PositionAnalysis | undefined, elo: number): string {
@@ -309,7 +320,7 @@ export function renderPreviousMove(ref: PreviousMoveRef | undefined, a: Position
     currentBest: current && lineScoreOf(current),
   })
   if (!segs.length) return ''
-  return `<div class="prev-move">${sideIcon(ref.whiteMoved)}${segs.map((s) => ('text' in s ? s.text : playedChip(s.san, s.color))).join('')}</div>`
+  return `<div class="prev-move">${sideIcon(ref.whiteMoved)}${segs.map((s) => ('text' in s ? s.text : playedChip(s.san, s.color, shapeIn(prev, ref.uci)))).join('')}</div>`
 }
 
 /**
@@ -334,7 +345,7 @@ function renderEnginesText(a: PositionAnalysis | undefined, elo: number): string
     policy: m.maia.policy,
     san: (uci) => sanOf(m.fen, uci),
   })
-  const body = segs.map((s) => ('text' in s ? s.text : chip(s.move, s.san, s.color))).join('')
+  const body = segs.map((s) => ('text' in s ? s.text : chip(s.move, s.san, s.color, shapeIn(m, s.move)))).join('')
   // About the side to move: its pawn first.
   const icon = sideIcon(m.fen.split(' ')[1] === 'w')
   return `<div class="side-text">${icon}${m.tb ? `<b>${t('panel.tbExact')}</b> ${body}` : body}</div>`

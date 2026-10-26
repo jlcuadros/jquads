@@ -105,7 +105,7 @@ const prevMove = (await page.textContent('#text .prev-move').catch(() => '')) ??
 // Order of the paragraphs (José, 2026-10-26): book, position, previous move.
 const order = await page.$$eval('#text > div', (ds) => ds.map((d) => d.className))
 console.log(`${order.join(',') === 'book-line,side-text,prev-move' ? 'OK  ' : 'FAIL'} text paragraphs in order: ${order.join(', ')}`)
-console.log(`${/^♙\uFE0E? 1\.\S+ fue (la mejor|buena) jugada \([+−]?\d\.\d → [+−]?\d\.\d\)\./.test(prevMove) ? 'OK  ' : 'FAIL'} previous move summary: "${prevMove}"`)
+console.log(`${/^♙\uFE0E? 1\.\S+ fue (la mejor jugada \([+−]?\d\.\d\)|buena jugada \([+−]?\d\.\d → [+−]?\d\.\d\))\./ /* the best move: one evaluation */.test(prevMove) ? 'OK  ' : 'FAIL'} previous move summary: "${prevMove}"`)
 // Every move shown in the bar legends must have been evaluated (coloured dot).
 const uncoloured = await page.locator('.meter-legend .move-chip.plain').allTextContents()
 console.log('legend moves without colour:', uncoloured.length ? uncoloured.join(' ') : 'none')
