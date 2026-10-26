@@ -17,6 +17,9 @@ export const en: Messages = {
   'set.depth': 'Stockfish depth',
   'set.threatDepth': 'Threats depth',
   'set.hash': 'Stockfish memory (hash)',
+  'btn.position': 'Position and game (FEN, editor, PGN)',
+  'set.sfThreads': 'Stockfish threads',
+  'set.sfThreads.cores': '({n} cores)',
   'set.variant': 'Stockfish version',
   'set.variant.sf17': '17 NNUE (stronger, ~80 MB)',
   'set.variant.sfhce': 'Classic (light, less accurate)',
@@ -48,7 +51,7 @@ export const en: Messages = {
   'set.exportPgn': 'Export PGN',
 
   'help.title': 'How to read the screen',
-  'help.top.html': '<b>Top line</b>: White’s winning chances according to Maia (red) and Stockfish’s evaluation with its depth (blue). <b>🙈</b> hides the moves (shown as «--») but keeps the evaluations, for training; while moves are hidden the button is <b>💡</b>: tap it to show them again.',
+  'help.top.html': '<b>Top line</b>: <b>📋</b> opens the position and the game (FEN, set up a position, new game, export PGN); then White’s winning chances according to Maia (red) and Stockfish’s evaluation (blue; its depth is in the «SF» column). <b>🙈</b> hides the moves (shown as «--») but keeps the evaluations, for training; while they are hidden the button is <b>💡</b>: tap it to see them again.',
   'help.arrows.html': '<b>Arrows</b>: red = most human move (Maia); blue = best move (Stockfish); orange = threat (the opponent’s best move if it were their turn). If red and blue coincide, the red one is drawn inside the blue one.',
   'help.bar1.html': '<b>1st bar — moves</b>: how Maia’s probability (what a human of that rating would play) splits between good moves ✓, inaccuracies ?! and blunders ??. In «Moves bar» choose bar and moves, bar only (default), moves only or hide it.',
   'help.bar2.html': '<b>2nd bar — threats</b>: the same for the opponent if it were their turn (as if the side to move passed). Not calculated when in check. It has an orange edge (the colour of the threat arrow) and its moves use coloured triangles instead of circles. In settings it can show bar and moves, moves only, or not be calculated.',

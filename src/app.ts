@@ -43,6 +43,12 @@ const DEPTHS = [10, 12, 14, 16, 18, 20, 22, 24]
 const THREAT_DEPTHS = [8, 10, 12, 14, 16]
 const HASH_SIZES = [16, 32, 64, 128, 256] // MB
 const LINE_COUNTS = [3, 4, 5, 6] // moves shown per engine column
+/**
+ * Cores the browser reports. Stockfish uses min(4, cores) threads by default
+ * (as before ⚙ had the option, 2026-10-26); ⚙ offers 1 … cores (at most 8).
+ */
+const CORES = Math.max(1, navigator.hardwareConcurrency || 1)
+const SF_THREADS = Array.from({ length: Math.min(8, CORES) }, (_, i) => i + 1)
 const DEFAULTS: AppSettings = {
   elo: 1500,
   depth: 18,
@@ -53,6 +59,7 @@ const DEFAULTS: AppSettings = {
   deltaCol: true, // "Δ eval" column in the Maia panel (iteration 5, can be hidden)
   maiaCol: true, // "Maia" % column in the Stockfish panel (iteration 5, can be hidden)
   hashMb: 16,
+  sfThreads: Math.min(4, CORES), // ⚙ (José, 2026-10-26)
   variant: 'sf17',
   notation: 'figurine', // iteration 4: chess figurines by default
   evalBar: true, // iteration 4: thin vertical evaluation bar beside the board
@@ -79,6 +86,7 @@ interface AppSettings extends Omit<Settings, 'threats'> {
   deltaCol: boolean // show "Δ eval" in the Maia panel
   maiaCol: boolean // show Maia's % in the Stockfish panel
   hashMb: number // Stockfish hash (shared by the main analysis and the threats)
+  sfThreads: number // Stockfish threads (Maia keeps min(4, cores))
   variant: StockfishVariant // changing it reloads the page
   notation: Notation // move notation: figurine (♘f3) or letters (Nf3)
   evalBar: boolean // show the vertical evaluation bar
@@ -126,6 +134,15 @@ let openingBook: PolyglotBook | null = null
 // a game made here) and its favourite id if it was saved with 📂 → 💾 Guardar.
 let gameHeaders: PgnHeaders = {}
 let savedId: string | undefined
+
+/** The panels under the top line: ⚙ settings and 📋 position/game. At most one is open. */
+type Panel = 'settings' | 'positionPanel'
+function showPanel(open: Panel | null) {
+  for (const id of ['settings', 'positionPanel'] as const) $(id).hidden = id !== open
+}
+function togglePanel(panel: Panel) {
+  showPanel($(panel).hidden ? panel : null)
+}
 
 /** A new game (editor, FEN, "Nueva partida"): forgets the headers and the saved favourite. */
 function startNewGame(next: GameTree) {
@@ -335,6 +352,8 @@ function setupControls() {
   fillSelect('depth', DEPTHS, settings.depth, (v) => String(v))
   fillSelect('threatDepth', THREAT_DEPTHS, settings.threatDepth, (v) => String(v))
   fillSelect('hashMb', HASH_SIZES, settings.hashMb, (v) => `${v} MB`)
+  fillSelect('sfThreads', SF_THREADS, Math.min(settings.sfThreads, CORES), (v) => String(v))
+  $('sfThreadsCores').textContent = t('set.sfThreads.cores', { n: CORES })
   $<HTMLSelectElement>('variant').value = settings.variant
   fillSelect('lines', LINE_COUNTS, settings.lines, (v) => String(v))
   $<HTMLSelectElement>('threatsMode').value = settings.threatsMode
@@ -375,7 +394,7 @@ function setupControls() {
   // 📂 Lichess / Chess.com games: open one at the initial position, board facing
   // the user whose username is set (José: "always oriented for that player").
   $('gamesBtn').onclick = () => {
-    $('settings').hidden = true
+    showPanel(null)
     analyzer.cancel()
     openGames({
       getUser: (site) => settings[USER_SETTING[site].key],
@@ -414,6 +433,7 @@ function setupControls() {
     saveSettings()
     setLang(settings.lang)
     applyStaticTranslations()
+    $('sfThreadsCores').textContent = t('set.sfThreads.cores', { n: CORES }) // generated text, not in the HTML
     $('hideMoves').title = t(hideMoves ? 'btn.show' : 'btn.hide')
     $('hideMoves').setAttribute('aria-label', $('hideMoves').title)
     retranslateEditor()
@@ -463,6 +483,14 @@ function setupControls() {
     saveSettings()
     analyzer.cancel()
     await stockfish.configure([`setoption name Hash value ${settings.hashMb}`]) // waits for the engine to be idle
+    positionChanged()
+  }
+  // Threads can change while the engine is loaded (UCI "Threads"), like the hash.
+  $('sfThreads').onchange = async (ev) => {
+    settings.sfThreads = Number((ev.target as HTMLSelectElement).value)
+    saveSettings()
+    analyzer.cancel()
+    await stockfish.configure([`setoption name Threads value ${settings.sfThreads}`])
     positionChanged()
   }
   // A different Stockfish build means loading another WASM module: simplest is a reload.
@@ -522,19 +550,20 @@ function setupControls() {
   // Footer link "Ver créditos: ⚙ > Créditos y licencias": open ⚙ with the credits unfolded.
   $('openCredits').onclick = (e) => {
     e.preventDefault()
-    $('settings').hidden = false
+    showPanel('settings')
     $<HTMLDetailsElement>('creditsDetails').open = true
     $('creditsDetails').scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
-  $('menu').onclick = () => {
-    const s = $('settings')
-    s.hidden = !s.hidden
+  $('menu').onclick = () => togglePanel('settings')
+  // 📋 Position and game (José, 2026-10-26): FEN, editor, new game, PGN.
+  $('positionBtn').onclick = () => {
     $<HTMLInputElement>('fenInput').value = tree.current.fen
+    togglePanel('positionPanel')
   }
   // Position editor (full screen): starts from the current position; "Analizar"
   // starts a new game from the edited position, like "Cargar FEN".
   $('editPosition').onclick = () => {
-    $('settings').hidden = true
+    showPanel(null)
     analyzer.cancel() // no engine work while editing
     openEditor(tree.current.fen, orientation, (fen) => {
       startNewGame(new GameTree(fen))
@@ -544,7 +573,7 @@ function setupControls() {
   $('loadFen').onclick = () => {
     try {
       startNewGame(new GameTree($<HTMLInputElement>('fenInput').value.trim()))
-      $('settings').hidden = true
+      showPanel(null)
       positionChanged()
     } catch {
       alert(t('msg.invalidFen'))
@@ -552,7 +581,7 @@ function setupControls() {
   }
   $('newGame').onclick = () => {
     startNewGame(new GameTree())
-    $('settings').hidden = true
+    showPanel(null)
     positionChanged()
   }
 
@@ -583,11 +612,10 @@ async function loadEngines() {
     status.innerHTML = `${t('msg.loading', { pct: Math.round(total * 100) })} <progress value="${total}"></progress>`
   }
   show()
-  const threads = Math.min(4, navigator.hardwareConcurrency || 1)
   try {
     await Promise.all([
-      maia.init(threads, (f) => ((progress.maia = f), show())),
-      stockfish.init(settings.variant, threads, settings.hashMb, (f) => ((progress.sf = f), show())),
+      maia.init(Math.min(4, CORES), (f) => ((progress.maia = f), show())),
+      stockfish.init(settings.variant, Math.min(settings.sfThreads, CORES), settings.hashMb, (f) => ((progress.sf = f), show())),
     ])
     status.textContent = ''
     enginesReady = true

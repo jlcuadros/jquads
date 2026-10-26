@@ -27,6 +27,9 @@ export const es = {
   'set.depth': 'Profundidad Stockfish',
   'set.threatDepth': 'Profundidad amenazas',
   'set.hash': 'Memoria Stockfish (hash)',
+  'btn.position': 'Posición y partida (FEN, editor, PGN)',
+  'set.sfThreads': 'Hilos de Stockfish',
+  'set.sfThreads.cores': '({n} núcleos)',
   'set.variant': 'Versión Stockfish',
   'set.variant.sf17': '17 NNUE (más fuerte, ~80 MB)',
   'set.variant.sfhce': 'Clásico (ligero, menos preciso)',
@@ -59,7 +62,7 @@ export const es = {
 
   // --- Help -------------------------------------------------------------------
   'help.title': 'Cómo se lee la pantalla',
-  'help.top.html': '<b>Línea de arriba</b>: probabilidad de que ganen las blancas según Maia (rojo) y evaluación de Stockfish con su profundidad (azul). <b>🙈</b> oculta las jugadas (salen como «--») pero deja las evaluaciones, para entrenar; con las jugadas ocultas el botón es <b>💡</b>: púlsalo para volver a verlas.',
+  'help.top.html': '<b>Línea de arriba</b>: <b>📋</b> abre la posición y la partida (FEN, introducir posición, nueva partida, exportar PGN); luego la probabilidad de que ganen las blancas según Maia (rojo) y la evaluación de Stockfish (azul; su profundidad está en la columna «SF»). <b>🙈</b> oculta las jugadas (salen como «--») pero deja las evaluaciones, para entrenar; con las jugadas ocultas el botón es <b>💡</b>: púlsalo para volver a verlas.',
   'help.arrows.html': '<b>Flechas</b>: roja = jugada más humana (Maia); azul = mejor jugada (Stockfish); naranja = amenaza (la mejor jugada del rival si le tocara mover). Si la roja y la azul coinciden, la roja va dentro de la azul.',
   'help.bar1.html': '<b>1ª barra — jugadas</b>: cómo se reparte la probabilidad de Maia (lo que jugaría un humano de ese Elo) entre jugadas buenas ✓, imprecisiones ?! y errores ??. En «Barra de jugadas» se elige barra y jugadas, solo barra (por defecto), solo jugadas o no mostrarla.',
   'help.bar2.html': '<b>2ª barra — amenazas</b>: lo mismo para el rival si le tocara mover a él (como si el bando que mueve pasara turno). No se calcula si hay jaque. Va marcada con un borde naranja (el color de la flecha de amenaza) y sus jugadas llevan triángulos de color en vez de círculos. En ajustes se puede ver como barra y jugadas, solo las jugadas, o no calcularla.',

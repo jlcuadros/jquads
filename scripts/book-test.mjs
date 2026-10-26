@@ -51,7 +51,7 @@ check(!s.overflow, 'no horizontal overflow with the 📖 marks')
 await page.screenshot({ path: `${outDir}/book-01-start.png`, fullPage: true })
 
 // 3. Out of the book: a middlegame position by FEN.
-await page.click('#menu')
+await page.click('#positionBtn') // 📋: FEN, editor, new game, PGN (moved out of ⚙, 2026-10-26)
 await page.fill('#fenInput', 'r1bq1rk1/pp2bppp/2n1pn2/3p4/2PP4/2N1PN2/P3BPPP/R1BQ1RK1 w - - 0 9')
 await page.click('#loadFen')
 await page.waitForFunction(() => document.getElementById('meterMain').dataset.done === 'true', null, { timeout: 120_000 })
@@ -59,7 +59,7 @@ s = await state()
 check(!s.bookLine && s.maiaMarks === 0 && s.sfMarks === 0, `out of the book: no line, no marks (${JSON.stringify(s)})`)
 
 // 4. Turn the book off and on (back at the start position).
-await page.click('#menu'); await page.click('#newGame')
+await page.click('#positionBtn'); await page.click('#newGame')
 await page.waitForFunction(() => document.querySelector('#text .book-line'), null, { timeout: 60_000 })
 await page.click('#menu'); await page.uncheck('#book'); await page.click('#menu')
 s = await state()

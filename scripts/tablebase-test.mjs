@@ -37,7 +37,7 @@ check(tbRequests.length === 0, `start position (32 pieces): ${tbRequests.length}
 
 // K+R vs K.
 async function loadFen(fen) {
-  await page.click('#menu')
+  await page.click('#positionBtn') // 📋 (FEN moved out of ⚙, 2026-10-26)
   await page.fill('#fenInput', fen)
   await page.click('#loadFen')
   await analysed()

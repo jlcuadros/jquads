@@ -86,7 +86,7 @@ export function renderNumbers(a: PositionAnalysis | undefined): string {
   // "blancas" dropped to make room for the hide-moves button (iteration 4).
   const maia = m?.maia ? `Maia: ${Math.round(m.maia.whiteWinProb * 100)}%` : 'Maia: …'
   const best = m?.lines[0]
-  const sf = m?.tb ? `TB ${tbLabel(tbPositionScore(m.tb, m.fen), m.tb.outcome)}` : best ? `SF ${formatScore(lineScoreOf(best))} · d${m.depth}` : 'SF: …'
+  const sf = m?.tb ? `TB ${tbLabel(tbPositionScore(m.tb, m.fen), m.tb.outcome)}` : best ? `SF ${formatScore(lineScoreOf(best))}` : 'SF: …' // depth in the SF column's header (2026-10-26: room for 📋)
   return `<span class="maia">${maia}</span><span class="sf">${sf}</span>`
 }
 

@@ -17,6 +17,9 @@ export const de: Messages = {
   'set.depth': 'Stockfish-Tiefe',
   'set.threatDepth': 'Tiefe der Drohungen',
   'set.hash': 'Stockfish-Speicher (Hash)',
+  'btn.position': 'Stellung und Partie (FEN, Editor, PGN)',
+  'set.sfThreads': 'Stockfish-Threads',
+  'set.sfThreads.cores': '({n} Kerne)',
   'set.variant': 'Stockfish-Version',
   'set.variant.sf17': '17 NNUE (stärker, ~80 MB)',
   'set.variant.sfhce': 'Klassisch (leicht, weniger genau)',
@@ -48,7 +51,7 @@ export const de: Messages = {
   'set.exportPgn': 'PGN exportieren',
 
   'help.title': 'So liest man den Bildschirm',
-  'help.top.html': '<b>Obere Zeile</b>: Gewinnchance von Weiß laut Maia (rot) und Stockfish-Bewertung mit Suchtiefe (blau). <b>🙈</b> blendet die Züge aus (als «--») und lässt die Bewertungen stehen, zum Trainieren; bei ausgeblendeten Zügen ist der Knopf <b>💡</b>: antippen, um sie wieder zu sehen.',
+  'help.top.html': '<b>Obere Zeile</b>: <b>📋</b> öffnet Stellung und Partie (FEN, Stellung eingeben, neue Partie, PGN exportieren); dann Weiß’ Gewinnchancen laut Maia (rot) und Stockfishs Bewertung (blau; die Tiefe steht in der Spalte „SF“). <b>🙈</b> blendet die Züge aus (als „--“), lässt aber die Bewertungen stehen, zum Trainieren; solange sie ausgeblendet sind, ist der Knopf <b>💡</b>: antippen, um sie wieder zu sehen.',
   'help.arrows.html': '<b>Pfeile</b>: rot = menschlichster Zug (Maia); blau = bester Zug (Stockfish); orange = Drohung (bester Zug des Gegners, wenn er am Zug wäre). Fallen rot und blau zusammen, wird der rote im blauen gezeichnet.',
   'help.bar1.html': '<b>1. Leiste — Züge</b>: wie sich Maias Wahrscheinlichkeit (was ein Mensch dieser Wertung spielen würde) auf gute Züge ✓, Ungenauigkeiten ?! und Fehler ?? verteilt. Unter „Zugleiste“ wählst du Leiste und Züge, nur Leiste (Standard), nur Züge oder ausblenden.',
   'help.bar2.html': '<b>2. Balken — Drohungen</b>: dasselbe für den Gegner, wenn er am Zug wäre (als ob die Seite am Zug passen würde). Wird bei Schach nicht berechnet. Er hat einen orangen Rand (die Farbe des Drohungspfeils) und seine Züge haben farbige Dreiecke statt Kreisen. In den Einstellungen: Balken und Züge, nur Züge oder nicht berechnen.',

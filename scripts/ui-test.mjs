@@ -166,12 +166,27 @@ await page.click('#menu')
 
 // Export PGN: intercept the share sheet and check the text.
 await page.evaluate(() => { window.__shared = null; navigator.share = async (d) => { window.__shared = d.text } })
-await page.click('#menu')
+await page.click('#positionBtn') // 📋 (moved out of ⚙, 2026-10-26)
 await page.click('#exportPgn')
 await page.waitForFunction(() => window.__shared !== null, null, { timeout: 5000 }).catch(() => {})
 const pgn = await page.evaluate(() => window.__shared)
 console.log(`${pgn && pgn.includes('[Site "https://jquads.pages.dev"]') && /1\. e4/.test(pgn) ? 'OK  ' : 'FAIL'} export PGN: ${JSON.stringify((pgn ?? '').split('\n').pop() || pgn)}`)
-await page.click('#menu')
+await page.click('#positionBtn')
+
+// 📋 panel and Stockfish threads (José, 2026-10-26): 📋 first in the top line, FEN/editor/new
+// game/PGN in its panel and no longer in ⚙, no "· d18" in the top line, threads in ⚙
+// (1 … cores, max 8; default min(4, cores)).
+const layout = await page.evaluate(() => ({
+  first: document.querySelector('.infobar')?.firstElementChild?.id,
+  inSettings: document.querySelectorAll('#settings #exportPgn, #settings #fenInput, #settings #editPosition, #settings #newGame').length,
+  inPanel: document.querySelectorAll('#positionPanel #exportPgn, #positionPanel #fenInput, #positionPanel #editPosition, #positionPanel #newGame, #positionPanel #loadFen').length,
+  numbers: document.getElementById('numbers').textContent,
+  threads: [...document.querySelectorAll('#sfThreads option')].map((o) => o.value),
+  threadsValue: document.getElementById('sfThreads').value,
+  cores: navigator.hardwareConcurrency,
+}))
+const expectedDefault = String(Math.min(4, layout.cores))
+console.log(`${layout.first === 'positionBtn' && layout.inSettings === 0 && layout.inPanel === 5 && !/· d\d/.test(layout.numbers) && layout.threads.length === Math.min(8, layout.cores) && layout.threadsValue === expectedDefault ? 'OK  ' : 'FAIL'} 📋 panel and threads: ${JSON.stringify(layout)}`)
 
 // Back to the start: should come from the cache (instant).
 const t1 = Date.now()
@@ -180,20 +195,22 @@ await page.waitForFunction(() => document.getElementById('text').textContent.len
 console.log(`back to start (cached) in ${Date.now() - t1} ms`)
 
 /**
- * Opens ⚙ and makes sure it opened: in WebKit's iPhone emulation a tap on ⚙ is
- * sometimes delivered without a click (see i18n-test.mjs; traced 2026-10-26), so
+ * Opens a panel (its button: ⚙ or 📋) and makes sure it opened: in WebKit's iPhone emulation a
+ * tap is sometimes delivered without a click (see i18n-test.mjs; traced 2026-10-26), so
  * it retries after a pause. A person would simply tap again.
  */
-async function openSettings() {
-  for (let i = 0; i < 3 && (await page.isHidden('#settings')); i++) {
+async function openPanel(button, panel) {
+  for (let i = 0; i < 3 && (await page.isHidden(panel)); i++) {
     if (i) await page.waitForTimeout(700)
-    await page.click('#menu')
+    await page.click(button)
   }
 }
+/** 📋 Position and game (FEN, editor, new game, PGN; moved out of ⚙ on 2026-10-26). */
+const openPosition = () => openPanel('#positionBtn', '#positionPanel')
 
 // Δ eval with mates (José, 2026-10-26): Scholar's mate position, Qxf7# = +M1.
 // The mating move shows "0.0"; moves that give the mate away show "⇵" + their eval.
-await openSettings()
+await openPosition()
 await page.fill('#fenInput', 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4')
 await page.click('#loadFen')
 await page.waitForFunction(() => document.getElementById('meterMain').dataset.done === 'true', null, { timeout: 120_000 })
@@ -201,7 +218,7 @@ const mateRows = await page.$$eval('#maiaCol tr[data-move]', (trs) => trs.map((t
 const qxf7 = mateRows.find(([m]) => m === 'h5f7')
 console.log(`${qxf7?.[1] === '0.0' && mateRows.some(([m, d]) => m !== 'h5f7' && /^⇵[+−]?\d+\.\d$/.test(d)) ? 'OK  ' : 'FAIL'} Δ eval with a mate: ${JSON.stringify(mateRows)}`)
 await page.screenshot({ path: `${outDir}/07-delta-mate.png`, fullPage: true })
-await openSettings(); await page.click('#newGame')
+await openPosition(); await page.click('#newGame')
 
 
 await browser.close()

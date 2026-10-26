@@ -17,6 +17,9 @@ export const fr: Messages = {
   'set.depth': 'Profondeur Stockfish',
   'set.threatDepth': 'Profondeur menaces',
   'set.hash': 'Mémoire Stockfish (hash)',
+  'btn.position': 'Position et partie (FEN, éditeur, PGN)',
+  'set.sfThreads': 'Threads de Stockfish',
+  'set.sfThreads.cores': '({n} cœurs)',
   'set.variant': 'Version de Stockfish',
   'set.variant.sf17': '17 NNUE (plus fort, ~80 Mo)',
   'set.variant.sfhce': 'Classique (léger, moins précis)',
@@ -48,7 +51,7 @@ export const fr: Messages = {
   'set.exportPgn': 'Exporter PGN',
 
   'help.title': "Comment lire l'écran",
-  'help.top.html': "<b>Ligne du haut</b> : chances de gain des Blancs selon Maia (rouge) et évaluation de Stockfish avec sa profondeur (bleu). <b>🙈</b> masque les coups (affichés «--») mais garde les évaluations, pour s'entraîner ; quand les coups sont masqués le bouton devient <b>💡</b> : touchez-le pour les revoir.",
+  'help.top.html': '<b>Ligne du haut</b> : <b>📋</b> ouvre la position et la partie (FEN, saisir une position, nouvelle partie, exporter PGN) ; puis les chances de gain des Blancs selon Maia (rouge) et l’évaluation de Stockfish (bleu ; sa profondeur est dans la colonne « SF »). <b>🙈</b> masque les coups (affichés « -- ») mais garde les évaluations, pour s’entraîner ; quand ils sont masqués le bouton est <b>💡</b> : touchez-le pour les revoir.',
   'help.arrows.html': "<b>Flèches</b> : rouge = coup le plus humain (Maia) ; bleue = meilleur coup (Stockfish) ; orange = menace (le meilleur coup de l'adversaire si c'était à lui de jouer). Si la rouge et la bleue coïncident, la rouge est dessinée dans la bleue.",
   'help.bar1.html': '<b>1re barre — coups</b> : comment la probabilité de Maia (ce que jouerait un humain de ce classement) se répartit entre bons coups ✓, imprécisions ?! et gaffes ??. Dans « Barre des coups », choisissez barre et coups, barre seule (par défaut), coups seuls ou la masquer.',
   'help.bar2.html': "<b>2e barre — menaces</b> : la même chose pour l'adversaire si c'était à lui de jouer (comme si le camp au trait passait son tour). Non calculée en cas d'échec. Elle a un bord orange (la couleur de la flèche de menace) et ses coups portent des triangles de couleur au lieu de cercles. Dans les réglages : barre et coups, coups seulement, ou ne pas calculer.",

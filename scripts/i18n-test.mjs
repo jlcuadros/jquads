@@ -47,7 +47,7 @@ const EXPECT = {
   const ctx = await webkit.launchPersistentContext(join(tmpdir(), `maia-i18n-fr-${Date.now()}`), { ...devices['iPhone 13'], locale: 'fr-FR' })
   const page = await ctx.newPage()
   await page.goto(base)
-  await page.waitForSelector('#exportPgn', { state: 'attached' }) // inside the closed ⚙ panel
+  await page.waitForSelector('#exportPgn', { state: 'attached' }) // inside the closed 📋 panel
   check((await page.textContent('#exportPgn')) === 'Exporter PGN' && (await page.getAttribute('html', 'lang')) === 'fr',
     `French device → French by default ("${await page.textContent('#exportPgn')}", lang=${await page.getAttribute('html', 'lang')})`)
   await ctx.close()
@@ -77,8 +77,8 @@ for (const [lang, exp] of Object.entries(EXPECT)) {
   check(got.exportPgn === exp.exportPgn && got.evalHeader === exp.evalHeader && exp.textStart.some((start) => got.text.startsWith(start)) && got.book.startsWith(exp.book) && got.htmlLang === lang,
     `${lang}: "${got.exportPgn}" | "${got.evalHeader}" | "${got.book.slice(0, 40)}…" | "${got.text.slice(0, 50)}…"`)
   check(widths.doc <= widths.vp && widths.top, `${lang}: no overflow (page ${widths.doc}/${widths.vp} px, top line fits: ${widths.top})`)
-  // Editor texts (opened from ⚙ and cancelled).
-  await menu(page); await page.click('#editPosition')
+  // Editor texts (opened from 📋 and cancelled).
+  await page.click('#positionBtn'); await page.click('#editPosition')
   check((await page.textContent('#edApply')) === exp.editorApply, `${lang}: editor "${await page.textContent('#edApply')}"`)
   await page.screenshot({ path: `${outDir}/i18n-${lang}-editor.png` })
   await page.click('#edCancel')

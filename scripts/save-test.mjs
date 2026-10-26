@@ -46,7 +46,7 @@ const favRows = () => page.$$eval('#gamesList li', (lis) => lis.map((li) => ({ i
 const field = (k) => `#pgnh-${k}`
 
 // 1. A game with a variation.
-await page.tap('#menu'); await page.tap('#newGame')
+await page.tap('#positionBtn'); await page.tap('#newGame')
 await move('e2', 'e4'); await move('e7', 'e5'); await move('g1', 'f3')
 await page.tap('#moves .mv >> text=e4') // back to after 1. e4
 await move('c7', 'c5') // variation 1... c5
@@ -113,7 +113,7 @@ check(after.includes('1. e4 e5 (1... c5) 2. Nf3 1-0'), 'saving the reopened game
 
 // 7. New game → a new favourite.
 await page.tap('#gamesClose')
-await page.tap('#menu'); await page.tap('#newGame')
+await page.tap('#positionBtn'); await page.tap('#newGame')
 await move('d2', 'd4')
 await page.tap('#gamesBtn'); await page.tap('#site-save')
 check((await page.inputValue(field('White'))) === '?' && (await page.textContent('#saveGame')).includes('Guardar en favoritas'), 'new game: default headers, saves as a new favourite')

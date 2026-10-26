@@ -31,7 +31,8 @@ or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
   percentages and number of games; built for this app (see [docs/BOOK.md](docs/BOOK.md)).
 - **Save the game on the board** in the favourites (editable PGN headers, variations kept);
   the favourites are kept as a PGN file and can be downloaded in one `.pgn`.
-- Settings: Maia rating, depths, hash memory, light classic Stockfish, number of lines.
+- Settings: Maia rating, depths, hash memory, Stockfish threads, light classic Stockfish, number of lines.
+  📋 (first in the top line): FEN, position editor, new game, PGN export.
 
 ## How it works
 No server: Maia-3 runs as an ONNX model with `onnxruntime-web` in a Web Worker and Stockfish

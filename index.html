@@ -23,6 +23,8 @@
       <div class="board-col">
         <!-- One line: Maia win % + SF eval (numbers) + actions. Engine settings live in ⚙. -->
         <header class="infobar">
+          <!-- Position and game (José, 2026-10-26): FEN, editor, new game, PGN — moved out of ⚙ -->
+          <button id="positionBtn" data-i18n-title="btn.position" data-i18n-aria="btn.position">📋</button>
           <span id="numbers" class="numbers"></span>
           <!-- Hide moves (training): moves become "--", evaluations stay (iteration 4) -->
           <!-- Lichess games (José, 2026-10-25): list, filters, favourites -->
@@ -32,6 +34,17 @@
           <button id="lichess" data-i18n-title="btn.lichess" data-i18n-aria="btn.lichess">↗Li</button>
           <button id="menu" data-i18n-title="btn.menu" data-i18n-aria="btn.menu">⚙</button>
         </header>
+
+        <!-- Position and game panel (hidden until 📋 is tapped) -->
+        <div id="positionPanel" class="settings position-panel" hidden>
+          <label class="fen">FEN <input id="fenInput" type="text" spellcheck="false" autocapitalize="off" /></label>
+          <div class="settings-actions">
+            <button id="editPosition" data-i18n="set.editPosition">Introducir posición</button>
+            <button id="loadFen" data-i18n="set.loadFen">Cargar FEN</button>
+            <button id="newGame" data-i18n="set.newGame">Nueva partida</button>
+            <button id="exportPgn" data-i18n="set.exportPgn">Exportar PGN</button>
+          </div>
+        </div>
 
         <!-- Settings + help (hidden until ⚙ is tapped) -->
         <div id="settings" class="settings" hidden>
@@ -45,6 +58,8 @@
             <label><span data-i18n="set.depth">Profundidad Stockfish</span> <select id="depth"></select></label>
             <label><span data-i18n="set.threatDepth">Profundidad amenazas</span> <select id="threatDepth"></select></label>
             <label><span data-i18n="set.hash">Memoria Stockfish (hash)</span> <select id="hashMb"></select></label>
+            <!-- Stockfish threads (José, 2026-10-26); the hint says how many cores the browser reports -->
+            <label><span><span data-i18n="set.sfThreads">Hilos de Stockfish</span> <small id="sfThreadsCores"></small></span> <select id="sfThreads"></select></label>
             <label><span data-i18n="set.variant">Versión Stockfish</span>
               <select id="variant">
                 <option value="sf17" data-i18n="set.variant.sf17">17 NNUE (más fuerte, ~80 MB)</option>
@@ -79,13 +94,6 @@
             <label class="check"><input type="checkbox" id="showMaiaCol" /> <span data-i18n="set.maiaCol">Columna «Maia» en Stockfish</span></label>
             <label class="check"><input type="checkbox" id="book" /> <span data-i18n="set.book">Libro de aperturas (Lichess 2300+, rápidas y clásicas)</span></label>
             <label class="check"><input type="checkbox" id="tablebase" /> <span data-i18n="set.tablebase">Tablas de finales en línea (Lichess, ≤ 7 piezas)</span></label>
-          </div>
-          <label class="fen">FEN <input id="fenInput" type="text" spellcheck="false" autocapitalize="off" /></label>
-          <div class="settings-actions">
-            <button id="editPosition" data-i18n="set.editPosition">Introducir posición</button>
-            <button id="loadFen" data-i18n="set.loadFen">Cargar FEN</button>
-            <button id="newGame" data-i18n="set.newGame">Nueva partida</button>
-            <button id="exportPgn" data-i18n="set.exportPgn">Exportar PGN</button>
           </div>
           <details class="help">
             <summary data-i18n="help.title">Cómo se lee la pantalla</summary>

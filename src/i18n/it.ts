@@ -17,6 +17,9 @@ export const it: Messages = {
   'set.depth': 'Profondità Stockfish',
   'set.threatDepth': 'Profondità minacce',
   'set.hash': 'Memoria Stockfish (hash)',
+  'btn.position': 'Posizione e partita (FEN, editor, PGN)',
+  'set.sfThreads': 'Thread di Stockfish',
+  'set.sfThreads.cores': '({n} core)',
   'set.variant': 'Versione di Stockfish',
   'set.variant.sf17': '17 NNUE (più forte, ~80 MB)',
   'set.variant.sfhce': 'Classica (leggera, meno precisa)',
@@ -48,7 +51,7 @@ export const it: Messages = {
   'set.exportPgn': 'Esporta PGN',
 
   'help.title': 'Come leggere lo schermo',
-  'help.top.html': '<b>Riga in alto</b>: probabilità di vittoria del Bianco secondo Maia (rosso) e valutazione di Stockfish con la sua profondità (blu). <b>🙈</b> nasconde le mosse (mostrate come «--») ma lascia le valutazioni, per allenarsi; con le mosse nascoste il pulsante è <b>💡</b>: toccalo per rivederle.',
+  'help.top.html': '<b>Riga in alto</b>: <b>📋</b> apre la posizione e la partita (FEN, inserisci posizione, nuova partita, esporta PGN); poi la probabilità di vittoria del Bianco secondo Maia (rosso) e la valutazione di Stockfish (blu; la profondità è nella colonna «SF»). <b>🙈</b> nasconde le mosse (mostrate come «--») ma lascia le valutazioni, per allenarsi; con le mosse nascoste il pulsante è <b>💡</b>: toccalo per rivederle.',
   'help.arrows.html': "<b>Frecce</b>: rossa = mossa più umana (Maia); blu = mossa migliore (Stockfish); arancione = minaccia (la mossa migliore dell'avversario se toccasse a lui). Se la rossa e la blu coincidono, la rossa è disegnata dentro la blu.",
   'help.bar1.html': '<b>1ª barra — mosse</b>: come si ripartisce la probabilità di Maia (ciò che giocherebbe un umano di quell’Elo) tra mosse buone ✓, imprecisioni ?! ed errori ??. In «Barra delle mosse» scegli barra e mosse, solo barra (predefinito), solo mosse o non mostrarla.',
   'help.bar2.html': "<b>2ª barra — minacce</b>: lo stesso per l'avversario se toccasse a lui (come se chi ha la mossa passasse). Non si calcola in caso di scacco. Ha un bordo arancione (il colore della freccia di minaccia) e le sue mosse hanno triangoli colorati invece di cerchi. Nelle impostazioni: barra e mosse, solo mosse o non calcolare.",

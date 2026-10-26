@@ -28,7 +28,7 @@ await page.goto(base)
 await page.waitForFunction(() => document.getElementById('text').textContent.length > 20, null, { timeout: 600_000 })
 
 // Open the editor.
-await page.tap('#menu')
+await page.tap('#positionBtn') // 📋 (the editor moved out of ⚙, 2026-10-26)
 await page.tap('#editPosition')
 check(await page.isVisible('#editor'), 'editor opens full screen')
 

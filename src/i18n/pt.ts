@@ -17,6 +17,9 @@ export const pt: Messages = {
   'set.depth': 'Profundidade do Stockfish',
   'set.threatDepth': 'Profundidade das ameaças',
   'set.hash': 'Memória do Stockfish (hash)',
+  'btn.position': 'Posição e partida (FEN, editor, PGN)',
+  'set.sfThreads': 'Threads do Stockfish',
+  'set.sfThreads.cores': '({n} núcleos)',
   'set.variant': 'Versão do Stockfish',
   'set.variant.sf17': '17 NNUE (mais forte, ~80 MB)',
   'set.variant.sfhce': 'Clássica (leve, menos precisa)',
@@ -48,7 +51,7 @@ export const pt: Messages = {
   'set.exportPgn': 'Exportar PGN',
 
   'help.title': 'Como ler o ecrã',
-  'help.top.html': '<b>Linha de cima</b>: probabilidade de vitória das brancas segundo o Maia (vermelho) e avaliação do Stockfish com a sua profundidade (azul). <b>🙈</b> oculta os lances (aparecem como «--») mas mantém as avaliações, para treinar; com os lances ocultos o botão é <b>💡</b>: toque nele para voltar a vê-los.',
+  'help.top.html': '<b>Linha de cima</b>: <b>📋</b> abre a posição e a partida (FEN, introduzir posição, nova partida, exportar PGN); depois a probabilidade de vitória das brancas segundo o Maia (vermelho) e a avaliação do Stockfish (azul; a profundidade está na coluna «SF»). <b>🙈</b> oculta os lances (aparecem como «--») mas mantém as avaliações, para treinar; com os lances ocultos o botão é <b>💡</b>: toque nele para os voltar a ver.',
   'help.arrows.html': '<b>Setas</b>: vermelha = lance mais humano (Maia); azul = melhor lance (Stockfish); laranja = ameaça (o melhor lance do adversário se fosse a vez dele). Se a vermelha e a azul coincidirem, a vermelha é desenhada dentro da azul.',
   'help.bar1.html': '<b>1.ª barra — lances</b>: como a probabilidade do Maia (o que jogaria um humano desse Elo) se reparte entre lances bons ✓, imprecisões ?! e erros ??. Em «Barra de lances» escolha barra e lances, só barra (por omissão), só lances ou não mostrar.',
   'help.bar2.html': '<b>2.ª barra — ameaças</b>: o mesmo para o adversário se fosse a vez dele (como se o lado que joga passasse a vez). Não é calculada em xeque. Tem uma margem laranja (a cor da seta de ameaça) e os seus lances têm triângulos coloridos em vez de círculos. Nos ajustes: barra e lances, só lances ou não calcular.',
