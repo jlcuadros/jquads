@@ -19,6 +19,7 @@ Node scripts for the app: **build helpers** (`copy-vendor` copies the engine fil
 | ------ | ------------ | -------------- |
 | [copy-vendor.mjs](../scripts/copy-vendor.mjs) | Copies `sf17-79.*`, `sfhce.*` (Stockfish) and `ort-wasm-simd-threaded.*` (onnxruntime) from `node_modules` into `public/vendor/` | Automatic with `npm run dev` / `npm run build` |
 | [third-party-licenses.mjs](../scripts/third-party-licenses.mjs) | Writes `public/licenses.txt`: components (author, licence, URL, use), online services and the full licence texts (AGPL-3.0, GPL-3.0, MIT, BSD-2), each once | Automatic with `npm run dev` / `npm run build` (after copy-vendor) |
+| [variations-test.mjs](../scripts/variations-test.mjs) | Tests **variations, marks, comments and 📜** with taps: bar widths, mark on 1.e4, new variation / ▶ choice / cancel / overwrite, 📜 tap to go, a commented PGN from the favourites (✏️ in the text, comments in the export). 12 checks | After changing the move tree, PGN, strip or navigation |
 | [book-test.mjs](../scripts/book-test.mjs) | Tests the **opening book**: file served, text starting with "📖 Libro: e4 …% · d4 …% … — N partidas", 📖 marks in both columns, no overflow, no book out of the opening (FEN), ⚙ off/on, downloaded once. 8 checks | After changing the book or how it is shown |
 | [book/](../scripts/book/) | **Python**: builds the opening book from Lichess games → book | When the book must be rebuilt |
 | [save-test.mjs](../scripts/save-test.mjs) | Tests **📂 → 💾 Guardar** and **⬇ Descargar PGN** (no network): moves + variation by tapping squares, header form, save/update favourite, local PGN, share sheet (simulated) and plain download, reopening keeps headers and variation, new game → new favourite. 18 checks | After changing saving, favourites or PGN |
@@ -73,6 +74,8 @@ node scripts/games-test.mjs http://localhost:4173 <screenshots-folder>
 node scripts/i18n-test.mjs http://localhost:4173 <screenshots-folder>
 # endgame tables:
 node scripts/tablebase-test.mjs http://localhost:4173 <screenshots-folder>
+# variations, marks, comments, whole-game view:
+node scripts/variations-test.mjs http://localhost:4173 <screenshots-folder>
 # opening book:
 node scripts/book-test.mjs http://localhost:4173 <screenshots-folder>
 # save the current game + download the favourites:

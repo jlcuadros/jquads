@@ -11,7 +11,9 @@ import { bestScore, deltaEval, formatScore, type MoveClass } from '../analysis/c
 import { describePosition, type Segment } from '../analysis/describe'
 import { describePreviousMove } from '../analysis/previousMove'
 import type { EngineLine } from '../stockfish/stockfishClient'
-import type { GameTree } from '../game/tree'
+import type { GameTree, MoveNode } from '../game/tree'
+import { movetextTokens, type PgnHeaders } from '../game/pgn'
+import { moveMark, type MoveMark } from '../analysis/moveMarks'
 import { formatSan, type Notation } from '../game/notation'
 import { tbLabel, tbPositionScore } from '../analysis/tablebase'
 import { getLang, t } from '../i18n/i18n'
@@ -121,8 +123,27 @@ export function renderMeter(side: SideAnalysis | null | undefined, emptyMsg: str
   )
 }
 
-/** The move list in a single horizontal row; the current move highlighted. */
-export function renderMoves(tree: GameTree): string {
+/** Mark of a move (strip and full game view): coloured circle / square / diamond, or nothing. */
+export type MarkOf = (node: MoveNode) => MoveMark | undefined
+const markHtml = (m?: MoveMark) => (m ? `<span class="mark mark-${m.shape}" style="--mark:${m.color}"></span>` : '')
+
+/** The previous position's data as the move judges need it (shared by the summary and the marks). */
+const prevData = (side?: SideAnalysis) =>
+  side && { classified: side.classified, best: side.lines[0] && lineScoreOf(side.lines[0]), policy: side.maia?.policy }
+
+/**
+ * Mark of `node` from the analyses (cached) of the position before it and of
+ * its own position (José, 2026-10-26: colour = quality of the move, shape =
+ * how findable the good moves were).
+ */
+export function markFrom(node: MoveNode, before?: PositionAnalysis, after?: PositionAnalysis): MoveMark | undefined {
+  if (!node.parent) return undefined
+  const current = after?.main.done ? after.main.lines[0] : undefined
+  return moveMark(prevData(before?.main), node.uci, node.parent.fen.split(' ')[1] === 'w', current && lineScoreOf(current))
+}
+
+/** The move list in a single horizontal row; the current move highlighted; marks where analysed. */
+export function renderMoves(tree: GameTree, markOf?: MarkOf): string {
   const line = tree.displayLine()
   if (!line.length) return `<span class="empty">${t('panel.noMoves')}</span>`
   return line
@@ -130,9 +151,44 @@ export function renderMoves(tree: GameTree): string {
       const { number, whiteMove } = tree.moveNumber(n)
       const num = whiteMove ? `<span class="num">${number}.</span>` : i === 0 ? `<span class="num">${number}…</span>` : ''
       const cur = n === tree.current ? ' current' : ''
-      return `${num}<span class="mv${cur}" data-node="${n.id}">${figHtml(formatSan(n.san, whiteMove, view.notation))}</span>`
+      return `${num}<span class="mv${cur}" data-node="${n.id}">${markHtml(markOf?.(n))}${figHtml(formatSan(n.san, whiteMove, view.notation))}</span>`
     })
     .join('')
+}
+
+const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+
+/**
+ * The whole game in large type (José, 2026-10-26), opened with the button in
+ * the middle of the navigation bar: players/event from the PGN headers, then
+ * every move — variations in parentheses, comments in italics — each one
+ * tappable (data-node) to go there; the current move highlighted.
+ */
+export function renderGameView(tree: GameTree, headers: PgnHeaders, markOf?: MarkOf): string {
+  const players = headers.White || headers.Black ? `${escapeHtml(headers.White ?? '?')} – ${escapeHtml(headers.Black ?? '?')}` : ''
+  const about = [players, headers.Event, headers.Date, headers.Result && headers.Result !== '*' ? headers.Result : '']
+    .filter((x) => x && x !== '?')
+    .map((x) => escapeHtml(x!))
+    .join(' · ')
+  const tokens = movetextTokens(tree)
+  const body = tokens
+    .map((tk, i) => {
+      // A space between tokens, but not after "(" nor before ")": "e5 (1... c5)".
+      const space = i === 0 || tk.kind === 'close' || tokens[i - 1].kind === 'open' ? '' : ' '
+      return space + tokenHtml(tk)
+    })
+    .join('')
+  return (about ? `<div class="pv-about">${about}</div>` : '') + `<div class="pv-moves">${body || `<span class="empty">${t('panel.noMoves')}</span>`}</div>`
+
+  function tokenHtml(tk: (typeof tokens)[number]): string {
+    if (tk.kind === 'open') return '<span class="pv-var">('
+    if (tk.kind === 'close') return ')</span>'
+    if (tk.kind === 'comment') return `<span class="pv-comment">${escapeHtml(tk.text)}</span>`
+    const n = tk.node
+    const number = tk.text.slice(0, tk.text.length - n.san.length) // "1. ", "1... " or ""
+    const cur = n === tree.current ? ' current' : ''
+    return `<span class="pv-mv${cur}" data-node="${n.id}">${number}${markHtml(markOf?.(n))}${figHtml(formatSan(n.san, tree.moveNumber(n).whiteMove, view.notation))}</span>`
+  }
 }
 
 /**
@@ -249,7 +305,7 @@ export function renderPreviousMove(ref: PreviousMoveRef | undefined, a: Position
     whiteMoved: ref.whiteMoved,
     elo,
     inBook: !!view.book?.(ref.fen).some((m) => m.uci === ref.uci),
-    prev: prev && { classified: prev.classified, best: best && lineScoreOf(best), policy: prev.maia?.policy },
+    prev: prevData(prev),
     currentBest: current && lineScoreOf(current),
   })
   if (!segs.length) return ''
@@ -258,11 +314,13 @@ export function renderPreviousMove(ref: PreviousMoveRef | undefined, a: Position
 
 /**
  * Explanatory text under the columns, in this order (José, 2026-10-26): the
- * book (if the position is in it), the position (always, once analysed), the
- * previous move (when there is one and data for it).
+ * PGN's comment on this move (✏️, if any), the book (if the position is in
+ * it), the position (always, once analysed), the previous move (when there is
+ * one and data for it).
  */
-export function renderText(a: PositionAnalysis | undefined, elo: number, fen: string, previous?: PreviousMoveRef): string {
-  return renderBookLine(fen, a) + renderEnginesText(a, elo) + renderPreviousMove(previous, a, elo)
+export function renderText(a: PositionAnalysis | undefined, elo: number, fen: string, previous?: PreviousMoveRef, comment?: string): string {
+  const pgnComment = comment ? `<div class="pgn-comment">✏️ ${escapeHtml(comment)}</div>` : ''
+  return pgnComment + renderBookLine(fen, a) + renderEnginesText(a, elo) + renderPreviousMove(previous, a, elo)
 }
 
 function renderEnginesText(a: PositionAnalysis | undefined, elo: number): string {

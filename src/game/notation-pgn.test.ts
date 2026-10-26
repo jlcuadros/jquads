@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { formatSan } from './notation'
-import { gamePgn, parsePgnHeaders, treeFromPgn } from './pgn'
+import { commentText, gamePgn, movetextTokens, parsePgnHeaders, treeFromPgn } from './pgn'
 import { GameTree } from './tree'
 
 describe('formatSan', () => {
@@ -91,11 +91,48 @@ describe('PGN headers and import with variations', () => {
 
   it('reads Lichess / Chess.com style movetext: clocks, comments, NAGs, "1...", custom FEN', () => {
     const t = treeFromPgn('[FEN "4k3/8/8/8/8/8/8/K3R3 b - - 0 1"]\n\n1... Kd7 {[%clk 0:03:00]} 2.Re2!? $1 ; note\n(2. Ka2 Kc6) 2... Kd6 *')
-    expect(gamePgn(t, date)).toContain('1... Kd7 2. Re2 (2. Ka2 Kc6) 2... Kd6 *')
+    // The "; note" comment is kept (2026-10-26); the clock is not.
+    expect(gamePgn(t, date)).toContain('1... Kd7 2. Re2 {note} (2. Ka2 Kc6) 2... Kd6 *')
   })
 
   it('throws on an illegal move', () => {
     expect(() => treeFromPgn('1. e5 *')).toThrow(/Illegal/)
+  })
+})
+
+describe('PGN comments (shown with ✏️, kept on export — 2026-10-26)', () => {
+  const date = new Date(2026, 9, 25)
+  const pgn = '[Event "x"]\n\n{Una partida de prueba} 1. e4 {[%clk 0:03:00] El peón rey} e5 (1... c5 {La siciliana}) 2. Nf3 *'
+
+  it('reads comments into the moves (and the root), without clock/eval commands', () => {
+    const t = treeFromPgn(pgn)
+    const e4 = t.root.children[0]
+    expect(t.root.comment).toBe('Una partida de prueba')
+    expect(e4.comment).toBe('El peón rey')
+    expect(e4.children.map((n) => [n.san, n.comment])).toEqual([['e5', undefined], ['c5', 'La siciliana']])
+    expect(commentText('[%clk 0:03:00] [%eval 0.3]  ')).toBe('') // only commands → no comment
+  })
+
+  it('writes them back, with the numbering a comment requires', () => {
+    expect(gamePgn(treeFromPgn(pgn), date)).toContain('{Una partida de prueba} 1. e4 {El peón rey} 1... e5 (1... c5 {La siciliana}) 2. Nf3 *')
+  })
+
+  it('round trip keeps moves, variations and comments', () => {
+    const once = gamePgn(treeFromPgn(pgn), date)
+    expect(gamePgn(treeFromPgn(once), date)).toBe(once)
+  })
+
+  it('tokens for the full game view: moves with their nodes, comments, variations', () => {
+    const kinds = movetextTokens(treeFromPgn(pgn)).map((tk) => (tk.kind === 'move' ? tk.text : tk.kind === 'comment' ? `{${tk.text}}` : tk.kind))
+    expect(kinds).toEqual(['{Una partida de prueba}', '1. e4', '{El peón rey}', '1... e5', 'open', '1... c5', '{La siciliana}', 'close', '2. Nf3'])
+  })
+
+  it('"Sobrescribir": clearContinuation drops what followed', () => {
+    const t = treeFromPgn(pgn)
+    t.goTo(t.root.children[0]) // after 1. e4
+    t.clearContinuation()
+    t.play('d7d5')
+    expect(gamePgn(t, date)).toContain('1. e4 {El peón rey} 1... d5 *')
   })
 })
 

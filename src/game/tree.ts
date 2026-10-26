@@ -18,6 +18,9 @@ export interface MoveNode {
   ply: number // half-moves from the root position (root = 0)
   parent: MoveNode | null
   children: MoveNode[]
+  // Comment from the PGN after this move (on the root: before the first move).
+  // Shown with ✏️ in the text and kept when exporting (2026-10-26).
+  comment?: string
 }
 
 export class GameTree {
@@ -62,6 +65,15 @@ export class GameTree {
     }
     this.current.children.push(node)
     return (this.current = node)
+  }
+
+  /**
+   * "Sobrescribir" (José, 2026-10-26): forgets everything that followed the
+   * current position (its continuation and all its variations), so the next
+   * move played becomes the only continuation.
+   */
+  clearContinuation() {
+    this.current.children = []
   }
 
   // --- Navigation -----------------------------------------------------------

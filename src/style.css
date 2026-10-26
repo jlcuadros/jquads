@@ -96,7 +96,8 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 }
 
 /* --- Navigation and move strip ------------------------------------------- */
-.nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 6px 0 2px; }
+/* ⏮ 📜 ⏭ small (under half of ◀ ▶), José 2026-10-26 */
+.nav { display: grid; grid-template-columns: 0.4fr 1fr 0.4fr 1fr 0.4fr; gap: 4px; margin: 6px 0 2px; }
 .nav button { padding: 5px 0; font-size: 1rem; }
 .moves {
   display: flex; gap: 2px; overflow-x: auto; white-space: nowrap; padding: 6px 2px;
@@ -265,3 +266,23 @@ html, body { overflow-x: hidden; }
 .prev-move { margin-bottom: 6px; }
 .side-icon { margin-right: 1px; }
 .side-text { margin-bottom: 6px; }
+
+/* Move marks (strip and game view, 2026-10-26): colour = quality, shape = how findable the good moves were */
+.mark { display: inline-block; width: 0.5em; height: 0.5em; margin-right: 3px; vertical-align: 0.1em; background: var(--mark); border: 1px solid rgba(0, 0, 0, 0.3); }
+.mark-circle { border-radius: 50%; }
+.mark-diamond { transform: rotate(45deg) scale(0.85); }
+/* The whole game (📜) */
+.pgn-view { font-size: 1.15rem; line-height: 1.9; }
+.pgn-view .pv-about { color: var(--muted); font-size: 0.9rem; margin-bottom: 8px; }
+.pgn-view .pv-mv { padding: 1px 4px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+.pgn-view .pv-mv.current { background: var(--accent); color: #fff; }
+.pgn-view .pv-var { color: var(--muted); font-size: 0.92em; }
+.pgn-view .pv-comment { font-style: italic; color: var(--muted); }
+/* Choice dialog (variations) */
+.choice-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+.choice-box { background: var(--bg); color: var(--text); border-radius: 10px; padding: 14px; width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 8px; }
+.choice-box p { margin: 0 0 4px; }
+.choice-box button { padding: 9px; font-size: 1rem; }
+.choice-cancel { color: var(--muted); }
+/* PGN comment paragraph (✏️) at the top of the text */
+.pgn-comment { margin-bottom: 6px; font-style: italic; }

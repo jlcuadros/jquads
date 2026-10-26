@@ -16,8 +16,10 @@ import 'chessground/assets/chessground.cburnett.css'
 import './style.css'
 
 import { Chess } from 'chess.js'
-import { GameTree } from './game/tree'
+import { GameTree, type MoveNode } from './game/tree'
 import { loadBook } from './book/openingBook'
+import { askChoice } from './ui/choice'
+import { findNode, openGameView, refreshGameView } from './ui/gameView'
 import type { PolyglotBook } from './book/polyglot'
 import { gamePgn, parsePgnHeaders, treeFromPgn, type PgnHeaders } from './game/pgn'
 import type { Notation } from './game/notation'
@@ -30,7 +32,7 @@ import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analy
 import { openEditor, retranslateEditor } from './ui/editor'
 import { openGames, ownerName, retranslateGames } from './ui/gamesPanel'
 import { userColor, type OnlineSite } from './games/common'
-import { setViewOptions, type PreviousMoveRef, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
+import { setViewOptions, markFrom, renderGameView, sanOf, type MarkOf, type PreviousMoveRef, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 
@@ -191,9 +193,47 @@ function onBoardMove(orig: Key, dest: Key) {
   playMove(orig + dest + (promotes ? 'q' : ''))
 }
 
-function playMove(uci: string) {
+/**
+ * Plays a move from the current position. If the game already continues with a
+ * different move there, asks (José, 2026-10-26): "Variante nueva" (added as a
+ * variation, the main line untouched) or "Sobrescribir" (what followed is
+ * deleted). Cancelling puts the board back.
+ */
+async function playMove(uci: string) {
+  const here = tree.current
+  if (here.children.length && !here.children.some((c) => c.uci === uci)) {
+    const main = here.children[0]
+    const choice = await askChoice(t('var.title', { move: numberedSan(main) }), [
+      { label: t('var.new'), value: 'new' },
+      { label: t('var.overwrite'), value: 'overwrite' },
+    ])
+    if (!choice) return updateBoard() // the piece goes back
+    if (choice === 'overwrite') tree.clearContinuation()
+  }
   if (tree.play(uci)) positionChanged()
+  else updateBoard()
 }
+
+/** "12.♘f3" / "12…e5": a node's move as shown in the move list. */
+function numberedSan(node: MoveNode): string {
+  const { number, whiteMove } = tree.moveNumber(node)
+  return `${number}${whiteMove ? '.' : '…'}${sanOf(node.parent!.fen, node.uci)}`
+}
+
+/** ▶: with several continuations, asks which one to follow (José, 2026-10-26). */
+async function stepForward() {
+  const options = tree.current.children
+  if (options.length <= 1) return (tree.forward(), positionChanged())
+  const chosen = await askChoice(
+    t('var.choose'),
+    options.map((c, i) => ({ label: numberedSan(c) + (i === 0 ? ` <small>(${t('var.main')})</small>` : ''), value: c })),
+  )
+  if (chosen) (tree.goTo(chosen), positionChanged())
+}
+
+/** Strip and game-view marks, from the analyses already in the cache (no engine work). */
+const markOf: MarkOf = (node) =>
+  node.parent ? markFrom(node, analyzer.cached(node.parent.fen, analysisSettings()), analyzer.cached(node.fen, analysisSettings())) : undefined
 
 /** Arrows: red = Maia's most likely move, blue = Stockfish's best move, orange = threat. */
 function arrows(): DrawShape[] {
@@ -293,14 +333,17 @@ function renderPanel() {
   )
   $('maiaCol').innerHTML = renderMaiaCol(analysis?.main, settings.elo, settings.lines)
   $('sfCol').innerHTML = renderSfCol(analysis?.main, settings.variant === 'sf17' ? 'SF' : t('panel.sfClassic')) // or the endgame tables
-  $('text').innerHTML = renderText(analysis, settings.elo, tree.current.fen, previousMove())
+  $('text').innerHTML = renderText(analysis, settings.elo, tree.current.fen, previousMove(), tree.current.comment)
+  // A finished analysis can give the strip (and the game view) a new mark.
+  if (analysis?.main.done) renderMoveStrip()
+  refreshGameView()
   board.setAutoShapes(arrows())
 }
 
 function renderMoveStrip() {
   setViewOptions({ notation: settings.notation, hideMoves })
   const el = $('moves')
-  el.innerHTML = renderMoves(tree)
+  el.innerHTML = renderMoves(tree, markOf)
   // Centre the current move by scrolling ONLY the strip. scrollIntoView() also
   // scrolled the whole page sideways on the iPhone (the eval bar went off screen,
   // José 2026-10-25), so it is not used here.
@@ -502,7 +545,16 @@ function setupControls() {
 
   $('first').onclick = () => (tree.toStart(), positionChanged())
   $('prev').onclick = () => (tree.back(), positionChanged())
-  $('next').onclick = () => (tree.forward(), positionChanged())
+  $('next').onclick = () => void stepForward()
+  // 📜 The whole game, large: tap a move to go there (José, 2026-10-26).
+  $('gameViewBtn').onclick = () =>
+    openGameView({
+      render: () => renderGameView(tree, gameHeaders, markOf),
+      goTo: (id) => {
+        const node = findNode(tree.root, id)
+        if (node) (tree.goTo(node), positionChanged())
+      },
+    })
   $('last').onclick = () => (tree.toEnd(), positionChanged())
   document.addEventListener('keydown', (e) => {
     if ((e.target as HTMLElement).tagName === 'INPUT') return

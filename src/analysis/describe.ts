@@ -27,6 +27,22 @@ export interface DescribeInput {
   san: (uci: string) => string
 }
 
+export type Findability = 'easy' | 'medium' | 'hard'
+
+/**
+ * How findable the good moves are for a human of the selected Elo: Maia's
+ * probability mass on them. ≥ 70 % easy, ≥ 30 % medium ("not obvious"), else
+ * hard. Used by the text and by the move-strip marks (circle / square /
+ * diamond, José 2026-10-26).
+ */
+export function goodMoveFindability(
+  policy: Array<{ uci: string; prob: number }>,
+  classified: Map<string, ClassifiedMove>,
+): { mass: number; level: Findability } {
+  const mass = policy.filter((p) => classified.get(p.uci)?.cls === 'good').reduce((a, p) => a + p.prob, 0)
+  return { mass, level: mass >= 0.7 ? 'easy' : mass >= 0.3 ? 'medium' : 'hard' }
+}
+
 /** Minimum Maia probability for a mistake to be called "tempting". */
 const TEMPTING_PROB = 0.1
 
@@ -65,12 +81,11 @@ export function describePosition(input: DescribeInput): Segment[] {
   if (!good.length) return segs
 
   // Sentence 2 + 3: good moves and how findable they are at this Elo.
-  const goodMass = input.policy.filter((p) => input.classified.get(p.uci)?.cls === 'good').reduce((a, p) => a + p.prob, 0)
+  const { mass, level } = goodMoveFindability(input.policy, input.classified)
   const number = good.length === 1 ? 'one' : 'many' // grammar: "la" / "las", "it" / "them"…
   segs.push({ text: t(`d.good.${number}`) })
   segs.push(...moveList(good, input))
-  const findability = goodMass >= 0.7 ? 'easy' : goodMass >= 0.3 ? 'medium' : 'hard'
-  segs.push({ text: t(`d.${findability}.${number}` as MessageKey, { elo: input.elo, pct: pct(goodMass) }) })
+  segs.push({ text: t(`d.${level}.${number}` as MessageKey, { elo: input.elo, pct: pct(mass) }) })
 
   // Sentence 4: tempting mistakes (likely for a human, but bad).
   const tempting = input.policy

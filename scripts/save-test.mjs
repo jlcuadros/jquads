@@ -49,7 +49,9 @@ const field = (k) => `#pgnh-${k}`
 await page.tap('#positionBtn'); await page.tap('#newGame')
 await move('e2', 'e4'); await move('e7', 'e5'); await move('g1', 'f3')
 await page.tap('#moves .mv >> text=e4') // back to after 1. e4
-await move('c7', 'c5') // variation 1... c5
+await tapSquare('c7'); await tapSquare('c5') // variation 1... c5: the game already continues with 1... e5,
+await page.click('#choice button:has-text("Variante nueva")') // so the app asks (2026-10-26)
+await page.waitForFunction(() => document.querySelector('#moves .mv.current')?.textContent === 'c5')
 
 // 2. Save it.
 await page.tap('#gamesBtn')

@@ -103,6 +103,7 @@
               <li data-i18n-html="help.bar1.html"><b>1ª barra — jugadas</b>: cómo se reparte la probabilidad de Maia (lo que jugaría un humano de ese Elo) entre jugadas buenas ✓, imprecisiones ?! y errores ??.</li>
               <li data-i18n-html="help.bar2.html"><b>2ª barra — amenazas</b>: lo mismo para el rival si le tocara mover a él (como si el bando que mueve pasara turno). No se calcula si hay jaque. Va marcada con un borde naranja (el color de la flecha de amenaza) y sus jugadas llevan triángulos de color en vez de círculos. En ajustes se puede ver como barra y jugadas, solo las jugadas, o no calcularla.</li>
               <li data-i18n-html="help.colors.html"><b>Colores</b>: según cuánta probabilidad de ganar se pierde frente a la mejor jugada de Stockfish: verde &lt; 5 %, amarillo 5–10 %, rojo ≥ 10 %. Cuanto más oscuro el verde, mejor; cuanto más oscuro el rojo, peor.</li>
+              <li data-i18n-html="help.moves.html"></li>
               <li data-i18n-html="help.book.html"></li>
               <li data-i18n-html="help.prevMove.html"></li>
               <li data-i18n-html="help.tablebase.html"><b>Tablas de finales</b>: con 7 piezas o menos (reyes incluidos) y sin enroques, el resultado exacto viene de las tablas Syzygy de Lichess en vez de Stockfish: arriba «TB: …» y la columna derecha «Tablas Syzygy» con «Gana M12» (mate en 12), «Tablas» o «Pierde». Se puede desactivar en esta pantalla; si fallan o no hay conexión, se usa Stockfish.</li>
@@ -145,10 +146,12 @@
         <section class="meter-block" id="meterThreats" data-i18n-title="meter.threats"></section>
 
         <nav class="nav">
-          <button id="first" data-i18n-aria="nav.first">⏮</button>
+          <!-- ⏮, 📜 and ⏭ small, ◀ ▶ big (José, 2026-10-26); 📜 opens the whole game -->
+          <button id="first" class="small" data-i18n-aria="nav.first">⏮</button>
           <button id="prev" data-i18n-aria="nav.prev">◀</button>
+          <button id="gameViewBtn" class="small" data-i18n-title="btn.gameView" data-i18n-aria="btn.gameView">📜</button>
           <button id="next" data-i18n-aria="nav.next">▶</button>
-          <button id="last" data-i18n-aria="nav.last">⏭</button>
+          <button id="last" class="small" data-i18n-aria="nav.last">⏭</button>
         </nav>
 
         <!-- Move list in one horizontal row -->
@@ -166,6 +169,18 @@
         <footer class="credits">
           <a href="#" id="openCredits" class="credits-link" data-i18n="credits.link">Ver créditos: ⚙ &gt; Créditos y licencias</a>
         </footer>
+      </div>
+    </div>
+
+    <!-- The whole game, large (src/ui/gameView.ts) -->
+    <div id="gameView" class="editor game-view" hidden>
+      <div class="editor-inner">
+        <header class="editor-top">
+          <b data-i18n="gameView.title">Partida</b>
+          <span class="spacer"></span>
+          <button id="gameViewClose" data-i18n="games.close">Cerrar</button>
+        </header>
+        <div id="gameViewBody" class="pgn-view"></div>
       </div>
     </div>
 
