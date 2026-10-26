@@ -85,10 +85,26 @@ describe('deltaEval (Maia column, iteration 5)', () => {
     expect(deltaEval({ cp: -50 }, { cp: -50 })).toBe('0.0') // no arrow when nothing is lost
     expect(deltaEval({ cp: -300 }, { cp: -10 })).toBe('↓2.9') // Black to move: best is lower, still positive
   })
-  it('mates: same side → 0.0, gaining or losing a mate → M', () => {
-    expect(deltaEval({ mate: 3 }, { mate: 7 })).toBe('0.0')
-    expect(deltaEval({ mate: 3 }, { cp: 400 })).toBe('↓M')
-    expect(deltaEval({ cp: 0 }, { mate: -2 })).toBe('↓M')
+  it('mates for the same side: change of mate distance (José, 2026-10-26)', () => {
+    expect(deltaEval({ mate: -6 }, { mate: -9 })).toBe('↓M+3') // the mate comes 3 moves later
+    expect(deltaEval({ mate: -9 }, { mate: -3 })).toBe('↓M−6') // received 6 moves sooner
+    expect(deltaEval({ mate: 3 }, { mate: 7 })).toBe('↓M+4')
+    expect(deltaEval({ mate: -5 }, { mate: -5 })).toBe('0.0') // same distance: nothing lost, no arrow
+  })
+  it('a mate appears, disappears or changes side: ⇵ and the move\'s own evaluation', () => {
+    expect(deltaEval({ mate: 5 }, { mate: -6 })).toBe('⇵−M6')
+    expect(deltaEval({ cp: 30 }, { mate: -3 })).toBe('⇵−M3')
+    expect(deltaEval({ cp: -30 }, { mate: -3 })).toBe('⇵−M3')
+    expect(deltaEval({ mate: -3 }, { cp: 40 })).toBe('⇵+0.4')
+    expect(deltaEval({ mate: 2 }, { cp: 0 })).toBe('⇵0.0')
+  })
+  it('endgame-table wins of unknown distance', () => {
+    const win = { cp: 2000, mateUnknown: true }
+    expect(deltaEval(win, { cp: 0 })).toBe('⇵0.0') // a won ending drawn
+    expect(deltaEval({ cp: 0 }, win)).toBe('⇵+M?')
+    expect(deltaEval(win, win)).toBe('0.0')
+    expect(deltaEval({ mate: 12 }, win)).toBe('↓M?')
+    expect(formatScore(win)).toBe('+M?')
   })
   it('bestScore = the evaluated move with no loss', () => {
     const scores = new Map([['e2e4', { cp: 30 }], ['g2g4', { cp: -150 }]])

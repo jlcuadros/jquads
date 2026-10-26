@@ -32,6 +32,10 @@ export const PALETTE: Record<MoveClass, string[]> = {
 export interface Score {
   cp?: number
   mate?: number // + = white mates
+  // Endgame tables: a forced win whose mate distance the tables don't give.
+  // `cp` is then ±2000 (so colours and bars treat it as decisive) and it is
+  // written "+M?" / "−M?" (José, 2026-10-26).
+  mateUnknown?: boolean
 }
 
 /**
@@ -116,27 +120,39 @@ export function blunderMeter(
 /** "+0.35", "−1.20", "+M3" — from WHITE's point of view, as on Lichess. */
 export function formatScore(score: Score, decimals = 2): string {
   if (score.mate !== undefined) return `${score.mate > 0 ? '+' : '−'}M${Math.abs(score.mate)}`
+  if (score.mateUnknown) return `${(score.cp ?? 0) > 0 ? '+' : '−'}M?`
   const text = Math.abs((score.cp ?? 0) / 100).toFixed(decimals)
   if (Number(text) === 0) return text // "0.0", not "−0.0" (−0.04 rounded to one decimal)
   return ((score.cp ?? 0) > 0 ? '+' : '−') + text
 }
 
+/** Which side a mate score favours: 1 White mates, −1 Black mates, 0 not a mate. */
+const mateSide = (s: Score) => (s.mate !== undefined ? Math.sign(s.mate) : s.mateUnknown ? Math.sign(s.cp ?? 0) : 0)
+
 /**
- * "Δ eval" of the Maia column (José, iteration 5): how much worse a move is
- * than the best one, in pawns with one decimal — |eval(best) − eval(move)| —
- * after a down arrow: "↓1.6". Nothing lost → plain "0.0", no arrow (José,
- * 2026-10-26).
- * Both scores from White's point of view, as Stockfish gives them.
- * With mates there is no pawn difference: "0.0" if both mate for the same side
- * (only the distance changes), "↓M" if the move gains or loses a mate.
+ * "Δ eval" of the Maia column: how much worse a move is than the best one.
+ * Scores are White's point of view, as Stockfish (or the endgame tables) give
+ * them; the same rules for Stockfish's mates and the tables' (José, 2026-10-26):
+ *  - no mate in either: pawns lost with one decimal after a down arrow, "↓1.6";
+ *    nothing lost → plain "0.0" (iteration 5);
+ *  - both mate for the same side: how the mate distance changes, "↓M+3" (the
+ *    mate comes 3 moves later, e.g. −M6 → −M9) or "↓M−6" (it comes 6 moves
+ *    sooner, e.g. −M9 → −M3); same distance → "0.0"; if the tables don't
+ *    give a distance: "↓M?" ("0.0" if neither has one);
+ *  - a mate appears, disappears or changes side: "⇵" (U+21F5) and the move's
+ *    own evaluation, e.g. +M5 → −M6 "⇵−M6", +0.3 → −M3 "⇵−M3",
+ *    −M3 → +0.4 "⇵+0.4", a table win of unknown distance "⇵+M?".
  */
 export function deltaEval(best: Score, move: Score): string {
-  if (best.mate === undefined && move.mate === undefined) {
+  const side = mateSide(best)
+  if (!side && !mateSide(move)) {
     const pawns = (Math.abs((best.cp ?? 0) - (move.cp ?? 0)) / 100).toFixed(1)
     return pawns === '0.0' ? pawns : `↓${pawns}`
   }
-  if (best.mate !== undefined && move.mate !== undefined && Math.sign(best.mate) === Math.sign(move.mate)) return '0.0'
-  return '↓M'
+  if (side !== mateSide(move)) return `⇵${formatScore(move, 1)}`
+  if (best.mate === undefined || move.mate === undefined) return best.mate === move.mate ? '0.0' : '↓M?'
+  const later = Math.abs(move.mate) - Math.abs(best.mate) // > 0: the mate comes later
+  return later === 0 ? '0.0' : `↓M${later > 0 ? '+' : '−'}${Math.abs(later)}`
 }
 
 /** The best of the evaluated moves for the side to move (the one with no loss), or undefined. */

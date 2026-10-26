@@ -30,7 +30,7 @@ export const en: Messages = {
   'set.meter.off': 'Hide',
   'set.deltaCol': '«Δ eval» column in Maia',
   'set.maiaCol': '«Maia» column in Stockfish',
-  'help.columns.html': '<b>Columns</b>: Maia = move, «Δ eval» (↓ how many pawns worse than Stockfish’s best move; «↓M» if it changes a mate) and probability. Stockfish (SF) = move, «Maia» (Maia’s probability for that move; 0 % if it isn’t among its candidates) and evaluation. The middle columns can be hidden here.',
+  'help.columns.html': '<b>Columns</b>: Maia = move, «Δ eval» and probability; Stockfish (SF) = move, «Maia» (Maia’s probability for that move; 0 % if it isn’t among its candidates) and evaluation. <b>Δ eval</b> compares the move with Stockfish’s best (+ White ahead, − Black): «↓1.6» = 1.6 pawns worse; «0.0» = nothing lost; with a mate for the same side in both, «↓M+3» = the mate comes 3 moves later and «↓M−6» = 6 moves sooner; if a mate appears, disappears or changes side, «⇵» and the move’s evaluation («⇵−M6», «⇵+0.4», «⇵+M?» = wins, distance unknown). The same for Stockfish’s mates and the endgame tables’. The middle columns can be hidden here.',
   'set.notation': 'Notation',
   'set.notation.figurine': 'Figurines (♘f3)',
   'set.notation.letters': 'Letters (Nf3)',

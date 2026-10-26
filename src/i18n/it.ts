@@ -30,7 +30,7 @@ export const it: Messages = {
   'set.meter.off': 'Non mostrare',
   'set.deltaCol': 'Colonna «Δ eval» in Maia',
   'set.maiaCol': 'Colonna «Maia» in Stockfish',
-  'help.columns.html': '<b>Colonne</b>: Maia = mossa, «Δ eval» (↓ di quanti pedoni è peggiore della mossa migliore di Stockfish; «↓M» se cambia un matto) e probabilità. Stockfish (SF) = mossa, «Maia» (probabilità di quella mossa secondo Maia; 0 % se non è tra le sue candidate) e valutazione. Le colonne centrali si possono nascondere qui.',
+  'help.columns.html': '<b>Colonne</b>: Maia = mossa, «Δ eval» e probabilità; Stockfish (SF) = mossa, «Maia» (probabilità di quella mossa secondo Maia; 0 % se non è tra le sue candidate) e valutazione. <b>Δ eval</b> confronta la mossa con la migliore di Stockfish (+ vantaggio del Bianco, − del Nero): «↓1.6» = 1,6 pedoni peggio; «0.0» = nulla di perso; con matto per lo stesso colore in entrambe, «↓M+3» = il matto arriva 3 mosse dopo e «↓M−6» = 6 mosse prima; se un matto compare, scompare o cambia colore, «⇵» e la valutazione della mossa («⇵−M6», «⇵+0.4», «⇵+M?» = vince, distanza sconosciuta). Lo stesso per i matti di Stockfish e delle tablebase. Le colonne centrali si possono nascondere qui.',
   'set.notation': 'Notazione',
   'set.notation.figurine': 'Figurine (♘f3)',
   'set.notation.letters': 'Lettere (Nf3)',

@@ -30,7 +30,7 @@ export const fr: Messages = {
   'set.meter.off': 'Masquer',
   'set.deltaCol': 'Colonne «Δ eval» dans Maia',
   'set.maiaCol': 'Colonne «Maia» dans Stockfish',
-  'help.columns.html': '<b>Colonnes</b> : Maia = coup, « Δ eval » (↓ de combien de pions il est pire que le meilleur coup de Stockfish ; « ↓M » s’il change un mat) et probabilité. Stockfish (SF) = coup, « Maia » (probabilité de ce coup selon Maia ; 0 % s’il n’est pas parmi ses candidats) et évaluation. Les colonnes du milieu peuvent être masquées ici.',
+  'help.columns.html': '<b>Colonnes</b> : Maia = coup, « Δ eval » et probabilité ; Stockfish (SF) = coup, « Maia » (probabilité de ce coup selon Maia ; 0 % s’il n’est pas parmi ses candidats) et évaluation. <b>Δ eval</b> compare le coup au meilleur de Stockfish (+ avantage blanc, − noir) : « ↓1.6 » = 1,6 pion de moins ; « 0.0 » = rien de perdu ; avec un mat pour le même camp dans les deux, « ↓M+3 » = le mat arrive 3 coups plus tard et « ↓M−6 » = 6 coups plus tôt ; si un mat apparaît, disparaît ou change de camp, « ⇵ » et l’évaluation du coup (« ⇵−M6 », « ⇵+0.4 », « ⇵+M? » = gain, distance inconnue). Pareil pour les mats de Stockfish et des tables de finales. Les colonnes du milieu peuvent être masquées ici.',
   'set.notation': 'Notation',
   'set.notation.figurine': 'Figurines (♘f3)',
   'set.notation.letters': 'Lettres (Nf3)',

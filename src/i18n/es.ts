@@ -40,7 +40,7 @@ export const es = {
   'set.meter.off': 'No mostrar',
   'set.deltaCol': 'Columna «Δ eval» en Maia',
   'set.maiaCol': 'Columna «Maia» en Stockfish',
-  'help.columns.html': '<b>Columnas</b>: Maia = jugada, «Δ eval» (↓ cuántos peones peor que la mejor jugada de Stockfish; «↓M» si cambia un mate) y probabilidad. Stockfish (SF) = jugada, «Maia» (probabilidad de esa jugada según Maia; 0 % si no está entre sus candidatas) y evaluación. Las columnas del medio se pueden ocultar aquí.',
+  'help.columns.html': '<b>Columnas</b>: Maia = jugada, «Δ eval» y probabilidad; Stockfish (SF) = jugada, «Maia» (probabilidad de esa jugada según Maia; 0 % si no está entre sus candidatas) y evaluación. <b>Δ eval</b> compara la jugada con la mejor de Stockfish (+ ventaja blanca, − negra): «↓1.6» = 1,6 peones peor; «0.0» = no se pierde nada; con mate del mismo bando en las dos, «↓M+3» = el mate llega 3 jugadas más tarde y «↓M−6» = 6 jugadas antes; si aparece, desaparece o cambia de bando un mate, «⇵» y la evaluación de la jugada («⇵−M6», «⇵+0.4», «⇵+M?» = gana, distancia desconocida). Igual para los mates de Stockfish y de las tablas de finales. Las columnas del medio se pueden ocultar aquí.',
   'set.notation': 'Notación',
   'set.notation.figurine': 'Figuras (♘f3)',
   'set.notation.letters': 'Letras (Nf3)',

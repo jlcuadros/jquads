@@ -30,7 +30,7 @@ export const pt: Messages = {
   'set.meter.off': 'Não mostrar',
   'set.deltaCol': 'Coluna «Δ eval» no Maia',
   'set.maiaCol': 'Coluna «Maia» no Stockfish',
-  'help.columns.html': '<b>Colunas</b>: Maia = lance, «Δ eval» (↓ quantos peões pior do que o melhor lance do Stockfish; «↓M» se muda um mate) e probabilidade. Stockfish (SF) = lance, «Maia» (probabilidade desse lance segundo o Maia; 0 % se não estiver entre os candidatos) e avaliação. As colunas do meio podem ser ocultadas aqui.',
+  'help.columns.html': '<b>Colunas</b>: Maia = lance, «Δ eval» e probabilidade; Stockfish (SF) = lance, «Maia» (probabilidade desse lance segundo o Maia; 0 % se não estiver entre os candidatos) e avaliação. <b>Δ eval</b> compara o lance com o melhor do Stockfish (+ vantagem das brancas, − das pretas): «↓1.6» = 1,6 peões pior; «0.0» = nada perdido; com mate para o mesmo lado em ambos, «↓M+3» = o mate chega 3 lances mais tarde e «↓M−6» = 6 lances antes; se um mate aparece, desaparece ou muda de lado, «⇵» e a avaliação do lance («⇵−M6», «⇵+0.4», «⇵+M?» = ganha, distância desconhecida). O mesmo para os mates do Stockfish e das tablebases. As colunas do meio podem ser ocultadas aqui.',
   'set.notation': 'Notação',
   'set.notation.figurine': 'Figuras (♘f3)',
   'set.notation.letters': 'Letras (Nf3)',

@@ -16,6 +16,9 @@ or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
 - **Stockfish 17** (NNUE) with configurable depth; best lines and evaluation.
 - **Colour code** for every move shown (good / inaccuracy / blunder, by win probability lost
   versus Stockfish's best move) and a "Blunder Meter"-style bar.
+- **Δ eval** next to Maia's moves: how much worse than Stockfish's best — "↓1.6" pawns, "↓M+3" / "↓M−6"
+  (the mate comes later / sooner), "⇵−M6" / "⇵+0.4" when a mate appears, disappears or changes side
+  (the same for Stockfish's mates and the endgame tables'). In the Stockfish column, Maia's % of each move.
 - **Threats**: the same analysis as if the opponent were to move (orange arrow, triangles).
 - Explanatory text generated from both engines (in the selected language).
 - **Position editor** (full screen), FEN loading, PGN export, "open in Lichess".

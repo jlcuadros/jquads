@@ -135,7 +135,7 @@ const cols = () => page.evaluate(() => ({
   sfEval: [...document.querySelectorAll('#sfCol tr[data-move] td:last-child')].map((t) => t.textContent),
 }))
 let c = await cols()
-const colsOk = c.maiaHead[1] === 'Δ eval' && c.deltas.every((d) => /^(0\.0|↓(\d+\.\d|M))$/.test(d)) && !c.deltas.includes('↓0.0') && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
+const colsOk = c.maiaHead[1] === 'Δ eval' && c.deltas.every((d) => /^(0\.0|↓\d+\.\d|↓M[+−]\d+|↓M\?|⇵.+)$/.test(d)) && !c.deltas.includes('↓0.0') && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
   c.sfHead[0].startsWith('SF') && c.sfHead[1] === 'Maia' && c.sfMid.every((p) => /^\d+%$/.test(p)) && c.sfEval.every((e) => /^([+−]?\d+\.\d|[+−]M\d+)$/.test(e))
 console.log(`${colsOk ? 'OK  ' : 'FAIL'} middle columns: ${JSON.stringify(c)}`)
 await page.click('#menu'); await page.uncheck('#showDeltaCol'); await page.uncheck('#showMaiaCol'); await page.click('#menu')
@@ -170,5 +170,18 @@ const t1 = Date.now()
 await page.click('#prev')
 await page.waitForFunction(() => document.getElementById('text').textContent.length > 20)
 console.log(`back to start (cached) in ${Date.now() - t1} ms`)
+
+// Δ eval with mates (José, 2026-10-26): Scholar's mate position, Qxf7# = +M1.
+// The mating move shows "0.0"; moves that give the mate away show "⇵" + their eval.
+await page.click('#menu')
+await page.fill('#fenInput', 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4')
+await page.click('#loadFen')
+await page.waitForFunction(() => document.getElementById('meterMain').dataset.done === 'true', null, { timeout: 120_000 })
+const mateRows = await page.$$eval('#maiaCol tr[data-move]', (trs) => trs.map((tr) => [tr.dataset.move, tr.querySelectorAll('td')[1]?.textContent]))
+const qxf7 = mateRows.find(([m]) => m === 'h5f7')
+console.log(`${qxf7?.[1] === '0.0' && mateRows.some(([m, d]) => m !== 'h5f7' && /^⇵[+−]?\d+\.\d$/.test(d)) ? 'OK  ' : 'FAIL'} Δ eval with a mate: ${JSON.stringify(mateRows)}`)
+await page.screenshot({ path: `${outDir}/07-delta-mate.png`, fullPage: true })
+await page.click('#menu'); await page.click('#newGame'); await page.click('#menu')
+
 
 await browser.close()

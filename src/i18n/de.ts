@@ -30,7 +30,7 @@ export const de: Messages = {
   'set.meter.off': 'Ausblenden',
   'set.deltaCol': 'Spalte «Δ eval» bei Maia',
   'set.maiaCol': 'Spalte «Maia» bei Stockfish',
-  'help.columns.html': '<b>Spalten</b>: Maia = Zug, „Δ eval“ (↓ um wie viele Bauern schlechter als Stockfishs bester Zug; „↓M“, wenn sich ein Matt ändert) und Wahrscheinlichkeit. Stockfish (SF) = Zug, „Maia“ (Maias Wahrscheinlichkeit für diesen Zug; 0 %, wenn er nicht unter ihren Kandidaten ist) und Bewertung. Die mittleren Spalten lassen sich hier ausblenden.',
+  'help.columns.html': '<b>Spalten</b>: Maia = Zug, „Δ eval“ und Wahrscheinlichkeit; Stockfish (SF) = Zug, „Maia“ (Maias Wahrscheinlichkeit für diesen Zug; 0 %, wenn er nicht unter ihren Kandidaten ist) und Bewertung. <b>Δ eval</b> vergleicht den Zug mit Stockfishs bestem (+ Vorteil Weiß, − Schwarz): „↓1.6“ = 1,6 Bauern schlechter; „0.0“ = nichts verloren; bei Matt für dieselbe Seite in beiden: „↓M+3“ = das Matt kommt 3 Züge später, „↓M−6“ = 6 Züge früher; entsteht, verschwindet oder wechselt ein Matt die Seite: „⇵“ und die Bewertung des Zugs („⇵−M6“, „⇵+0.4“, „⇵+M?“ = Gewinn, Distanz unbekannt). Gleich für Matts von Stockfish und den Endspieldatenbanken. Die mittleren Spalten lassen sich hier ausblenden.',
   'set.notation': 'Notation',
   'set.notation.figurine': 'Figurinen (♘f3)',
   'set.notation.letters': 'Buchstaben (Nf3)',

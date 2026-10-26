@@ -98,7 +98,7 @@ function toScore(outcome: TbOutcome, mateIn: number | undefined, moverIsWhite: b
   if (outcome === 'draw') return { cp: 0 }
   const sign = (outcome === 'win') === moverIsWhite ? 1 : -1
   // Mate distance when known; otherwise a decisive score (unknown distance).
-  return mateIn !== undefined ? { mate: sign * mateIn } : { cp: sign * 2000 }
+  return mateIn !== undefined ? { mate: sign * mateIn } : { cp: sign * 2000, mateUnknown: true }
 }
 
 /** Converts the API answer into our result; null when the tables don't know. */
@@ -137,8 +137,7 @@ export function parseTablebase(json: TbJson, fen: string): TbResult | null {
 export function tbLabel(score: Score, outcome: TbOutcome, cursed = false): string {
   if (cursed) return '= (50)'
   if (outcome === 'draw') return '='
-  if (score.mate !== undefined) return formatScore(score)
-  return `${(score.cp ?? 0) > 0 ? '+' : '−'}M?`
+  return formatScore(score) // "+M12", "−M20", or "+M?" when the distance is unknown
 }
 
 /** Score of the position itself (White's point of view), for the top line. */
