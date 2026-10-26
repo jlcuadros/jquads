@@ -35,6 +35,12 @@ export const es = {
   'set.threats.bar': 'Barra y jugadas',
   'set.threats.moves': 'Solo jugadas',
   'set.threats.off': 'No calcular',
+  'set.meter': 'Barra de jugadas',
+  'set.meter.bar': 'Solo barra',
+  'set.meter.off': 'No mostrar',
+  'set.deltaCol': 'Columna «Δ eval» en Maia',
+  'set.maiaCol': 'Columna «Maia» en Stockfish',
+  'help.columns.html': '<b>Columnas</b>: Maia = jugada, «Δ eval» (↓ cuántos peones peor que la mejor jugada de Stockfish; «↓M» si cambia un mate) y probabilidad. Stockfish (SF) = jugada, «Maia» (probabilidad de esa jugada según Maia; 0 % si no está entre sus candidatas) y evaluación. Las columnas del medio se pueden ocultar aquí.',
   'set.notation': 'Notación',
   'set.notation.figurine': 'Figuras (♘f3)',
   'set.notation.letters': 'Letras (Nf3)',
@@ -49,10 +55,10 @@ export const es = {
   'help.title': 'Cómo se lee la pantalla',
   'help.top.html': '<b>Línea de arriba</b>: probabilidad de que ganen las blancas según Maia (rojo) y evaluación de Stockfish con su profundidad (azul). <b>🙈</b> oculta las jugadas (salen como «--») pero deja las evaluaciones, para entrenar; con las jugadas ocultas el botón es <b>💡</b>: púlsalo para volver a verlas.',
   'help.arrows.html': '<b>Flechas</b>: roja = jugada más humana (Maia); azul = mejor jugada (Stockfish); naranja = amenaza (la mejor jugada del rival si le tocara mover). Si la roja y la azul coinciden, la roja va dentro de la azul.',
-  'help.bar1.html': '<b>1ª barra — jugadas</b>: cómo se reparte la probabilidad de Maia (lo que jugaría un humano de ese Elo) entre jugadas buenas ✓, imprecisiones ?! y errores ??.',
+  'help.bar1.html': '<b>1ª barra — jugadas</b>: cómo se reparte la probabilidad de Maia (lo que jugaría un humano de ese Elo) entre jugadas buenas ✓, imprecisiones ?! y errores ??. En «Barra de jugadas» se elige barra y jugadas, solo barra (por defecto), solo jugadas o no mostrarla.',
   'help.bar2.html': '<b>2ª barra — amenazas</b>: lo mismo para el rival si le tocara mover a él (como si el bando que mueve pasara turno). No se calcula si hay jaque. Va marcada con un borde naranja (el color de la flecha de amenaza) y sus jugadas llevan triángulos de color en vez de círculos. En ajustes se puede ver como barra y jugadas, solo las jugadas, o no calcularla.',
   'help.colors.html': '<b>Colores</b>: según cuánta probabilidad de ganar se pierde frente a la mejor jugada de Stockfish: verde &lt; 5 %, amarillo 5–10 %, rojo ≥ 10 %. Cuanto más oscuro el verde, mejor; cuanto más oscuro el rojo, peor.',
-  'help.tablebase.html': '<b>Tablas de finales</b>: con 7 piezas o menos (reyes incluidos) y sin enroques, el resultado exacto viene de las tablas Syzygy de Lichess en vez de Stockfish: arriba «TB …» y la columna derecha «Tablas Syzygy» con «Gana M12» (mate en 12), «Tablas» o «Pierde». Se puede desactivar en esta pantalla; si fallan o no hay conexión, se usa Stockfish.',
+  'help.tablebase.html': '<b>Tablas de finales</b>: con 7 piezas o menos (reyes incluidos) y sin enroques, el resultado exacto viene de las tablas Syzygy de Lichess en vez de Stockfish: arriba «TB …» y la columna «TB» con «+M12» (las blancas dan mate en 12), «−M20» (las negras, en 20), «+M?» (ganan, distancia desconocida), «=» (tablas) o «= (50)» (tablas por la regla de 50 jugadas). Se puede desactivar en esta pantalla; si fallan o no hay conexión, se usa Stockfish.',
   'help.evalBar.html': '<b>Barra vertical</b> (opcional): blanco/negro según la evaluación de Stockfish; la marca roja es la probabilidad de victoria de las blancas según Maia.',
   'help.pgn.html': '<b>Exportar PGN</b>: la partida con sus variantes; se puede copiar o enviar a otra app (para Lichess: pegarla en lichess.org/paste). <b>↗Li</b> abre la posición actual en Lichess.',
   'help.memory.html': '<b>Memoria</b>: el hash de Stockfish sirve para el análisis y para las amenazas (es el mismo motor). La versión clásica ahorra unos 80 MB de redes neuronales; cambiarla recarga la página.',
@@ -74,7 +80,6 @@ export const es = {
   'panel.prob': 'prob',
   'panel.eval': 'eval',
   'panel.result': 'resultado',
-  'panel.tablebase': 'Tablas',
   'panel.sfClassic': 'SF clásico',
   'panel.noMoves': 'Mueve una pieza para empezar',
   'panel.threatsInCheck': 'Amenazas: no se calculan con el rey en jaque',
@@ -85,8 +90,6 @@ export const es = {
   'meter.threats': 'Amenazas (si moviera el rival)',
 
   // --- Endgame tables -----------------------------------------------------------
-  'tb.label.draw': 'Tablas',
-  'tb.label.draw50': 'Tablas (50 j.)',
 
   // --- Explanatory text (analysis/describe.ts) -----------------------------------
   'd.mate.white': 'Hay mate en {n} para las blancas.',

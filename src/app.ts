@@ -47,6 +47,9 @@ const DEFAULTS: AppSettings = {
   threatDepth: 12,
   lines: 4,
   threatsMode: 'moves', // José, iteration 3
+  meterMode: 'bar', // top bar (Maia's moves): only the bar by default (José, iteration 5)
+  deltaCol: true, // "Δ eval" column in the Maia panel (iteration 5, can be hidden)
+  maiaCol: true, // "Maia" % column in the Stockfish panel (iteration 5, can be hidden)
   hashMb: 16,
   variant: 'sf17',
   notation: 'figurine', // iteration 4: chess figurines by default
@@ -62,11 +65,16 @@ const SETTINGS_VERSION = 2
 
 /** How threats are shown: bar + moves, only the moves (legend), or not computed. */
 type ThreatsMode = 'bar' | 'moves' | 'off'
+/** How the top bar (Maia's moves) is shown: bar + moves, only the bar, only the moves, or hidden. */
+type MeterMode = 'both' | 'bar' | 'moves' | 'off'
 
 /** Analysis settings + UI/engine settings, all editable in the ⚙ panel. */
 interface AppSettings extends Omit<Settings, 'threats'> {
   version?: number // settings format version (SETTINGS_VERSION)
   threatsMode: ThreatsMode
+  meterMode: MeterMode
+  deltaCol: boolean // show "Δ eval" in the Maia panel
+  maiaCol: boolean // show Maia's % in the Stockfish panel
   hashMb: number // Stockfish hash (shared by the main analysis and the threats)
   variant: StockfishVariant // changing it reloads the page
   notation: Notation // move notation: figurine (♘f3) or letters (Nf3)
@@ -225,10 +233,12 @@ function renderEvalBar() {
 }
 
 function renderPanel() {
-  setViewOptions({ notation: settings.notation, hideMoves })
+  setViewOptions({ notation: settings.notation, hideMoves, deltaCol: settings.deltaCol, maiaCol: settings.maiaCol })
   $('numbers').innerHTML = renderNumbers(analysis)
   renderEvalBar()
-  $('meterMain').innerHTML = renderMeter(analysis?.main, '')
+  // Top bar: it's still computed when hidden (the columns and arrows need it).
+  $('meterMain').hidden = settings.meterMode === 'off'
+  $('meterMain').innerHTML = renderMeter(analysis?.main, '', settings.meterMode !== 'moves', settings.meterMode !== 'bar')
   // data-done marks a block whose analysis is complete (used by scripts/ui-test.mjs).
   $('meterMain').dataset.done = String(!!analysis?.main.done)
   $('meterThreats').dataset.done = String(analysis?.threats === null || !!analysis?.threats?.done)
@@ -239,7 +249,7 @@ function renderPanel() {
     settings.threatsMode === 'bar', // 'moves' → only the legend line, no bar
   )
   $('maiaCol').innerHTML = renderMaiaCol(analysis?.main, settings.elo, settings.lines)
-  $('sfCol').innerHTML = renderSfCol(analysis?.main, settings.variant === 'sf17' ? 'Stockfish 17' : t('panel.sfClassic')) // or the endgame tables
+  $('sfCol').innerHTML = renderSfCol(analysis?.main, settings.variant === 'sf17' ? 'SF' : t('panel.sfClassic')) // or the endgame tables
   $('text').innerHTML = renderText(analysis, settings.elo)
   board.setAutoShapes(arrows())
 }
@@ -302,8 +312,20 @@ function setupControls() {
   $<HTMLSelectElement>('variant').value = settings.variant
   fillSelect('lines', LINE_COUNTS, settings.lines, (v) => String(v))
   $<HTMLSelectElement>('threatsMode').value = settings.threatsMode
+  $<HTMLSelectElement>('meterMode').value = settings.meterMode
   $<HTMLSelectElement>('notation').value = settings.notation
   $<HTMLInputElement>('evalBar').checked = settings.evalBar
+  // Middle columns of the panels (iteration 5): on/off, only redraw needed.
+  // (checkbox ids "show…": "maiaCol" is already the Maia panel's id)
+  const COL_SETTING = { deltaCol: 'showDeltaCol', maiaCol: 'showMaiaCol' } as const
+  for (const [key, id] of Object.entries(COL_SETTING) as [keyof typeof COL_SETTING, string][]) {
+    $<HTMLInputElement>(id).checked = settings[key]
+    $(id).onchange = (ev) => {
+      settings[key] = (ev.target as HTMLInputElement).checked
+      saveSettings()
+      renderPanel()
+    }
+  }
   $<HTMLInputElement>('tablebase').checked = settings.tablebase
   // Usernames per site (also editable in the 📂 panel; same saved values).
   const USER_SETTING: Record<OnlineSite, { key: 'lichessUser' | 'chesscomUser'; input: string }> = {
@@ -393,6 +415,11 @@ function setupControls() {
   $('depth').onchange = onNumber('depth')
   $('threatDepth').onchange = onNumber('threatDepth')
   $('lines').onchange = onNumber('lines')
+  $('meterMode').onchange = (ev) => {
+    settings.meterMode = (ev.target as HTMLSelectElement).value as MeterMode
+    saveSettings()
+    renderPanel() // display only: the analysis doesn't change
+  }
   $('threatsMode').onchange = (ev) => {
     settings.threatsMode = (ev.target as HTMLSelectElement).value as ThreatsMode
     saveSettings()

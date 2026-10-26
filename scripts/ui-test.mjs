@@ -5,8 +5,12 @@
 // 2. Plays Maia's first suggestion by tapping it, and checks that the move
 //    strip and the analysis update; waits for the threats bar too.
 // 3. Checks the threats modes: "only moves" (default, no bar) and "bar and moves".
+// 3b. Iteration 5: top bar modes (default "only the bar", both, moves, off) and
+//    the middle columns ("↓x.x" in Maia, Maia % in SF, SF eval with one decimal),
+//    which can be hidden.
 // 4. Saves screenshots (01-start, 02-after-move, 03-settings,
-//    04-threats-only-moves, 05-threats-bar) to the folder given as 2nd argument.
+//    04-threats-only-moves, 05-threats-bar, 06-columns-hidden) to the folder
+//    given as 2nd argument.
 //
 // Usage (preview server running, see app.md):
 //   node scripts/ui-test.mjs http://localhost:4173 /tmp/shots
@@ -108,7 +112,37 @@ await page.click('#menu')
 
 // Threats: default is "only moves" (iteration 4) → no bar; then check "bar and moves".
 console.log('threats default: bar present =', await page.locator('#meterThreats .meter').count())
-console.log('legend (moves by probability):', await page.textContent('#meterMain .meter-legend'))
+// Top bar (iteration 5): default "only the bar"; then the other three modes.
+const topBar = () => page.evaluate(() => ({ hidden: document.getElementById('meterMain').hidden, bar: !!document.querySelector('#meterMain .meter'), moves: !!document.querySelector('#meterMain .meter-legend') }))
+const setMeter = async (mode) => { await page.click('#menu'); await page.selectOption('#meterMode', mode); await page.click('#menu') }
+let tb = await topBar()
+console.log(`${!tb.hidden && tb.bar && !tb.moves ? 'OK  ' : 'FAIL'} top bar default "Solo barra": ${JSON.stringify(tb)}`)
+await setMeter('both'); tb = await topBar()
+const legendUncoloured = await page.locator('#meterMain .meter-legend .move-chip.plain').count()
+const okBoth = tb.bar && tb.moves && legendUncoloured === 0
+await setMeter('moves'); const tbMoves = await topBar()
+await setMeter('off'); const tbOff = await topBar()
+await setMeter('bar') // back to the default for the persistent profile
+console.log(`${okBoth && !tbMoves.bar && tbMoves.moves && tbOff.hidden ? 'OK  ' : 'FAIL'} top bar modes: both=${JSON.stringify(tb)} moves=${JSON.stringify(tbMoves)} off=${JSON.stringify(tbOff)}`)
+
+// Middle columns (iteration 5): "↓x.x" in Maia, "NN%" in SF, eval with one decimal; both can be hidden.
+const cols = () => page.evaluate(() => ({
+  maiaHead: [...document.querySelectorAll('#maiaCol th')].map((t) => t.textContent),
+  sfHead: [...document.querySelectorAll('#sfCol th')].map((t) => t.textContent),
+  deltas: [...document.querySelectorAll('#maiaCol tr[data-move] td.num')].filter((_, i) => i % 2 === 0).map((t) => t.textContent),
+  maiaPct: [...document.querySelectorAll('#maiaCol tr[data-move] td:last-child')].map((t) => t.textContent),
+  sfMid: [...document.querySelectorAll('#sfCol tr[data-move] td.num')].filter((_, i) => i % 2 === 0).map((t) => t.textContent),
+  sfEval: [...document.querySelectorAll('#sfCol tr[data-move] td:last-child')].map((t) => t.textContent),
+}))
+let c = await cols()
+const colsOk = c.maiaHead[1] === 'Δ eval' && c.deltas.every((d) => /^↓(\d+\.\d|M)$/.test(d)) && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
+  c.sfHead[0].startsWith('SF') && c.sfHead[1] === 'Maia' && c.sfMid.every((p) => /^\d+%$/.test(p)) && c.sfEval.every((e) => /^([+−]?\d+\.\d|[+−]M\d+)$/.test(e))
+console.log(`${colsOk ? 'OK  ' : 'FAIL'} middle columns: ${JSON.stringify(c)}`)
+await page.click('#menu'); await page.uncheck('#showDeltaCol'); await page.uncheck('#showMaiaCol'); await page.click('#menu')
+c = await cols()
+console.log(`${c.maiaHead.length === 2 && c.sfHead.length === 2 ? 'OK  ' : 'FAIL'} middle columns hidden: ${JSON.stringify([c.maiaHead, c.sfHead])}`)
+await page.screenshot({ path: `${outDir}/06-columns-hidden.png`, fullPage: true })
+await page.click('#menu'); await page.check('#showDeltaCol'); await page.check('#showMaiaCol'); await page.click('#menu')
 await page.screenshot({ path: `${outDir}/04-threats-only-moves.png`, fullPage: true })
 await page.click('#menu')
 await page.selectOption('#threatsMode', 'bar')

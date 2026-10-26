@@ -55,12 +55,12 @@ describe('generated texts in other languages', () => {
     expect(text(describePosition(input()))).toBe(
       'The position is balanced. The good moves are e4 and d4, and a 1500 player would find them easily (85 %). Beware of g4: 15 % would play it, but it is a blunder (−1.50). ',
     )
-    expect(tbLabel({ cp: 0 }, 'draw', true)).toBe('Draw (50 m.)')
+    expect(tbLabel({ cp: 0 }, 'draw', true)).toBe('= (50)') // table results don't depend on the language
   })
 
   it('Russian', () => {
     setLang('ru')
     expect(text(describePosition(input()))).toContain('Позиция равная. Хорошие ходы: e4 и d4')
-    expect(tbLabel({ cp: 0 }, 'draw')).toBe('Ничья')
+    expect(tbLabel({ cp: 0 }, 'draw')).toBe('=')
   })
 })

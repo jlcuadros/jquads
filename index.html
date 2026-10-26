@@ -52,6 +52,15 @@
               </select>
             </label>
             <label><span data-i18n="set.lines">Jugadas por motor</span> <select id="lines"></select></label>
+            <!-- Top bar (Maia's moves), iteration 5: default "Solo barra" -->
+            <label><span data-i18n="set.meter">Barra de jugadas</span>
+              <select id="meterMode">
+                <option value="both" data-i18n="set.threats.bar">Barra y jugadas</option>
+                <option value="bar" data-i18n="set.meter.bar">Solo barra</option>
+                <option value="moves" data-i18n="set.threats.moves">Solo jugadas</option>
+                <option value="off" data-i18n="set.meter.off">No mostrar</option>
+              </select>
+            </label>
             <label><span data-i18n="set.threats">Amenazas</span>
               <select id="threatsMode">
                 <option value="bar" data-i18n="set.threats.bar">Barra y jugadas</option>
@@ -66,6 +75,8 @@
               </select>
             </label>
             <label class="check"><input type="checkbox" id="evalBar" /> <span data-i18n="set.evalBar">Barra de evaluación junto al tablero</span></label>
+            <label class="check"><input type="checkbox" id="showDeltaCol" /> <span data-i18n="set.deltaCol">Columna «Δ eval» en Maia</span></label>
+            <label class="check"><input type="checkbox" id="showMaiaCol" /> <span data-i18n="set.maiaCol">Columna «Maia» en Stockfish</span></label>
             <label class="check"><input type="checkbox" id="tablebase" /> <span data-i18n="set.tablebase">Tablas de finales en línea (Lichess, ≤ 7 piezas)</span></label>
           </div>
           <label class="fen">FEN <input id="fenInput" type="text" spellcheck="false" autocapitalize="off" /></label>
@@ -84,6 +95,7 @@
               <li data-i18n-html="help.bar2.html"><b>2ª barra — amenazas</b>: lo mismo para el rival si le tocara mover a él (como si el bando que mueve pasara turno). No se calcula si hay jaque. Va marcada con un borde naranja (el color de la flecha de amenaza) y sus jugadas llevan triángulos de color en vez de círculos. En ajustes se puede ver como barra y jugadas, solo las jugadas, o no calcularla.</li>
               <li data-i18n-html="help.colors.html"><b>Colores</b>: según cuánta probabilidad de ganar se pierde frente a la mejor jugada de Stockfish: verde &lt; 5 %, amarillo 5–10 %, rojo ≥ 10 %. Cuanto más oscuro el verde, mejor; cuanto más oscuro el rojo, peor.</li>
               <li data-i18n-html="help.tablebase.html"><b>Tablas de finales</b>: con 7 piezas o menos (reyes incluidos) y sin enroques, el resultado exacto viene de las tablas Syzygy de Lichess en vez de Stockfish: arriba «TB: …» y la columna derecha «Tablas Syzygy» con «Gana M12» (mate en 12), «Tablas» o «Pierde». Se puede desactivar en esta pantalla; si fallan o no hay conexión, se usa Stockfish.</li>
+              <li data-i18n-html="help.columns.html"></li>
               <li data-i18n-html="help.evalBar.html"><b>Barra vertical</b> (opcional): blanco/negro según la evaluación de Stockfish; la marca roja es la probabilidad de victoria de las blancas según Maia.</li>
               <li data-i18n-html="help.games.html"></li>
               <li data-i18n-html="help.pgn.html"><b>Exportar PGN</b>: la partida con sus variantes; se puede copiar o enviar a otra app (para Lichess: pegarla en lichess.org/paste). <b>↗Li</b> abre la posición actual en Lichess.</li>

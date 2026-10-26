@@ -114,8 +114,31 @@ export function blunderMeter(
 }
 
 /** "+0.35", "−1.20", "+M3" — from WHITE's point of view, as on Lichess. */
-export function formatScore(score: Score): string {
+export function formatScore(score: Score, decimals = 2): string {
   if (score.mate !== undefined) return `${score.mate > 0 ? '+' : '−'}M${Math.abs(score.mate)}`
-  const pawns = (score.cp ?? 0) / 100
-  return (pawns >= 0 ? '+' : '−') + Math.abs(pawns).toFixed(2)
+  const text = Math.abs((score.cp ?? 0) / 100).toFixed(decimals)
+  if (Number(text) === 0) return text // "0.0", not "−0.0" (−0.04 rounded to one decimal)
+  return ((score.cp ?? 0) > 0 ? '+' : '−') + text
 }
+
+/**
+ * "Δ eval" of the Maia column (José, iteration 5): how much worse a move is
+ * than the best one, in pawns with one decimal — |eval(best) − eval(move)| —
+ * after a down arrow: "↓1.6".
+ * Both scores from White's point of view, as Stockfish gives them.
+ * With mates there is no pawn difference: "↓0.0" if both mate for the same side
+ * (only the distance changes), "↓M" if the move gains or loses a mate.
+ */
+export function deltaEval(best: Score, move: Score): string {
+  if (best.mate === undefined && move.mate === undefined) return `↓${(Math.abs((best.cp ?? 0) - (move.cp ?? 0)) / 100).toFixed(1)}`
+  if (best.mate !== undefined && move.mate !== undefined && Math.sign(best.mate) === Math.sign(move.mate)) return '↓0.0'
+  return '↓M'
+}
+
+/** The best of the evaluated moves for the side to move (the one with no loss), or undefined. */
+export function bestScore(classified: Map<string, ClassifiedMove>): Score | undefined {
+  let best: ClassifiedMove | undefined
+  for (const c of classified.values()) if (!best || c.loss < best.loss) best = c
+  return best?.score
+}
+

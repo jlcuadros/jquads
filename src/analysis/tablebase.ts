@@ -14,7 +14,6 @@
  * draw → 0.00, loss → being mated.
  */
 import { formatScore, type Score } from './classify'
-import { t } from '../i18n/i18n'
 
 export const TABLEBASE_URL = 'https://tablebase.lichess.org/standard'
 export const MAX_TB_PIECES = 7
@@ -128,15 +127,16 @@ export function parseTablebase(json: TbJson, fen: string): TbResult | null {
 
 /**
  * Short result label, in White's point of view like Stockfish's eval:
- * "+M20" (White mates in 20), "−M20" (Black mates in 20), "Tablas",
- * "Tablas (50 j.)". When the tables don't give the mate distance (usually
- * 6–7 pieces): "+M?" / "−M?". Signs instead of "Gana" / "Pierde" (José,
- * 2026-10-25): in some languages the words didn't fit on one line.
+ * "+M20" (White mates in 20), "−M20" (Black mates in 20), "=" (draw) and
+ * "= (50)" (a win or loss that the 50-move rule turns into a draw). When the
+ * tables don't give the mate distance (usually 6–7 pieces): "+M?" / "−M?".
+ * Signs instead of words (José, 2026-10-25: "Gana" / "Pierde" didn't fit on
+ * one line in some languages; iteration 5: "=" instead of "Tablas").
  * Used for the moves (right column) and for the position (top line).
  */
 export function tbLabel(score: Score, outcome: TbOutcome, cursed = false): string {
-  if (cursed) return t('tb.label.draw50')
-  if (outcome === 'draw') return t('tb.label.draw')
+  if (cursed) return '= (50)'
+  if (outcome === 'draw') return '='
   if (score.mate !== undefined) return formatScore(score)
   return `${(score.cp ?? 0) > 0 ? '+' : '−'}M?`
 }

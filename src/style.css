@@ -117,6 +117,9 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 .col.sf th:first-child { color: var(--sf); }
 .col th:last-child, .col th small { color: var(--muted); font-weight: normal; font-size: 0.75rem; }
 .col td:last-child, .col th:last-child { text-align: right; }
+/* Middle columns (iteration 5: "Δ eval" in Maia, "Maia" % in SF): right-aligned, muted header, no wrapping */
+.col .num { text-align: right; white-space: nowrap; padding-left: 4px; }
+.col th.num { color: var(--muted); font-weight: normal; font-size: 0.75rem; }
 .col tr[data-move] { cursor: pointer; }
 
 /* A move coloured by the colour code: coloured dot + text (light shades are

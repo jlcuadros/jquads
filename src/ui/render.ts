@@ -7,7 +7,7 @@
  */
 import { Chess } from 'chess.js'
 import { shownMaiaMoves, type PositionAnalysis, type SideAnalysis } from '../analysis/analyzer'
-import { formatScore, type MoveClass } from '../analysis/classify'
+import { bestScore, deltaEval, formatScore, type MoveClass } from '../analysis/classify'
 import { describePosition } from '../analysis/describe'
 import type { EngineLine } from '../stockfish/stockfishClient'
 import type { GameTree } from '../game/tree'
@@ -19,9 +19,19 @@ import { t } from '../i18n/i18n'
  * Display options set by app.ts before rendering (iteration 4):
  *  - notation: figurine (♘f3, default) or letters (Nf3);
  *  - hideMoves: training mode — every suggested move becomes "--" (and is not
- *    clickable) while evaluations and percentages stay visible.
+ *    clickable) while evaluations and percentages stay visible;
+ *  - deltaCol / maiaCol: the middle columns of the Maia ("Δ eval") and
+ *    Stockfish ("Maia") panels, each can be hidden in ⚙ (José, iteration 5).
  */
-const view: { notation: Notation; hideMoves: boolean } = { notation: 'figurine', hideMoves: false }
+const view: { notation: Notation; hideMoves: boolean; deltaCol: boolean; maiaCol: boolean } = {
+  notation: 'figurine',
+  hideMoves: false,
+  deltaCol: true,
+  maiaCol: true,
+}
+
+/** A middle column cell (or header), only when that column is shown. */
+const midCell = (shown: boolean, html: string, tag = 'td') => (shown ? `<${tag} class="num">${html}</${tag}>` : '')
 export function setViewOptions(options: Partial<typeof view>) {
   Object.assign(view, options)
 }
@@ -55,7 +65,8 @@ function chip(uci: string, san: string, color?: string): string {
 /** `data-move` attribute for a table row, omitted when moves are hidden. */
 const rowMove = (uci: string) => (view.hideMoves ? '' : ` data-move="${uci}"`)
 
-const pct = (p: number) => `${(p * 100).toFixed(1)}%`
+/** Probability without decimals (José, iteration 5: saves space). */
+const pct = (p: number) => `${Math.round(p * 100)}%`
 
 // ---------------------------------------------------------------------------
 
@@ -81,12 +92,12 @@ const lineScoreOf = (l: EngineLine) => (l.mate !== undefined ? { mate: l.mate } 
  * least the first 4 fit). Which moves: shownMaiaMoves (≥ 1 %, max. 6).
  * No title on screen (saves vertical space): the bars are explained in ⚙.
  */
-export function renderMeter(side: SideAnalysis | null | undefined, emptyMsg: string, showBar = true): string {
+export function renderMeter(side: SideAnalysis | null | undefined, emptyMsg: string, showBar = true, showMoves = true): string {
   const bar = (html: string) => (showBar ? `<div class="meter">${html}</div>` : '')
-  if (side === null) return `${bar('')}<div class="meter-legend"><span>${emptyMsg}</span></div>`
-  if (!side?.meter || !side.maia) {
-    return `${bar('')}<div class="meter-legend"><span>${t('panel.calculating')}</span></div>`
-  }
+  // Bar only (iteration 5, default for the top bar): no legend line at all.
+  const legend = (html: string) => (showMoves ? `<div class="meter-legend">${html}</div>` : '')
+  if (side === null) return `${bar('')}${legend(`<span>${emptyMsg}</span>`)}`
+  if (!side?.meter || !side.maia) return `${bar('')}${legend(`<span>${t('panel.calculating')}</span>`)}`
   const { good, ok, blunder } = side.meter
   const seg = (cls: MoveClass, frac: number, label: string) =>
     `<div class="${cls}" style="width:${(frac * 100).toFixed(1)}%">${frac >= 0.12 ? label : ''}</div>`
@@ -96,7 +107,7 @@ export function renderMeter(side: SideAnalysis | null | undefined, emptyMsg: str
 
   return (
     bar(`${seg('blunder', blunder, `?? ${Math.round(blunder * 100)}%`)}${seg('ok', ok, `?! ${Math.round(ok * 100)}%`)}${seg('good', good, `✓ ${Math.round(good * 100)}%`)}`) +
-    `<div class="meter-legend">${items.join('')}</div>`
+    legend(items.join(''))
   )
 }
 
@@ -114,22 +125,34 @@ export function renderMoves(tree: GameTree): string {
     .join('')
 }
 
-/** Left column: Maia's most likely moves at the selected Elo. */
+/**
+ * Left column: Maia's most likely moves at the selected Elo, with "Δ eval"
+ * (José, iteration 5): how many pawns worse than Stockfish's best move each one
+ * is (blank until Stockfish has evaluated it).
+ */
 export function renderMaiaCol(side: SideAnalysis | undefined, elo: number, count: number): string {
+  const best = side && bestScore(side.classified)
   const rows = side?.maia
     ? side.maia.policy
         .slice(0, count)
         .map((p) => {
           const c = side.classified.get(p.uci)
-          return `<tr${rowMove(p.uci)}><td>${chip(p.uci, sanOf(side.fen, p.uci), c?.color)}</td><td>${pct(p.prob)}</td></tr>`
+          const delta = best && c ? deltaEval(best, c.score) : ''
+          return `<tr${rowMove(p.uci)}><td>${chip(p.uci, sanOf(side.fen, p.uci), c?.color)}</td>${midCell(view.deltaCol, delta)}<td class="num">${pct(p.prob)}</td></tr>`
         })
         .join('')
-    : `<tr><td colspan="2">${t('panel.calculating')}</td></tr>`
-  // The header row is also the title: "Maia 1500 | prob".
-  return `<table><tr><th>Maia ${elo}</th><th>${t('panel.prob')}</th></tr>${rows}</table>`
+    : `<tr><td colspan="3">${t('panel.calculating')}</td></tr>`
+  // The header row is also the title: "Maia 1500 | Δ eval | prob" ("Δ eval" is not translated).
+  return `<table><tr><th>Maia ${elo}</th>${midCell(view.deltaCol, 'Δ eval', 'th')}<th class="num">${t('panel.prob')}</th></tr>${rows}</table>`
 }
 
-/** Right column: Stockfish's best lines — or the endgame tables' exact results. */
+/** Maia's probability for a move of the Stockfish column: "0%" if Maia doesn't list it, "…" before Maia answers. */
+function maiaPct(side: SideAnalysis, uci: string): string {
+  if (!side.maia) return '…'
+  return pct(side.maia.policy.find((p) => p.uci === uci)?.prob ?? 0)
+}
+
+/** Right column: Stockfish's best lines — or the endgame tables' exact results — with Maia's probability of each move. */
 export function renderSfCol(side: SideAnalysis | undefined, engineName: string): string {
   if (side?.tb) {
     const tb = side.tb
@@ -138,23 +161,26 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
         const uci = l.pv[0]
         const m = tb.moves.find((x) => x.uci === uci)
         const label = m ? tbLabel(m.score, m.outcome, m.cursed) : ''
-        return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), side.classified.get(uci)?.color)}</td><td>${label}</td></tr>`
+        return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), side.classified.get(uci)?.color)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${label}</td></tr>`
       })
       .join('')
-    return `<table><tr><th>${t('panel.tablebase')} <small>Syzygy</small></th><th>${t('panel.result')}</th></tr>${rows}</table>`
+    // "TB" (tablebase) instead of the long name, so the 3 columns fit (iteration 5).
+    return `<table><tr><th>TB <small>Syzygy</small></th>${midCell(view.maiaCol, 'Maia', 'th')}<th class="num">${t('panel.result')}</th></tr>${rows}</table>`
   }
   const rows = side?.lines.length
     ? side.lines
         .map((l) => {
           const uci = l.pv[0]
           const c = side.classified.get(uci)
-          return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), c?.color)}</td><td>${formatScore(lineScoreOf(l))}</td></tr>`
+          return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), c?.color)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${formatScore(lineScoreOf(l), 1)}</td></tr>`
         })
         .join('')
-    : `<tr><td colspan="2">${t('panel.calculating')}</td></tr>`
-  // The header row is also the title: "Stockfish 17 d18 | eval".
+    : `<tr><td colspan="3">${t('panel.calculating')}</td></tr>`
+  // Eval with one decimal in this column (José, iteration 5: saves space).
+  // The header row is also the title: "SF d18 | Maia | eval". Middle column
+  // (iteration 5): Maia's probability for each of Stockfish's moves.
   const depth = side?.depth ? ` <small>d${side.depth}</small>` : ''
-  return `<table><tr><th>${engineName}${depth}</th><th>${t('panel.eval')}</th></tr>${rows}</table>`
+  return `<table><tr><th>${engineName}${depth}</th>${midCell(view.maiaCol, 'Maia', 'th')}<th class="num">${t('panel.eval')}</th></tr>${rows}</table>`
 }
 
 /** Explanatory text under the columns (only when the analysis is complete). */

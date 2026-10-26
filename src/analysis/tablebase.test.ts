@@ -79,8 +79,8 @@ describe('tbLabel', () => {
     expect(tbLabel({ mate: -20 }, 'loss')).toBe('−M20') // Black mates in 20
     expect(tbLabel({ cp: 2000 }, 'win')).toBe('+M?') // distance unknown
     expect(tbLabel({ cp: -2000 }, 'win')).toBe('−M?')
-    expect(tbLabel({ cp: 0 }, 'draw')).toBe('Tablas')
-    expect(tbLabel({ cp: 0 }, 'draw', true)).toBe('Tablas (50 j.)')
+    expect(tbLabel({ cp: 0 }, 'draw')).toBe('=') // iteration 5: "=" instead of "Tablas"
+    expect(tbLabel({ cp: 0 }, 'draw', true)).toBe('= (50)')
   })
 
   it('position score: Black to move and winning → negative', () => {
