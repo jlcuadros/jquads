@@ -32,8 +32,7 @@ export type Findability = 'easy' | 'medium' | 'hard'
 /**
  * How findable the good moves are for a human of the selected Elo: Maia's
  * probability mass on them. ≥ 70 % easy, ≥ 30 % medium ("not obvious"), else
- * hard. Used by the text and by the move-strip marks (circle / square /
- * diamond, José 2026-10-26).
+ * hard. Used by the text's sentence on how findable the good moves are.
  */
 export function goodMoveFindability(
   policy: Array<{ uci: string; prob: number }>,

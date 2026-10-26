@@ -133,7 +133,7 @@ export function renderMeter(side: SideAnalysis | null | undefined, emptyMsg: str
   )
 }
 
-/** Mark of a move (strip and full game view): coloured circle / square / diamond, or nothing. */
+/** Mark of a move (strip and full game view): colour = quality, shape ● ■ ▲ = how likely (likelihood.ts), or nothing. */
 export type MarkOf = (node: MoveNode) => MoveMark | undefined
 const markHtml = (m?: MoveMark) => (m ? `<span class="mark shape-${m.shape}" style="--chip:${m.color}"></span>` : '')
 
