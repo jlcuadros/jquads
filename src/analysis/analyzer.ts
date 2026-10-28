@@ -205,14 +205,15 @@ export class Analyzer {
     if (!alive()) return
     for (const l of side.lines) if (l.pv[0]) scores.set(l.pv[0], lineScore(l))
 
-    // 2c. h-eval (José, 2026-10-28): Stockfish's candidates at depth 6, the
-    //     opponent's likely replies (Maia, this Elo) valued by Maia 2600.
-    //     The Maia column's moves are always candidates too.
+    // 2c. h-eval (José, 2026-10-28): candidates = the SF column's and the Maia
+    //     column's moves (both show `multiPv` moves), filled up to N with
+    //     Stockfish at depth 7; the opponent's likely replies (Maia, this Elo)
+    //     are valued by Maia 2600.
     if (hevalCandidates > 0) {
       side.heval = await hEval(side.fen, elo, hevalCandidates, {
         candidates: async (fen, d, n) => (await this.stockfish.analyse(fen, d, n)).lines.map((l) => l.pv[0]).filter(Boolean),
         maia: async (items) => (items.length ? (await this.maia.predictMany(items)).predictions : []),
-      }, shownMaiaMoves(side.maia.policy).map((p) => p.uci))
+      }, [...side.lines.map((l) => l.pv[0]), ...side.maia.policy.slice(0, multiPv).map((p) => p.uci)].filter(Boolean))
       if (!alive()) return
       emit()
     }

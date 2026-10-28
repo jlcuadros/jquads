@@ -21,7 +21,7 @@ export const de: Messages = {
   'set.heval': 'h-eval-Kandidaten',
   'set.heval.off': 'Nicht berechnen',
   'set.hevalCol': 'Spalte «h-eval» bei Maia',
-  'help.heval.html': '<b>h-eval</b> („menschliche“ Bewertung): für Stockfishs beste Züge (Tiefe 6; wie viele, unter Engine) und für die Züge der Maia-Spalte werden die wahrscheinlichsten Antworten eines Gegners deiner Wertung laut Maia genommen (bis 90 % erreicht sind), jede entstehende Stellung so bewertet, wie es ein 2600er täte (Maia 2600), und mit der Wahrscheinlichkeit jeder Antwort gemittelt. Angezeigt wie eine Stockfish-Bewertung. Der Zug mit der besten h-eval trägt <b>💣</b>: der praktischste gegen einen Gegner deines Niveaus, auch wenn Stockfish einen anderen bevorzugt; er erscheint immer in der Maia-Spalte, anstelle des unwahrscheinlichsten Zugs, falls er fehlte.',
+  'help.heval.html': '<b>h-eval</b> („menschliche“ Bewertung): für die Züge der Stockfish- und der Maia-Spalte, aufgefüllt bis zur unter Engine gewählten Anzahl mit Stockfishs besten Zügen in Tiefe 7, werden die wahrscheinlichsten Antworten eines Gegners deiner Wertung laut Maia genommen (bis 90 % erreicht sind), jede entstehende Stellung so bewertet, wie es ein 2600er täte (Maia 2600), und mit der Wahrscheinlichkeit jeder Antwort gemittelt. Angezeigt wie eine Stockfish-Bewertung. Der Zug mit der besten h-eval trägt <b>💣</b>: der praktischste gegen einen Gegner deines Niveaus, auch wenn Stockfish einen anderen bevorzugt; er erscheint immer in der Maia-Spalte, anstelle des unwahrscheinlichsten Zugs, falls er fehlte.',
   'set.group.engine': 'Engine',
   'set.group.ui': 'Oberfläche',
   'set.sfSpeed': 'Stockfish-Geschwindigkeit',

@@ -72,7 +72,7 @@ const DEFAULTS: AppSettings = {
   meterMode: 'bar', // top bar (Maia's moves): only the bar by default (José, iteration 5)
   deltaCol: true, // "Δ eval" column in the Maia panel (iteration 5, can be hidden)
   maiaCol: true, // "Maia" % column in the Stockfish panel (iteration 5, can be hidden)
-  hevalCandidates: 10, // h-eval: Stockfish candidates at depth 6 (José, 2026-10-28); 0 = off
+  hevalCandidates: 10, // h-eval: Stockfish candidates at depth 7 (José, 2026-10-28); 0 = off
   hevalCol: true, // "h-eval" column in the Maia panel (can be hidden)
   hashMb: 16,
   sfThreads: Math.min(4, CORES), // ⚙ (José, 2026-10-26)

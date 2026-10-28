@@ -3,9 +3,10 @@
  * how much a move is worth in practice against an opponent of the selected Elo,
  * counting on how they are likely to answer.
  *
- *   1. Candidates: Stockfish at depth 6, the N best moves (⚙, default 10),
- *      plus always the moves shown in the Maia column (José, 2026-10-28), so
- *      every move there has its h-eval.
+ *   1. Candidates (José, 2026-10-28): every move shown in the SF column and in
+ *      the Maia column, then filled up to N (⚙, default 10) with Stockfish's
+ *      best moves at depth 7 (HEVAL_DEPTH). If the two columns already give N
+ *      or more, they are all taken and the depth-7 search is skipped.
  *   2. For each candidate, the opponent's replies according to Maia at the
  *      selected Elo, most likely first, until they cover ≥ 90 % (at most 8).
  *   3. Each reply's position is valued by Maia at 2600 (expected score for
@@ -24,7 +25,7 @@
 import { Chess } from 'chess.js'
 import type { Score } from './classify'
 
-export const HEVAL_DEPTH = 6
+export const HEVAL_DEPTH = 7 // was 6, then 10 was tried (≈ +0.7 s per position); José chose 7
 export const REPLY_COVERAGE = 0.9
 export const MAX_REPLIES = 8
 export const STRONG_ELO = 2600
@@ -73,10 +74,16 @@ export function likelyReplies(policy: Array<{ uci: string; prob: number }>): Arr
   return taken
 }
 
-/** `extra`: moves that are always candidates (the Maia column's), besides Stockfish's N. */
-export async function hEval(fen: string, elo: number, n: number, engines: HevalEngines, extra: string[] = []): Promise<HevalResult> {
+/** `shown`: the moves on screen (SF and Maia columns), always candidates; Stockfish fills up to `n`. */
+export async function hEval(fen: string, elo: number, n: number, engines: HevalEngines, shown: string[] = []): Promise<HevalResult> {
   const moverWhite = fen.split(' ')[1] === 'w'
-  const cands = [...new Set([...(await engines.candidates(fen, HEVAL_DEPTH, n)), ...extra])]
+  const cands = [...new Set(shown)]
+  if (cands.length < n) {
+    for (const m of await engines.candidates(fen, HEVAL_DEPTH, n)) {
+      if (cands.length >= n) break
+      if (!cands.includes(m)) cands.push(m)
+    }
+  }
   const expected = new Map<string, number>() // candidate → expected score for the mover (0..1)
 
   // Step 2: Maia (selected Elo) on the positions after each candidate.

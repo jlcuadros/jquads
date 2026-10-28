@@ -21,7 +21,7 @@ export const it: Messages = {
   'set.heval': 'Candidate h-eval',
   'set.heval.off': 'Non calcolare',
   'set.hevalCol': 'Colonna «h-eval» in Maia',
-  'help.heval.html': '<b>h-eval</b> (valutazione «umana»): per le mosse migliori di Stockfish (profondità 6; quante, in Motore) e per quelle della colonna di Maia, si prendono le risposte più probabili dell’avversario del tuo Elo secondo Maia (fino al 90 %), si valuta ogni posizione risultante come farebbe un giocatore da 2600 (Maia 2600) e si fa la media con la probabilità di ogni risposta. Si mostra come una valutazione di Stockfish. La mossa con la h-eval migliore ha <b>💣</b>: la più pratica contro un avversario del tuo livello, anche se Stockfish ne preferisce un’altra; compare sempre nella colonna di Maia, al posto della meno probabile se non c’era.',
+  'help.heval.html': '<b>h-eval</b> (valutazione «umana»): per le mosse delle colonne di Stockfish e di Maia, completate fino al numero scelto in Motore con le migliori di Stockfish a profondità 7, si prendono le risposte più probabili dell’avversario del tuo Elo secondo Maia (fino al 90 %), si valuta ogni posizione risultante come farebbe un giocatore da 2600 (Maia 2600) e si fa la media con la probabilità di ogni risposta. Si mostra come una valutazione di Stockfish. La mossa con la h-eval migliore ha <b>💣</b>: la più pratica contro un avversario del tuo livello, anche se Stockfish ne preferisce un’altra; compare sempre nella colonna di Maia, al posto della meno probabile se non c’era.',
   'set.group.engine': 'Motore',
   'set.group.ui': 'Interfaccia',
   'set.sfSpeed': 'Velocità di Stockfish',

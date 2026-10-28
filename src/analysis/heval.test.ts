@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Chess } from 'chess.js'
-import { hEval, likelyReplies, scoreToCp, MAX_REPLIES, STRONG_ELO, type HevalEngines } from './heval'
+import { hEval, likelyReplies, scoreToCp, HEVAL_DEPTH, MAX_REPLIES, STRONG_ELO, type HevalEngines } from './heval'
 import { formatScore } from './classify'
 
 /** FEN after playing UCI moves from `fen`. */
@@ -55,13 +55,20 @@ describe('h-eval (José\'s design, 2026-10-28)', () => {
     expect(r.best).toBe('h5f7')
   })
 
-  it('the Maia column\'s moves are always candidates, without repeating', async () => {
+  it('candidates: the moves on screen first, then Stockfish fills up to N', async () => {
+    const calls: number[] = []
     const engines: HevalEngines = {
-      candidates: async () => ['e2e4', 'd2d4'],
+      candidates: async (_f, d, n) => (calls.push(d), ['e2e4', 'd2d4', 'c2c4', 'g1f3'].slice(0, n)),
       maia: async (items) => items.map(() => ({ policy: [{ uci: 'e7e5', prob: 1 }], whiteWinProb: 0.5 })),
     }
-    const r = await hEval(START, 1500, 2, engines, ['d2d4', 'g1f3'])
-    expect([...r.scores.keys()]).toEqual(['e2e4', 'd2d4', 'g1f3'])
+    // SF + Maia columns give d2d4, g1f3 (repeated once): filled with e2e4 (d2d4 already in) up to 3.
+    let r = await hEval(START, 1500, 3, engines, ['d2d4', 'g1f3', 'd2d4'])
+    expect([...r.scores.keys()]).toEqual(['d2d4', 'g1f3', 'e2e4'])
+    expect(calls).toEqual([HEVAL_DEPTH])
+    // The columns already give N or more: all taken, no Stockfish search.
+    r = await hEval(START, 1500, 2, engines, ['d2d4', 'g1f3', 'b1c3'])
+    expect([...r.scores.keys()]).toEqual(['d2d4', 'g1f3', 'b1c3'])
+    expect(calls).toEqual([HEVAL_DEPTH])
   })
 
   it('replies: until 90 % or 8 moves; the formula and its limits', () => {
