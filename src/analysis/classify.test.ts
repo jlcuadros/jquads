@@ -22,18 +22,35 @@ describe('classify', () => {
 })
 
 describe('classifyMoves', () => {
-  it('measures loss from the side to move, and colours best→worst within a class', () => {
+  it('measures loss from the side to move', () => {
     // Black to move: more negative (white's view) is better for black.
     const scores = new Map([
       ['e7e5', { cp: -20 }], // best for black
-      ['d7d5', { cp: -10 }], // ~2 % worse → good, second shade
+      ['d7d5', { cp: -10 }], // ~0.9 % worse → good, still the darkest green
       ['g7g5', { cp: 150 }], // much worse → blunder
     ])
     const r = classifyMoves(scores, false)
     expect(r.get('e7e5')).toMatchObject({ cls: 'good', loss: 0, color: PALETTE.good[0] })
-    expect(r.get('d7d5')).toMatchObject({ cls: 'good', color: PALETTE.good[1] })
+    expect(r.get('d7d5')).toMatchObject({ cls: 'good', color: PALETTE.good[0] })
     expect(r.get('g7g5')?.cls).toBe('blunder')
     expect(r.get('g7g5')?.color).toBe(PALETTE.blunder[0]) // first (palest) blunder shade
+  })
+
+  it('green and yellow shades by the loss, one per point (José, 2026-10-28)', () => {
+    // White to move, best 0.00 (50 %). Losses: −0.30 2.8 %, −0.60 5.5 %, −0.80 7.3 %, −1.00 9.1 %.
+    const r = classifyMoves(new Map([['a', { cp: 0 }], ['b', { cp: -30 }], ['c', { cp: -60 }], ['d', { cp: -80 }], ['e', { cp: -100 }]]), true)
+    expect(r.get('b')?.color).toBe(PALETTE.good[2]) // 2–3 %
+    expect(r.get('c')?.color).toBe(PALETTE.ok[0]) // 5–6 %
+    expect(r.get('d')?.color).toBe(PALETTE.ok[2]) // 7–8 %
+    expect(r.get('e')?.color).toBe(PALETTE.ok[4]) // 9–10 %
+  })
+
+  it('same loss → same shade, whatever the order (green and red)', () => {
+    const r = classifyMoves(new Map([['a', { cp: 0 }], ['b', { cp: -10 }], ['c', { cp: -10 }], ['d', { cp: -200 }], ['e', { cp: -200 }], ['f', { cp: -300 }]]), true)
+    expect(r.get('b')?.color).toBe(r.get('c')?.color)
+    expect(r.get('d')?.color).toBe(PALETTE.blunder[0]) // red still by order…
+    expect(r.get('e')?.color).toBe(PALETTE.blunder[0]) // …but equal ones share it
+    expect(r.get('f')?.color).toBe(PALETTE.blunder[1])
   })
 })
 

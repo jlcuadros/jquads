@@ -69,7 +69,24 @@ export interface ClassifiedMove {
 }
 
 /**
- * Classifies every evaluated move of a position and assigns its colour.
+ * Shade (0 = first of the palette) of a move by what it loses (José, 2026-10-28):
+ *  - green and yellow: FIXED by the win probability lost, one shade per point —
+ *    green 0–1 %, 1–2 %, 2–3 %, 3–4 %, 4–5 % (darkest = practically the best);
+ *    yellow 5–6 % … 9–10 % (palest → orange). Same loss → same shade, in any position;
+ *  - red: by order among the position's mistakes (least bad = palest), as
+ *    maiachess; moves that lose exactly the same share the shade.
+ */
+function shadeIndex(cls: MoveClass, loss: number, redRank: number): number {
+  const points = Math.floor(loss * 100 + 1e-9) // whole percentage points lost
+  if (cls === 'good') return Math.min(4, points)
+  if (cls === 'ok') return Math.min(4, points - 5)
+  return Math.min(4, redRank)
+}
+
+/**
+ * Classifies every evaluated move of a position and assigns its colour:
+ * the class (green < 5 % lost, yellow 5–10 %, red ≥ 10 %) and the shade
+ * within it (shadeIndex).
  * @param scores UCI move → engine score (white's point of view)
  */
 export function classifyMoves(scores: Map<string, Score>, whiteToMove: boolean): Map<string, ClassifiedMove> {
@@ -78,14 +95,18 @@ export function classifyMoves(scores: Map<string, Score>, whiteToMove: boolean):
   const best = Math.max(...entries.map((e) => e.wp))
 
   const result = new Map<string, ClassifiedMove>()
-  // Sorted best → worst so that the shade index grows within each category.
+  // Best → worst, so that the red shades grow with the order.
   const sorted = entries.sort((a, b) => b.wp - a.wp)
-  const seen: Record<MoveClass, number> = { good: 0, ok: 0, blunder: 0 }
+  let redRank = -1
+  let lastRedWp: number | undefined
   for (const e of sorted) {
     const loss = Math.max(0, best - e.wp)
     const cls = classify(loss)
-    const shades = PALETTE[cls]
-    const color = shades[Math.min(seen[cls]++, shades.length - 1)]
+    if (cls === 'blunder' && e.wp !== lastRedWp) {
+      redRank++ // a new, worse red; an equal one keeps the shade
+      lastRedWp = e.wp
+    }
+    const color = PALETTE[cls][shadeIndex(cls, loss, redRank)]
     result.set(e.uci, { uci: e.uci, score: e.score, loss, cls, color })
   }
   return result
