@@ -42,6 +42,7 @@ const COMPONENTS = [
 const SERVICES = [
   'Lichess (https://lichess.org): public API for a user\'s games and the Syzygy endgame tablebase (tablebase.lichess.org). Used without login, one request at a time, as Lichess asks. Not affiliated with Lichess.',
   'Chess.com (https://www.chess.com/news/view/published-data-api): published-data API (PubAPI) for a user\'s monthly game archives. Read-only, without login, one request at a time. Not affiliated with Chess.com.',
+  'Cloudflare Web Analytics (https://www.cloudflare.com/web-analytics/): anonymous visit statistics (pages, countries, devices, load speed), without cookies, without storing IP addresses or other personal data. Enabled 2026-10-28.',
 ]
 
 const rule = '='.repeat(78)

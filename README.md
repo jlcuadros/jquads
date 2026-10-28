@@ -88,6 +88,9 @@ Browser end-to-end tests (Playwright, WebKit emulating an iPhone) are described 
 The full licence texts of the shipped components are generated into `licenses.txt`
 (`scripts/third-party-licenses.mjs`), linked from ⚙ → Credits and licences.
 
+Anonymous visit statistics with [Cloudflare Web Analytics](https://www.cloudflare.com/web-analytics/)
+(no cookies, no personal data).
+
 Unofficial project, not affiliated with or endorsed by Maia Chess / the University of Toronto,
 Stockfish, Lichess or Chess.com. Their names belong to their owners. Provided without any warranty.
 
