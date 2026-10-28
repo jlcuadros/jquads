@@ -15,6 +15,7 @@ export const en: Messages = {
   'set.lang': 'Language',
   'set.elo': 'Maia rating',
   'set.depth': 'Stockfish depth',
+  'set.depth.auto': 'Auto ({n})',
   'set.threatDepth': 'Threats depth',
   'set.hash': 'Stockfish memory (hash)',
   'set.group.engine': 'Engine',
@@ -68,7 +69,7 @@ export const en: Messages = {
   'help.tablebase.html': '<b>Endgame tables</b>: with 7 pieces or fewer (kings included) and no castling rights, the exact result comes from Lichess’ Syzygy tables instead of Stockfish: «TB …» at the top and the «TB» column with «+M12» (White mates in 12), «−M20» (Black, in 20), «+M?» (wins, distance unknown), «=» (draw) or «= (50)» (draw by the 50-move rule). It can be turned off on this screen; if the tables fail or there is no connection, Stockfish is used.',
   'help.evalBar.html': '<b>Vertical bar</b> (optional): white/black according to Stockfish’s evaluation; the red mark is White’s winning chance according to Maia.',
   'help.pgn.html': '<b>Export PGN</b>: the game with its variations; it can be copied or sent to another app (for Lichess: paste it at lichess.org/paste). <b>↗Li</b> opens the current position in Lichess.',
-  'help.memory.html': '<b>Memory</b>: Stockfish’s hash is used for the analysis and for the threats (same engine). The classic version saves about 80 MB of neural networks; changing it reloads the page. In <b>Engine</b>, «Measure» tests Stockfish’s speed on this device (nodes per second, with the chosen threads). In <b>Interface</b>, the theme can be light, dark or the system’s.',
+  'help.memory.html': '<b>Memory</b>: Stockfish’s hash is used for the analysis and for the threats (same engine). The classic version saves about 80 MB of neural networks; changing it reloads the page. In <b>Engine</b>, «Measure» tests Stockfish’s speed on this device (nodes per second, with the chosen threads). In <b>Interface</b>, the theme can be light, dark or the system’s. The «Auto» depth comes from that speed: 15 at 1.83 M nodes/s (iPhone 15), 10 at 0.4 M, never below 10; the threats’, 3 less (at least 9).',
 
   'credits.title': 'Credits and licences',
   'credits.source.html': '<b>Source code</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/maia-stockfish-analysis" target="_blank" rel="noopener">github.com/jlcuadros/maia-stockfish-analysis</a>',

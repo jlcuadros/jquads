@@ -18,6 +18,7 @@ import './style.css'
 import { Chess } from 'chess.js'
 import { GameTree, type MoveNode } from './game/tree'
 import { loadBook } from './book/openingBook'
+import { MAX_DEPTH, MIN_DEPTH, MIN_THREAT_DEPTH, THREAT_OFFSET, autoDepth, autoThreatDepth } from './stockfish/autoDepth'
 import { askChoice } from './ui/choice'
 import { findNode, openGameView, refreshGameView } from './ui/gameView'
 import type { PolyglotBook } from './book/polyglot'
@@ -48,8 +49,10 @@ declare global {
   }
 }
 const ELOS = Array.from({ length: 21 }, (_, i) => 600 + i * 100) // as maiachess
-const DEPTHS = [10, 12, 14, 16, 18, 20, 22, 24]
-const THREAT_DEPTHS = [8, 10, 12, 14, 16]
+// Every depth, odd ones too (José, 2026-10-28: "solo dejas valores pares"), never below
+// 10 (main) / 9 (threats): below that the analysis loses too much quality. "Auto" first.
+const DEPTHS = Array.from({ length: MAX_DEPTH - MIN_DEPTH + 1 }, (_, i) => MIN_DEPTH + i)
+const THREAT_DEPTHS = Array.from({ length: MAX_DEPTH - THREAT_OFFSET - MIN_THREAT_DEPTH + 1 }, (_, i) => MIN_THREAT_DEPTH + i)
 const HASH_SIZES = [16, 32, 64, 128, 256] // MB
 const LINE_COUNTS = [3, 4, 5, 6] // moves shown per engine column
 /**
@@ -60,8 +63,8 @@ const CORES = Math.max(1, navigator.hardwareConcurrency || 1)
 const SF_THREADS = Array.from({ length: Math.min(8, CORES) }, (_, i) => i + 1)
 const DEFAULTS: AppSettings = {
   elo: 1500,
-  depth: 18,
-  threatDepth: 12,
+  depth: 'auto', // from the device's speed (stockfish/autoDepth.ts, José 2026-10-28)
+  threatDepth: 'auto', // main depth − 3, at least 9
   lines: 4,
   threatsMode: 'moves', // José, iteration 3
   meterMode: 'bar', // top bar (Maia's moves): only the bar by default (José, iteration 5)
@@ -81,7 +84,7 @@ const DEFAULTS: AppSettings = {
 }
 
 /** Bumped when a default changes and saved settings must be migrated (see loadSettings). */
-const SETTINGS_VERSION = 2
+const SETTINGS_VERSION = 3
 
 /** How threats are shown: bar + moves, only the moves (legend), or not computed. */
 type ThreatsMode = 'bar' | 'moves' | 'off'
@@ -89,8 +92,10 @@ type ThreatsMode = 'bar' | 'moves' | 'off'
 type MeterMode = 'both' | 'bar' | 'moves' | 'off'
 
 /** Analysis settings + UI/engine settings, all editable in the ⚙ panel. */
-interface AppSettings extends Omit<Settings, 'threats'> {
+interface AppSettings extends Omit<Settings, 'threats' | 'depth' | 'threatDepth'> {
   version?: number // settings format version (SETTINGS_VERSION)
+  depth: number | 'auto' // main Stockfish depth; 'auto' = from the measured speed
+  threatDepth: number | 'auto' // threats' depth; 'auto' = main depth − 3 (≥ 9)
   threatsMode: ThreatsMode
   meterMode: MeterMode
   deltaCol: boolean // show "Δ eval" in the Maia panel
@@ -117,6 +122,12 @@ function loadSettings(): AppSettings {
     // Before settings version 2 the default threats mode was 'bar' and it was
     // saved with everything else: adopt the new default ('moves') once.
     if ((saved.version ?? 1) < 2 && saved.threatsMode === 'bar') delete saved.threatsMode
+    // Version 3 (2026-10-28): depths can be "Auto". The old defaults (18 / 12) were saved like
+    // any choice: they become Auto; a depth chosen by hand (e.g. José's 14) is kept.
+    if ((saved.version ?? 1) < 3) {
+      if (saved.depth === 18) delete saved.depth
+      if (saved.threatDepth === 12) delete saved.threatDepth
+    }
     saved.version = SETTINGS_VERSION
     return { ...DEFAULTS, ...saved }
   } catch {
@@ -125,7 +136,12 @@ function loadSettings(): AppSettings {
 }
 
 /** What the Analyzer needs from the app settings. */
-const analysisSettings = (): Settings => ({ ...settings, threats: settings.threatsMode !== 'off' })
+/** The depths in use: the chosen ones, or "Auto" resolved from the measured speed. */
+function engineDepths(): { depth: number; threatDepth: number } {
+  const depth = settings.depth === 'auto' ? autoDepth(settings.sfNps) : settings.depth
+  return { depth, threatDepth: settings.threatDepth === 'auto' ? autoThreatDepth(depth) : settings.threatDepth }
+}
+const analysisSettings = (): Settings => ({ ...settings, ...engineDepths(), threats: settings.threatsMode !== 'off' })
 function saveSettings() {
   try {
     localStorage.setItem('settings', JSON.stringify(settings))
@@ -146,6 +162,41 @@ let openingBook: PolyglotBook | null = null
 // a game made here) and its favourite id if it was saved with 📂 → 💾 Guardar.
 let gameHeaders: PgnHeaders = {}
 let savedId: string | undefined
+
+/**
+ * Measures Stockfish's speed on this device (1 s, ⚙ → Motor) and keeps it:
+ * it sets the "Auto" depths. Done automatically the first time the engines are
+ * ready, when the threads change, and with the "Medir" button.
+ * `restart`: start the interrupted analysis again afterwards.
+ */
+async function measureSpeed(restart: boolean) {
+  if (!enginesReady) return
+  const button = $<HTMLButtonElement>('sfMeasure')
+  button.disabled = true
+  $('sfSpeed').textContent = t('set.sfSpeed.measuring')
+  analyzer.cancel()
+  try {
+    settings.sfNps = await stockfish.benchmark(1000)
+    saveSettings()
+  } finally {
+    button.disabled = false
+    showSpeed()
+    fillDepthSelects()
+    if (restart) positionChanged()
+  }
+}
+
+/** Depth selects: "Auto (N)" (N = what Auto means now on this device) and every depth. */
+function fillDepthSelects() {
+  const { depth, threatDepth } = engineDepths()
+  const fill = (id: string, values: number[], chosen: number | 'auto', auto: number) => {
+    const options = [`<option value="auto">${t('set.depth.auto', { n: auto })}</option>`, ...values.map((v) => `<option value="${v}">${v}</option>`)]
+    $<HTMLSelectElement>(id).innerHTML = options.join('')
+    $<HTMLSelectElement>(id).value = String(chosen)
+  }
+  fill('depth', DEPTHS, settings.depth, settings.depth === 'auto' ? depth : autoDepth(settings.sfNps))
+  fill('threatDepth', THREAT_DEPTHS, settings.threatDepth, autoThreatDepth(depth))
+}
 
 /** Last measured Stockfish speed in ⚙ ("1.23 M nodos/s"), or "—" if never measured. */
 function showSpeed() {
@@ -407,8 +458,7 @@ function fillSelect(id: string, values: number[], selected: number, label: (v: n
 
 function setupControls() {
   fillSelect('elo', ELOS, settings.elo, (v) => String(v))
-  fillSelect('depth', DEPTHS, settings.depth, (v) => String(v))
-  fillSelect('threatDepth', THREAT_DEPTHS, settings.threatDepth, (v) => String(v))
+  fillDepthSelects()
   fillSelect('hashMb', HASH_SIZES, settings.hashMb, (v) => `${v} MB`)
   fillSelect('sfThreads', SF_THREADS, Math.min(settings.sfThreads, CORES), (v) => String(v))
   $('sfThreadsCores').textContent = t('set.sfThreads.cores', { n: CORES })
@@ -493,6 +543,7 @@ function setupControls() {
     applyStaticTranslations()
     $('sfThreadsCores').textContent = t('set.sfThreads.cores', { n: CORES }) // generated text, not in the HTML
     showSpeed()
+    fillDepthSelects() // "Auto (N)" is translated
     $('hideMoves').title = t(hideMoves ? 'btn.show' : 'btn.hide')
     $('hideMoves').setAttribute('aria-label', $('hideMoves').title)
     retranslateEditor()
@@ -518,14 +569,22 @@ function setupControls() {
     board.redrawAll() // the board width changes when the bar appears/disappears
   }
 
-  const onNumber = (key: 'elo' | 'depth' | 'threatDepth' | 'lines') => (ev: Event) => {
+  const onNumber = (key: 'elo' | 'lines') => (ev: Event) => {
     settings[key] = Number((ev.target as HTMLSelectElement).value)
     saveSettings()
     positionChanged()
   }
+  // Depths: a number, or "auto" (from the measured speed).
+  const onDepth = (key: 'depth' | 'threatDepth') => (ev: Event) => {
+    const v = (ev.target as HTMLSelectElement).value
+    settings[key] = v === 'auto' ? 'auto' : Number(v)
+    saveSettings()
+    fillDepthSelects() // "Auto (N)" of the threats follows the main depth
+    positionChanged()
+  }
   $('elo').onchange = onNumber('elo')
-  $('depth').onchange = onNumber('depth')
-  $('threatDepth').onchange = onNumber('threatDepth')
+  $('depth').onchange = onDepth('depth')
+  $('threatDepth').onchange = onDepth('threatDepth')
   $('lines').onchange = onNumber('lines')
   $('meterMode').onchange = (ev) => {
     settings.meterMode = (ev.target as HTMLSelectElement).value as MeterMode
@@ -554,28 +613,14 @@ function setupControls() {
   // Speed test (José, 2026-10-28): Stockfish searches a middlegame for 1 s with the
   // current threads; the result (nodes per second) is shown and kept.
   showSpeed()
-  $('sfMeasure').onclick = async () => {
-    if (!enginesReady) return
-    const button = $<HTMLButtonElement>('sfMeasure')
-    button.disabled = true
-    $('sfSpeed').textContent = t('set.sfSpeed.measuring')
-    analyzer.cancel()
-    try {
-      settings.sfNps = await stockfish.benchmark(1000)
-      saveSettings()
-    } finally {
-      button.disabled = false
-      showSpeed()
-      positionChanged() // the analysis was interrupted: start it again
-    }
-  }
+  $('sfMeasure').onclick = () => void measureSpeed(true)
   // Threads can change while the engine is loaded (UCI "Threads"), like the hash.
   $('sfThreads').onchange = async (ev) => {
     settings.sfThreads = Number((ev.target as HTMLSelectElement).value)
     saveSettings()
     analyzer.cancel()
     await stockfish.configure([`setoption name Threads value ${settings.sfThreads}`])
-    positionChanged()
+    await measureSpeed(true) // the speed (and "Auto" depth) depends on the threads
   }
   // A different Stockfish build means loading another WASM module: simplest is a reload.
   $('variant').onchange = (ev) => {
@@ -712,6 +757,8 @@ async function loadEngines() {
     ])
     status.textContent = ''
     enginesReady = true
+    // First time on this device: measure the speed (1 s) so "Auto" depths fit it.
+    if (!settings.sfNps) await measureSpeed(false)
     runAnalysis()
     if (settings.book) void loadOpeningBook() // after the engines: they matter more on a first visit
   } catch (e) {

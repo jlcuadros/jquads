@@ -15,6 +15,7 @@ export const fr: Messages = {
   'set.lang': 'Langue',
   'set.elo': 'Elo de Maia',
   'set.depth': 'Profondeur Stockfish',
+  'set.depth.auto': 'Auto ({n})',
   'set.threatDepth': 'Profondeur menaces',
   'set.hash': 'Mémoire Stockfish (hash)',
   'set.group.engine': 'Moteur',
@@ -68,7 +69,7 @@ export const fr: Messages = {
   'help.tablebase.html': '<b>Tables de finales</b> : avec 7 pièces ou moins (rois compris) et sans roque, le résultat exact vient des tables Syzygy de Lichess au lieu de Stockfish : « TB … » en haut et la colonne « TB » avec « +M12 » (les Blancs matent en 12), « −M20 » (les Noirs, en 20), « +M? » (gain, distance inconnue), « = » (nulle) ou « = (50) » (nulle par la règle des 50 coups). Désactivable sur cet écran ; si les tables échouent ou sans connexion, Stockfish est utilisé.',
   'help.evalBar.html': "<b>Barre verticale</b> (optionnelle) : blanc/noir selon l'évaluation de Stockfish ; la marque rouge est la chance de gain des Blancs selon Maia.",
   'help.pgn.html': "<b>Exporter PGN</b> : la partie avec ses variantes ; on peut la copier ou l'envoyer à une autre app (pour Lichess : la coller sur lichess.org/paste). <b>↗Li</b> ouvre la position actuelle dans Lichess.",
-  'help.memory.html': "<b>Mémoire</b> : le hash de Stockfish sert à l'analyse et aux menaces (même moteur). La version classique économise environ 80 Mo de réseaux neuronaux ; la changer recharge la page. Dans <b>Moteur</b>, « Mesurer » teste la vitesse de Stockfish sur cet appareil (nœuds par seconde, avec les threads choisis). Dans <b>Interface</b>, le thème peut être clair, sombre ou celui du système.",
+  'help.memory.html': "<b>Mémoire</b> : le hash de Stockfish sert à l'analyse et aux menaces (même moteur). La version classique économise environ 80 Mo de réseaux neuronaux ; la changer recharge la page. Dans <b>Moteur</b>, « Mesurer » teste la vitesse de Stockfish sur cet appareil (nœuds par seconde, avec les threads choisis). Dans <b>Interface</b>, le thème peut être clair, sombre ou celui du système. La profondeur « Auto » découle de cette vitesse : 15 à 1,83 M nœuds/s (iPhone 15), 10 à 0,4 M, jamais moins de 10 ; celle des menaces, 3 de moins (au moins 9).",
 
   'credits.title': 'Crédits et licences',
   'credits.source.html': '<b>Code source</b> (AGPL-3.0) : <a href="https://github.com/jlcuadros/maia-stockfish-analysis" target="_blank" rel="noopener">github.com/jlcuadros/maia-stockfish-analysis</a>',

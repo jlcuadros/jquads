@@ -15,6 +15,7 @@ export const pt: Messages = {
   'set.lang': 'Idioma',
   'set.elo': 'Elo do Maia',
   'set.depth': 'Profundidade do Stockfish',
+  'set.depth.auto': 'Auto ({n})',
   'set.threatDepth': 'Profundidade das ameaças',
   'set.hash': 'Memória do Stockfish (hash)',
   'set.group.engine': 'Motor',
@@ -68,7 +69,7 @@ export const pt: Messages = {
   'help.tablebase.html': '<b>Tablebases de finais</b>: com 7 peças ou menos (reis incluídos) e sem roques, o resultado exato vem das tablebases Syzygy do Lichess em vez do Stockfish: em cima «TB …» e a coluna «TB» com «+M12» (as brancas dão mate em 12), «−M20» (as pretas, em 20), «+M?» (ganham, distância desconhecida), «=» (empate) ou «= (50)» (empate pela regra dos 50 lances). Pode ser desativado neste ecrã; se falharem ou não houver ligação, usa-se o Stockfish.',
   'help.evalBar.html': '<b>Barra vertical</b> (opcional): branco/preto segundo a avaliação do Stockfish; a marca vermelha é a probabilidade de vitória das brancas segundo o Maia.',
   'help.pgn.html': '<b>Exportar PGN</b>: a partida com as suas variantes; pode ser copiada ou enviada para outra app (para o Lichess: colá-la em lichess.org/paste). <b>↗Li</b> abre a posição atual no Lichess.',
-  'help.memory.html': '<b>Memória</b>: o hash do Stockfish serve para a análise e para as ameaças (o mesmo motor). A versão clássica poupa cerca de 80 MB de redes neuronais; mudá-la recarrega a página. Em <b>Motor</b>, «Medir» testa a velocidade do Stockfish neste dispositivo (nós por segundo, com os threads escolhidos). Em <b>Interface</b>, o tema pode ser claro, escuro ou o do sistema.',
+  'help.memory.html': '<b>Memória</b>: o hash do Stockfish serve para a análise e para as ameaças (o mesmo motor). A versão clássica poupa cerca de 80 MB de redes neuronais; mudá-la recarrega a página. Em <b>Motor</b>, «Medir» testa a velocidade do Stockfish neste dispositivo (nós por segundo, com os threads escolhidos). Em <b>Interface</b>, o tema pode ser claro, escuro ou o do sistema. A profundidade «Auto» vem dessa velocidade: 15 a 1,83 M nós/s (iPhone 15), 10 a 0,4 M, nunca menos de 10; a das ameaças, 3 a menos (mínimo 9).',
 
   'credits.title': 'Créditos e licenças',
   'credits.source.html': '<b>Código-fonte</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/maia-stockfish-analysis" target="_blank" rel="noopener">github.com/jlcuadros/maia-stockfish-analysis</a>',

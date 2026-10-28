@@ -225,6 +225,11 @@ await page.click('#sfMeasure')
 await page.waitForFunction(() => /nodos\/s/.test(document.getElementById('sfSpeed').textContent), null, { timeout: 30_000 })
 const speed = await page.textContent('#sfSpeed')
 console.log(`${/^[\d.,]+ M nodos\/s$/.test(speed) ? 'OK  ' : 'FAIL'} Stockfish speed measured: ${speed}`)
+// Depths (José, 2026-10-28): "Auto (N)" first (N from the measured speed), every depth odd and even
+// (10–24, threats 9–21); Auto threats = main − 3, at least 9.
+const depths = await page.evaluate(() => ['depth', 'threatDepth'].map((id) => [...document.getElementById(id).options].map((o) => o.textContent)))
+const autoMain = Number(depths[0][0].match(/\((\d+)\)/)?.[1]), autoThreat = Number(depths[1][0].match(/\((\d+)\)/)?.[1])
+console.log(`${/^Auto \(\d+\)$/.test(depths[0][0]) && depths[0].slice(1).join(',') === '10,11,12,13,14,15,16,17,18,19,20,21,22,23,24' && depths[1].slice(1, 3).join(',') === '9,10' && autoThreat === Math.max(9, autoMain - 3) ? 'OK  ' : 'FAIL'} depths: main ${depths[0][0]} + ${depths[0].length - 1} values, threats ${depths[1][0]} + ${depths[1].length - 1} values`)
 await page.click('#menu')
 
 await browser.close()

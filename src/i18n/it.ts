@@ -15,6 +15,7 @@ export const it: Messages = {
   'set.lang': 'Lingua',
   'set.elo': 'Elo di Maia',
   'set.depth': 'Profondità Stockfish',
+  'set.depth.auto': 'Auto ({n})',
   'set.threatDepth': 'Profondità minacce',
   'set.hash': 'Memoria Stockfish (hash)',
   'set.group.engine': 'Motore',
@@ -68,7 +69,7 @@ export const it: Messages = {
   'help.tablebase.html': '<b>Tablebase dei finali</b>: con 7 pezzi o meno (re inclusi) e senza arrocco, il risultato esatto viene dalle tablebase Syzygy di Lichess invece che da Stockfish: in alto «TB …» e la colonna «TB» con «+M12» (il Bianco matta in 12), «−M20» (il Nero, in 20), «+M?» (vince, distanza sconosciuta), «=» (patta) o «= (50)» (patta per la regola delle 50 mosse). Si può disattivare in questa schermata; se falliscono o manca la connessione, si usa Stockfish.',
   'help.evalBar.html': '<b>Barra verticale</b> (opzionale): bianco/nero secondo la valutazione di Stockfish; il segno rosso è la probabilità di vittoria del Bianco secondo Maia.',
   'help.pgn.html': "<b>Esporta PGN</b>: la partita con le sue varianti; si può copiare o inviare a un'altra app (per Lichess: incollarla su lichess.org/paste). <b>↗Li</b> apre la posizione attuale in Lichess.",
-  'help.memory.html': "<b>Memoria</b>: l'hash di Stockfish serve per l'analisi e per le minacce (stesso motore). La versione classica risparmia circa 80 MB di reti neurali; cambiarla ricarica la pagina. In <b>Motore</b>, «Misura» prova la velocità di Stockfish su questo dispositivo (nodi al secondo, con i thread scelti). In <b>Interfaccia</b>, il tema può essere chiaro, scuro o quello di sistema.",
+  'help.memory.html': "<b>Memoria</b>: l'hash di Stockfish serve per l'analisi e per le minacce (stesso motore). La versione classica risparmia circa 80 MB di reti neurali; cambiarla ricarica la pagina. In <b>Motore</b>, «Misura» prova la velocità di Stockfish su questo dispositivo (nodi al secondo, con i thread scelti). In <b>Interfaccia</b>, il tema può essere chiaro, scuro o quello di sistema. La profondità «Auto» deriva da quella velocità: 15 a 1,83 M nodi/s (iPhone 15), 10 a 0,4 M, mai sotto 10; quella delle minacce, 3 in meno (almeno 9).",
 
   'credits.title': 'Crediti e licenze',
   'credits.source.html': '<b>Codice sorgente</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/maia-stockfish-analysis" target="_blank" rel="noopener">github.com/jlcuadros/maia-stockfish-analysis</a>',

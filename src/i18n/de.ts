@@ -15,6 +15,7 @@ export const de: Messages = {
   'set.lang': 'Sprache',
   'set.elo': 'Maia-Elo',
   'set.depth': 'Stockfish-Tiefe',
+  'set.depth.auto': 'Auto ({n})',
   'set.threatDepth': 'Tiefe der Drohungen',
   'set.hash': 'Stockfish-Speicher (Hash)',
   'set.group.engine': 'Engine',
@@ -68,7 +69,7 @@ export const de: Messages = {
   'help.tablebase.html': '<b>Endspieldatenbanken</b>: bei 7 Steinen oder weniger (Könige eingeschlossen) und ohne Rochaderechte kommt das exakte Ergebnis aus den Syzygy-Tabellen von Lichess statt von Stockfish: oben „TB …“ und in der Spalte „TB“ „+M12“ (Weiß setzt in 12 matt), „−M20“ (Schwarz, in 20), „+M?“ (Gewinn, Distanz unbekannt), „=“ (Remis) oder „= (50)“ (Remis durch die 50-Züge-Regel). Auf diesem Bildschirm abschaltbar; bei Fehlern oder ohne Verbindung wird Stockfish verwendet.',
   'help.evalBar.html': '<b>Senkrechter Balken</b> (optional): weiß/schwarz nach Stockfishs Bewertung; die rote Marke ist die Gewinnchance von Weiß laut Maia.',
   'help.pgn.html': '<b>PGN exportieren</b>: die Partie mit ihren Varianten; kann kopiert oder an eine andere App gesendet werden (für Lichess: auf lichess.org/paste einfügen). <b>↗Li</b> öffnet die aktuelle Stellung in Lichess.',
-  'help.memory.html': '<b>Speicher</b>: Stockfishs Hash dient der Analyse und den Drohungen (dieselbe Engine). Die klassische Version spart etwa 80 MB neuronale Netze; ein Wechsel lädt die Seite neu. Unter <b>Engine</b> misst „Messen“ die Geschwindigkeit von Stockfish auf diesem Gerät (Knoten pro Sekunde, mit den gewählten Threads). Unter <b>Oberfläche</b> kann das Design hell, dunkel oder das des Systems sein.',
+  'help.memory.html': '<b>Speicher</b>: Stockfishs Hash dient der Analyse und den Drohungen (dieselbe Engine). Die klassische Version spart etwa 80 MB neuronale Netze; ein Wechsel lädt die Seite neu. Unter <b>Engine</b> misst „Messen“ die Geschwindigkeit von Stockfish auf diesem Gerät (Knoten pro Sekunde, mit den gewählten Threads). Unter <b>Oberfläche</b> kann das Design hell, dunkel oder das des Systems sein. Die Tiefe „Auto“ ergibt sich aus dieser Geschwindigkeit: 15 bei 1,83 Mio. Knoten/s (iPhone 15), 10 bei 0,4 Mio., nie unter 10; die der Drohungen 3 weniger (mindestens 9).',
 
   'credits.title': 'Danksagungen und Lizenzen',
   'credits.source.html': '<b>Quellcode</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/maia-stockfish-analysis" target="_blank" rel="noopener">github.com/jlcuadros/maia-stockfish-analysis</a>',

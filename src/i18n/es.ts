@@ -25,6 +25,7 @@ export const es = {
   'set.lang': 'Idioma',
   'set.elo': 'Elo de Maia',
   'set.depth': 'Profundidad Stockfish',
+  'set.depth.auto': 'Auto ({n})',
   'set.threatDepth': 'Profundidad amenazas',
   'set.hash': 'Memoria Stockfish (hash)',
   'set.group.engine': 'Motor',
@@ -79,7 +80,7 @@ export const es = {
   'help.tablebase.html': '<b>Tablas de finales</b>: con 7 piezas o menos (reyes incluidos) y sin enroques, el resultado exacto viene de las tablas Syzygy de Lichess en vez de Stockfish: arriba «TB …» y la columna «TB» con «+M12» (las blancas dan mate en 12), «−M20» (las negras, en 20), «+M?» (ganan, distancia desconocida), «=» (tablas) o «= (50)» (tablas por la regla de 50 jugadas). Se puede desactivar en esta pantalla; si fallan o no hay conexión, se usa Stockfish.',
   'help.evalBar.html': '<b>Barra vertical</b> (opcional): blanco/negro según la evaluación de Stockfish; la marca roja es la probabilidad de victoria de las blancas según Maia.',
   'help.pgn.html': '<b>Exportar PGN</b>: la partida con sus variantes; se puede copiar o enviar a otra app (para Lichess: pegarla en lichess.org/paste). <b>↗Li</b> abre la posición actual en Lichess.',
-  'help.memory.html': '<b>Memoria</b>: el hash de Stockfish sirve para el análisis y para las amenazas (es el mismo motor). La versión clásica ahorra unos 80 MB de redes neuronales; cambiarla recarga la página. En <b>Motor</b>, «Medir» calcula la velocidad de Stockfish en este dispositivo (nodos por segundo, con los hilos elegidos). En <b>Interfaz</b>, el tema puede ser claro, oscuro o el del sistema.',
+  'help.memory.html': '<b>Memoria</b>: el hash de Stockfish sirve para el análisis y para las amenazas (es el mismo motor). La versión clásica ahorra unos 80 MB de redes neuronales; cambiarla recarga la página. En <b>Motor</b>, «Medir» calcula la velocidad de Stockfish en este dispositivo (nodos por segundo, con los hilos elegidos). En <b>Interfaz</b>, el tema puede ser claro, oscuro o el del sistema. La profundidad «Auto» sale de esa velocidad: 15 a 1,83 M nodos/s (iPhone 15), 10 a 0,4 M, nunca menos de 10; la de amenazas, 3 menos (mínimo 9).',
 
   // --- Credits ----------------------------------------------------------------
   'credits.title': 'Créditos y licencias',

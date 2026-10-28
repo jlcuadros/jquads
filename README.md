@@ -36,8 +36,8 @@ or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
   percentages and number of games; built for this app (see [docs/BOOK.md](docs/BOOK.md)).
 - **Save the game on the board** in the favourites (editable PGN headers, variations kept);
   the favourites are kept as a PGN file and can be downloaded in one `.pgn`.
-- Settings: language (with flags), usernames and Maia rating always visible; **Engine** (depths, hash memory,
-  threads, light classic Stockfish, speed test in nodes per second) and **Interface** (theme light / dark /
+- Settings: language (with flags), usernames and Maia rating always visible; **Engine** (depths — "Auto" picks one from the
+  device's measured speed —, hash memory, threads, light classic Stockfish, speed test) and **Interface** (theme light / dark /
   system, lines, bars, notation, columns, book, endgame tables).
   📋 (first in the top line): FEN, position editor, new game, PGN export.
 
