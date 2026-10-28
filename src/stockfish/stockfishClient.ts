@@ -132,8 +132,24 @@ export class StockfishClient {
     onUpdate?: (lines: EngineLine[]) => void,
     searchMoves?: string[],
   ): Promise<{ lines: EngineLine[]; ms: number; nodes: number }> {
-    const job = this.queue.then(() => this.runSearch(fen, depth, multiPv, onUpdate, searchMoves))
+    const job = this.queue.then(() => this.runSearch(fen, `depth ${depth}`, multiPv, onUpdate, searchMoves))
     this.queue = job.catch(() => undefined) // a failed job must not block the next ones
+    return job
+  }
+
+  /**
+   * Speed test (José, 2026-10-28): searches a typical middlegame position for
+   * `ms` milliseconds with the current threads and hash, and returns the
+   * nodes per second. Queued like any search (call `stop()` first to free the
+   * engine). Used to show the device's speed in ⚙ and, later, to pick a
+   * default depth that suits the device.
+   */
+  benchmark(ms = 1000): Promise<number> {
+    const job = this.queue.then(async () => {
+      const r = await this.runSearch(BENCH_FEN, `movetime ${ms}`, 1)
+      return Math.round(r.nodes / (r.ms / 1000))
+    })
+    this.queue = job.catch(() => undefined)
     return job
   }
 
@@ -158,9 +174,10 @@ export class StockfishClient {
   private queue: Promise<unknown> = Promise.resolve()
   private searching = false
 
+  /** One search; `limit` is the UCI "go" argument: "depth 18" or "movetime 1000". */
   private runSearch(
     fen: string,
-    depth: number,
+    limit: string,
     multiPv: number,
     onUpdate?: (lines: EngineLine[]) => void,
     searchMoves?: string[],
@@ -189,10 +206,13 @@ export class StockfishClient {
       engine.uci(`setoption name MultiPV value ${multiPv}`)
       engine.uci(`position fen ${fen}`)
       const restrict = searchMoves?.length ? ` searchmoves ${searchMoves.join(' ')}` : ''
-      engine.uci(`go depth ${depth}${restrict}`)
+      engine.uci(`go ${limit}${restrict}`)
     })
   }
 }
+
+/** Position of the speed test: a quiet, typical middlegame (Queen's Gambit Declined). */
+const BENCH_FEN = 'r1bq1rk1/pp2bppp/2n1pn2/3p4/2PP4/2N1PN2/P3BPPP/R1BQ1RK1 w - - 0 9'
 
 /**
  * Parses a UCI "info" line with a score and pv, e.g.

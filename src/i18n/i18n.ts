@@ -25,14 +25,15 @@ export type Messages = Record<MessageKey, string>
 export type Lang = 'es' | 'en' | 'fr' | 'it' | 'ru' | 'de' | 'pt'
 
 /** Languages offered in ⚙, each written in its own language. */
-export const LANGUAGES: Array<{ code: Lang; name: string }> = [
-  { code: 'es', name: 'Español' },
-  { code: 'en', name: 'English' },
-  { code: 'fr', name: 'Français' },
-  { code: 'it', name: 'Italiano' },
-  { code: 'ru', name: 'Русский' },
-  { code: 'de', name: 'Deutsch' },
-  { code: 'pt', name: 'Português' },
+/** Languages in ⚙, each with its flag (José, 2026-10-28). */
+export const LANGUAGES: Array<{ code: Lang; name: string; flag: string }> = [
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'pt', name: 'Português', flag: '🇵🇹' },
 ]
 
 export const MESSAGES: Record<Lang, Messages> = { es, en, fr, it, ru, de, pt }

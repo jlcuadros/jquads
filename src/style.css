@@ -1,4 +1,4 @@
-/* App styles. Colours as variables, automatic light/dark theme. */
+/* App styles. Colours as variables; light or dark theme (⚙ → Tema, see index.html). */
 :root {
   --bg: #f4f4f4;
   --surface: #ffffff;
@@ -11,19 +11,19 @@
   --meter-good: #1a9850;
   --meter-ok: #fee08b;
   --meter-blunder: #d73027;
-  color-scheme: light dark;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #161512;
-    --surface: #262421;
-    --text: #e8e6e3;
-    --muted: #9a958e;
-    --border: #3d3a36;
-    --accent: #6aa0e0;
-    --maia: #fe7f6d;
-    --sf: #76addd;
-  }
+/* Dark theme: data-theme is set in index.html from ⚙ → Tema (light / dark / system). */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #161512;
+  --surface: #262421;
+  --text: #e8e6e3;
+  --muted: #9a958e;
+  --border: #3d3a36;
+  --accent: #6aa0e0;
+  --maia: #fe7f6d;
+  --sf: #76addd;
 }
 
 * { box-sizing: border-box; }
@@ -287,3 +287,9 @@ html, body { overflow-x: hidden; }
 .choice-cancel { color: var(--muted); }
 /* PGN comment paragraph (✏️) at the top of the text */
 .pgn-comment { margin-bottom: 6px; font-style: italic; }
+
+/* ⚙ groups (2026-10-28): "Motor" and "Interfaz" fold */
+.settings-group { margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px; }
+.settings-group > summary { font-weight: 600; cursor: pointer; padding: 4px 0; }
+.settings-group .settings-grid { margin-top: 6px; }
+.sf-speed { display: flex; justify-content: space-between; align-items: center; gap: 8px; }

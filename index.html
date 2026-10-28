@@ -2,6 +2,21 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <!-- Theme (José, 2026-10-28): "system" (default), "light" or "dark", from the saved settings.
+         Applied here, before the page is painted (no flash of the wrong theme). It is the only
+         implementation: app.ts calls window.applyTheme() when ⚙ changes it. -->
+    <script>
+      function savedTheme() {
+        try { return JSON.parse(localStorage.getItem('settings') || '{}').theme } catch (e) { return undefined }
+      }
+      window.applyTheme = function (pref) {
+        var dark = pref === 'dark' || (pref !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+      }
+      applyTheme(savedTheme())
+      // While "system" is chosen, follow the device when it switches.
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { applyTheme(savedTheme()) })
+    </script>
     <!-- No zoom (José, iteration 4): maximum-scale/user-scalable stop most zooming; iOS Safari ignores
          user-scalable for accessibility, so app.ts also blocks pinch gestures and CSS uses touch-action. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -55,46 +70,68 @@
             <label><span data-i18n="games.user">Usuario de Lichess</span> <input id="lichessUserSetting" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" /></label>
             <label><span data-i18n="games.userChesscom">Usuario de Chess.com</span> <input id="chesscomUserSetting" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" /></label>
             <label><span data-i18n="set.elo">Elo de Maia</span> <select id="elo"></select></label>
-            <label><span data-i18n="set.depth">Profundidad Stockfish</span> <select id="depth"></select></label>
-            <label><span data-i18n="set.threatDepth">Profundidad amenazas</span> <select id="threatDepth"></select></label>
-            <label><span data-i18n="set.hash">Memoria Stockfish (hash)</span> <select id="hashMb"></select></label>
-            <!-- Stockfish threads (José, 2026-10-26); the hint says how many cores the browser reports -->
-            <label><span><span data-i18n="set.sfThreads">Hilos de Stockfish</span> <small id="sfThreadsCores"></small></span> <select id="sfThreads"></select></label>
-            <label><span data-i18n="set.variant">Versión Stockfish</span>
-              <select id="variant">
-                <option value="sf17" data-i18n="set.variant.sf17">17 NNUE (más fuerte, ~80 MB)</option>
-                <option value="sfhce" data-i18n="set.variant.sfhce">Clásico (ligero, menos preciso)</option>
-              </select>
-            </label>
-            <label><span data-i18n="set.lines">Jugadas por motor</span> <select id="lines"></select></label>
-            <!-- Top bar (Maia's moves), iteration 5: default "Solo barra" -->
-            <label><span data-i18n="set.meter">Barra de jugadas</span>
-              <select id="meterMode">
-                <option value="both" data-i18n="set.threats.bar">Barra y jugadas</option>
-                <option value="bar" data-i18n="set.meter.bar">Solo barra</option>
-                <option value="moves" data-i18n="set.threats.moves">Solo jugadas</option>
-                <option value="off" data-i18n="set.meter.off">No mostrar</option>
-              </select>
-            </label>
-            <label><span data-i18n="set.threats">Amenazas</span>
-              <select id="threatsMode">
-                <option value="bar" data-i18n="set.threats.bar">Barra y jugadas</option>
-                <option value="moves" data-i18n="set.threats.moves">Solo jugadas</option>
-                <option value="off" data-i18n="set.threats.off">No calcular</option>
-              </select>
-            </label>
-            <label><span data-i18n="set.notation">Notación</span>
-              <select id="notation">
-                <option value="figurine" data-i18n="set.notation.figurine">Figuras (♘f3)</option>
-                <option value="letters" data-i18n="set.notation.letters">Letras (Nf3)</option>
-              </select>
-            </label>
-            <label class="check"><input type="checkbox" id="evalBar" /> <span data-i18n="set.evalBar">Barra de evaluación junto al tablero</span></label>
-            <label class="check"><input type="checkbox" id="showDeltaCol" /> <span data-i18n="set.deltaCol">Columna «Δ eval» en Maia</span></label>
-            <label class="check"><input type="checkbox" id="showMaiaCol" /> <span data-i18n="set.maiaCol">Columna «Maia» en Stockfish</span></label>
-            <label class="check"><input type="checkbox" id="book" /> <span data-i18n="set.book">Libro de aperturas (Lichess 2300+, rápidas y clásicas)</span></label>
-            <label class="check"><input type="checkbox" id="tablebase" /> <span data-i18n="set.tablebase">Tablas de finales en línea (Lichess, ≤ 7 piezas)</span></label>
           </div>
+          <!-- ⚙ in groups (José, 2026-10-28): language, usernames and Maia's Elo always visible above;
+               the engine settings and the interface settings fold. -->
+          <details class="settings-group">
+            <summary data-i18n="set.group.engine">Motor</summary>
+            <div class="settings-grid">
+              <label><span data-i18n="set.depth">Profundidad Stockfish</span> <select id="depth"></select></label>
+              <label><span data-i18n="set.threatDepth">Profundidad amenazas</span> <select id="threatDepth"></select></label>
+              <label><span data-i18n="set.hash">Memoria Stockfish (hash)</span> <select id="hashMb"></select></label>
+              <!-- Stockfish threads (José, 2026-10-26); the hint says how many cores the browser reports -->
+              <label><span><span data-i18n="set.sfThreads">Hilos de Stockfish</span> <small id="sfThreadsCores"></small></span> <select id="sfThreads"></select></label>
+              <label><span data-i18n="set.variant">Versión Stockfish</span>
+                <select id="variant">
+                  <option value="sf17" data-i18n="set.variant.sf17">17 NNUE (más fuerte, ~80 MB)</option>
+                  <option value="sfhce" data-i18n="set.variant.sfhce">Clásico (ligero, menos preciso)</option>
+                </select>
+              </label>
+              <!-- Speed test (José, 2026-10-28): nodes per second on this device, measured on demand -->
+              <div class="sf-speed"><span><span data-i18n="set.sfSpeed">Velocidad de Stockfish</span>: <b id="sfSpeed">—</b></span> <button id="sfMeasure" data-i18n="set.sfMeasure">Medir</button></div>
+            </div>
+          </details>
+          <details class="settings-group">
+            <summary data-i18n="set.group.ui">Interfaz</summary>
+            <div class="settings-grid">
+              <!-- Theme (José, 2026-10-28): light / dark / follow the device -->
+              <label><span data-i18n="set.theme">Tema</span>
+                <select id="theme">
+                  <option value="system" data-i18n="set.theme.system">Sistema</option>
+                  <option value="light" data-i18n="set.theme.light">Claro</option>
+                  <option value="dark" data-i18n="set.theme.dark">Oscuro</option>
+                </select>
+              </label>
+              <label><span data-i18n="set.lines">Jugadas por motor</span> <select id="lines"></select></label>
+              <!-- Top bar (Maia's moves), iteration 5: default "Solo barra" -->
+              <label><span data-i18n="set.meter">Barra de jugadas</span>
+                <select id="meterMode">
+                  <option value="both" data-i18n="set.threats.bar">Barra y jugadas</option>
+                  <option value="bar" data-i18n="set.meter.bar">Solo barra</option>
+                  <option value="moves" data-i18n="set.threats.moves">Solo jugadas</option>
+                  <option value="off" data-i18n="set.meter.off">No mostrar</option>
+                </select>
+              </label>
+              <label><span data-i18n="set.threats">Amenazas</span>
+                <select id="threatsMode">
+                  <option value="bar" data-i18n="set.threats.bar">Barra y jugadas</option>
+                  <option value="moves" data-i18n="set.threats.moves">Solo jugadas</option>
+                  <option value="off" data-i18n="set.threats.off">No calcular</option>
+                </select>
+              </label>
+              <label><span data-i18n="set.notation">Notación</span>
+                <select id="notation">
+                  <option value="figurine" data-i18n="set.notation.figurine">Figuras (♘f3)</option>
+                  <option value="letters" data-i18n="set.notation.letters">Letras (Nf3)</option>
+                </select>
+              </label>
+              <label class="check"><input type="checkbox" id="evalBar" /> <span data-i18n="set.evalBar">Barra de evaluación junto al tablero</span></label>
+              <label class="check"><input type="checkbox" id="showDeltaCol" /> <span data-i18n="set.deltaCol">Columna «Δ eval» en Maia</span></label>
+              <label class="check"><input type="checkbox" id="showMaiaCol" /> <span data-i18n="set.maiaCol">Columna «Maia» en Stockfish</span></label>
+              <label class="check"><input type="checkbox" id="book" /> <span data-i18n="set.book">Libro de aperturas (Lichess 2300+, rápidas y clásicas)</span></label>
+              <label class="check"><input type="checkbox" id="tablebase" /> <span data-i18n="set.tablebase">Tablas de finales en línea (Lichess, ≤ 7 piezas)</span></label>
+            </div>
+          </details>
           <details class="help">
             <summary data-i18n="help.title">Cómo se lee la pantalla</summary>
             <ul>

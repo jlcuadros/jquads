@@ -126,6 +126,9 @@ export function formatScore(score: Score, decimals = 2): string {
   return ((score.cp ?? 0) > 0 ? '+' : '−') + text
 }
 
+/** Δ eval when the move loses nothing: a star, "as good as the best" (José, 2026-10-28). */
+export const DELTA_BEST = '★'
+
 /** Which side a mate score favours: 1 White mates, −1 Black mates, 0 not a mate. */
 const mateSide = (s: Score) => (s.mate !== undefined ? Math.sign(s.mate) : s.mateUnknown ? Math.sign(s.cp ?? 0) : 0)
 
@@ -134,11 +137,11 @@ const mateSide = (s: Score) => (s.mate !== undefined ? Math.sign(s.mate) : s.mat
  * Scores are White's point of view, as Stockfish (or the endgame tables) give
  * them; the same rules for Stockfish's mates and the tables' (José, 2026-10-26):
  *  - no mate in either: pawns lost with one decimal after a down arrow, "↓1.6";
- *    nothing lost → plain "0.0" (iteration 5);
+ *    nothing lost → "★" (U+2605; José 2026-10-28, before "0.0");
  *  - both mate for the same side: how the mate distance changes, "↓M+3" (the
  *    mate comes 3 moves later, e.g. −M6 → −M9) or "↓M−6" (it comes 6 moves
- *    sooner, e.g. −M9 → −M3); same distance → "0.0"; if the tables don't
- *    give a distance: "↓M?" ("0.0" if neither has one);
+ *    sooner, e.g. −M9 → −M3); same distance → "★"; if the tables don't
+ *    give a distance: "↓M?" ("★" if neither has one);
  *  - a mate appears, disappears or changes side: "⇵" (U+21F5) and the move's
  *    own evaluation, e.g. +M5 → −M6 "⇵−M6", +0.3 → −M3 "⇵−M3",
  *    −M3 → +0.4 "⇵+0.4", a table win of unknown distance "⇵+M?".
@@ -147,12 +150,12 @@ export function deltaEval(best: Score, move: Score): string {
   const side = mateSide(best)
   if (!side && !mateSide(move)) {
     const pawns = (Math.abs((best.cp ?? 0) - (move.cp ?? 0)) / 100).toFixed(1)
-    return pawns === '0.0' ? pawns : `↓${pawns}`
+    return pawns === '0.0' ? DELTA_BEST : `↓${pawns}`
   }
   if (side !== mateSide(move)) return `⇵${formatScore(move, 1)}`
-  if (best.mate === undefined || move.mate === undefined) return best.mate === move.mate ? '0.0' : '↓M?'
+  if (best.mate === undefined || move.mate === undefined) return best.mate === move.mate ? DELTA_BEST : '↓M?'
   const later = Math.abs(move.mate) - Math.abs(best.mate) // > 0: the mate comes later
-  return later === 0 ? '0.0' : `↓M${later > 0 ? '+' : '−'}${Math.abs(later)}`
+  return later === 0 ? DELTA_BEST : `↓M${later > 0 ? '+' : '−'}${Math.abs(later)}`
 }
 
 /** The best of the evaluated moves for the side to move (the one with no loss), or undefined. */

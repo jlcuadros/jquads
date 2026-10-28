@@ -10,6 +10,7 @@
 //
 // Usage (server running): node scripts/tablebase-test.mjs http://localhost:4173 <shots-dir>
 import { webkit, devices } from 'playwright'
+import { closeSettings, openSettings } from './lib/ui-helpers.mjs'
 import { mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -28,10 +29,11 @@ const analysed = () => page.waitForFunction(() => document.getElementById('meter
 
 // Settings are persistent between runs: make sure the tables are on.
 await page.goto(base)
+
 await analysed()
-await page.click('#menu')
+await openSettings(page)
 if (!(await page.isChecked('#tablebase'))) await page.check('#tablebase')
-await page.click('#menu')
+await closeSettings(page)
 await analysed()
 check(tbRequests.length === 0, `start position (32 pieces): ${tbRequests.length} tablebase requests`)
 
@@ -69,12 +71,12 @@ await analysed()
 check(tbRequests.length - before <= 2, `after a move and back: ${tbRequests.length - before} new requests (only the new position + its threats)`)
 
 // Tables off → Stockfish.
-await page.click('#menu')
+await openSettings(page)
 await page.uncheck('#tablebase')
-await page.click('#menu')
+await closeSettings(page)
 await analysed()
 check((await page.textContent('#numbers')).includes('SF'), `tables off → "${await page.textContent('#numbers')}"`)
-await page.click('#menu'); await page.check('#tablebase'); await page.click('#menu') // leave the default
+await openSettings(page); await page.check('#tablebase'); await closeSettings(page) // leave the default
 
 await ctx.close()
 process.exit(failed ? 1 : 0)

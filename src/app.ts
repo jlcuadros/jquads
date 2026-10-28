@@ -25,7 +25,7 @@ import { gamePgn, parsePgnHeaders, treeFromPgn, type PgnHeaders } from './game/p
 import type { Notation } from './game/notation'
 import { whiteWinProb } from './analysis/classify'
 import { TablebaseClient } from './analysis/tablebase'
-import { LANGUAGES, applyStaticTranslations, detectLang, setLang, t, type Lang } from './i18n/i18n'
+import { LANGUAGES, applyStaticTranslations, detectLang, setLang, t, type Lang, getLang } from './i18n/i18n'
 import { MaiaClient } from './maia/maiaClient'
 import { StockfishClient, type StockfishVariant } from './stockfish/stockfishClient'
 import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analyzer'
@@ -40,6 +40,13 @@ const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getEleme
 // Settings (remembered in localStorage when available)
 // ---------------------------------------------------------------------------
 
+
+declare global {
+  interface Window {
+    /** Defined in index.html: applies "system" / "light" / "dark" (also before the first paint). */
+    applyTheme(pref?: string): void
+  }
+}
 const ELOS = Array.from({ length: 21 }, (_, i) => 600 + i * 100) // as maiachess
 const DEPTHS = [10, 12, 14, 16, 18, 20, 22, 24]
 const THREAT_DEPTHS = [8, 10, 12, 14, 16]
@@ -62,6 +69,7 @@ const DEFAULTS: AppSettings = {
   maiaCol: true, // "Maia" % column in the Stockfish panel (iteration 5, can be hidden)
   hashMb: 16,
   sfThreads: Math.min(4, CORES), // ⚙ (José, 2026-10-26)
+  theme: 'system', // ⚙ → Interfaz → Tema (José, 2026-10-28); applied by index.html
   variant: 'sf17',
   notation: 'figurine', // iteration 4: chess figurines by default
   evalBar: true, // iteration 4: thin vertical evaluation bar beside the board
@@ -89,6 +97,8 @@ interface AppSettings extends Omit<Settings, 'threats'> {
   maiaCol: boolean // show Maia's % in the Stockfish panel
   hashMb: number // Stockfish hash (shared by the main analysis and the threats)
   sfThreads: number // Stockfish threads (Maia keeps min(4, cores))
+  theme: 'system' | 'light' | 'dark'
+  sfNps?: number // last speed test on this device (nodes per second), ⚙ → Motor
   variant: StockfishVariant // changing it reloads the page
   notation: Notation // move notation: figurine (♘f3) or letters (Nf3)
   evalBar: boolean // show the vertical evaluation bar
@@ -136,6 +146,11 @@ let openingBook: PolyglotBook | null = null
 // a game made here) and its favourite id if it was saved with 📂 → 💾 Guardar.
 let gameHeaders: PgnHeaders = {}
 let savedId: string | undefined
+
+/** Last measured Stockfish speed in ⚙ ("1.23 M nodos/s"), or "—" if never measured. */
+function showSpeed() {
+  $('sfSpeed').textContent = settings.sfNps ? t('set.sfSpeed.value', { n: (settings.sfNps / 1e6).toLocaleString(getLang(), { maximumFractionDigits: 2 }) }) : '—'
+}
 
 /** The panels under the top line: ⚙ settings and 📋 position/game. At most one is open. */
 type Panel = 'settings' | 'positionPanel'
@@ -469,7 +484,7 @@ function setupControls() {
   }
 
   // Language: re-translate the static texts and redraw everything generated in code.
-  $<HTMLSelectElement>('lang').innerHTML = LANGUAGES.map((l) => `<option value="${l.code}">${l.name}</option>`).join('')
+  $<HTMLSelectElement>('lang').innerHTML = LANGUAGES.map((l) => `<option value="${l.code}">${l.flag} ${l.name}</option>`).join('')
   $<HTMLSelectElement>('lang').value = settings.lang
   $('lang').onchange = (ev) => {
     settings.lang = (ev.target as HTMLSelectElement).value as Lang
@@ -477,6 +492,7 @@ function setupControls() {
     setLang(settings.lang)
     applyStaticTranslations()
     $('sfThreadsCores').textContent = t('set.sfThreads.cores', { n: CORES }) // generated text, not in the HTML
+    showSpeed()
     $('hideMoves').title = t(hideMoves ? 'btn.show' : 'btn.hide')
     $('hideMoves').setAttribute('aria-label', $('hideMoves').title)
     retranslateEditor()
@@ -527,6 +543,31 @@ function setupControls() {
     analyzer.cancel()
     await stockfish.configure([`setoption name Hash value ${settings.hashMb}`]) // waits for the engine to be idle
     positionChanged()
+  }
+  // Theme: the function lives in index.html (it also runs before the first paint).
+  $<HTMLSelectElement>('theme').value = settings.theme
+  $('theme').onchange = (ev) => {
+    settings.theme = (ev.target as HTMLSelectElement).value as AppSettings['theme']
+    saveSettings()
+    window.applyTheme(settings.theme)
+  }
+  // Speed test (José, 2026-10-28): Stockfish searches a middlegame for 1 s with the
+  // current threads; the result (nodes per second) is shown and kept.
+  showSpeed()
+  $('sfMeasure').onclick = async () => {
+    if (!enginesReady) return
+    const button = $<HTMLButtonElement>('sfMeasure')
+    button.disabled = true
+    $('sfSpeed').textContent = t('set.sfSpeed.measuring')
+    analyzer.cancel()
+    try {
+      settings.sfNps = await stockfish.benchmark(1000)
+      saveSettings()
+    } finally {
+      button.disabled = false
+      showSpeed()
+      positionChanged() // the analysis was interrupted: start it again
+    }
   }
   // Threads can change while the engine is loaded (UCI "Threads"), like the hash.
   $('sfThreads').onchange = async (ev) => {

@@ -81,15 +81,15 @@ describe('formatScore decimals', () => {
 describe('deltaEval (Maia column, iteration 5)', () => {
   it('pawns with one decimal, absolute value', () => {
     expect(deltaEval({ cp: 35 }, { cp: -120 })).toBe('↓1.6')
-    expect(deltaEval({ cp: 30 }, { cp: 26 })).toBe('0.0') // rounds to zero: no arrow either
-    expect(deltaEval({ cp: -50 }, { cp: -50 })).toBe('0.0') // no arrow when nothing is lost
+    expect(deltaEval({ cp: 30 }, { cp: 26 })).toBe('★') // rounds to zero: no arrow either
+    expect(deltaEval({ cp: -50 }, { cp: -50 })).toBe('★') // no arrow when nothing is lost
     expect(deltaEval({ cp: -300 }, { cp: -10 })).toBe('↓2.9') // Black to move: best is lower, still positive
   })
   it('mates for the same side: change of mate distance (José, 2026-10-26)', () => {
     expect(deltaEval({ mate: -6 }, { mate: -9 })).toBe('↓M+3') // the mate comes 3 moves later
     expect(deltaEval({ mate: -9 }, { mate: -3 })).toBe('↓M−6') // received 6 moves sooner
     expect(deltaEval({ mate: 3 }, { mate: 7 })).toBe('↓M+4')
-    expect(deltaEval({ mate: -5 }, { mate: -5 })).toBe('0.0') // same distance: nothing lost, no arrow
+    expect(deltaEval({ mate: -5 }, { mate: -5 })).toBe('★') // same distance: nothing lost, no arrow
   })
   it('a mate appears, disappears or changes side: ⇵ and the move\'s own evaluation', () => {
     expect(deltaEval({ mate: 5 }, { mate: -6 })).toBe('⇵−M6')
@@ -102,7 +102,7 @@ describe('deltaEval (Maia column, iteration 5)', () => {
     const win = { cp: 2000, mateUnknown: true }
     expect(deltaEval(win, { cp: 0 })).toBe('⇵0.0') // a won ending drawn
     expect(deltaEval({ cp: 0 }, win)).toBe('⇵+M?')
-    expect(deltaEval(win, win)).toBe('0.0')
+    expect(deltaEval(win, win)).toBe('★')
     expect(deltaEval({ mate: 12 }, win)).toBe('↓M?')
     expect(formatScore(win)).toBe('+M?')
   })

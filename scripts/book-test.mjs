@@ -10,6 +10,7 @@
 //
 // Usage (server running): node scripts/book-test.mjs http://localhost:4173 <shots-dir>
 import { webkit, devices } from 'playwright'
+import { closeSettings, openSettings } from './lib/ui-helpers.mjs'
 import { mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -33,6 +34,7 @@ const state = () => page.evaluate(() => ({
 const bookRequests = []
 page.on('request', (r) => { if (r.url().includes('/book/')) bookRequests.push(r.url()) })
 await page.goto(base)
+
 // Ensure the book is on and the language Spanish (persistent profile) and wait for the full analysis + the book.
 await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('settings') ?? '{}'); s.book = true; s.lang = 'es'; localStorage.setItem('settings', JSON.stringify(s)) })
 await page.reload()
@@ -61,10 +63,10 @@ check(!s.bookLine && s.maiaMarks === 0 && s.sfMarks === 0, `out of the book: no 
 // 4. Turn the book off and on (back at the start position).
 await page.click('#positionBtn'); await page.click('#newGame')
 await page.waitForFunction(() => document.querySelector('#text .book-line'), null, { timeout: 60_000 })
-await page.click('#menu'); await page.uncheck('#book'); await page.click('#menu')
+await openSettings(page); await page.uncheck('#book'); await closeSettings(page)
 s = await state()
 check(!s.bookLine && s.maiaMarks === 0 && s.sfMarks === 0, 'book off: no line, no marks')
-await page.click('#menu'); await page.check('#book'); await page.click('#menu')
+await openSettings(page); await page.check('#book'); await closeSettings(page)
 s = await state()
 check(!!s.bookLine && s.maiaMarks > 0, 'book on again: line and marks back')
 check(bookRequests.length <= 1, `book downloaded at most once (${bookRequests.length} request${bookRequests.length === 1 ? '' : 's'}; 0 = from the cache)`)

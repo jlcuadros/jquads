@@ -15,6 +15,7 @@
 // Usage (preview server running, see app.md):
 //   node scripts/ui-test.mjs http://localhost:4173 /tmp/shots
 import { webkit, devices } from 'playwright'
+import { openPanel, openSettings } from './lib/ui-helpers.mjs'
 import { mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -33,6 +34,7 @@ page.on('console', (m) => m.type() === 'error' && console.log('console.error:', 
 
 const t0 = Date.now()
 await page.goto(base)
+
 // Full analysis of the start position = explanatory text rendered.
 // (or stop at once if the engines failed to load)
 await page.waitForFunction(
@@ -122,7 +124,7 @@ await page.click('#menu')
 console.log('threats default: bar present =', await page.locator('#meterThreats .meter').count())
 // Top bar (iteration 5): default "only the bar"; then the other three modes.
 const topBar = () => page.evaluate(() => ({ hidden: document.getElementById('meterMain').hidden, bar: !!document.querySelector('#meterMain .meter'), moves: !!document.querySelector('#meterMain .meter-legend') }))
-const setMeter = async (mode) => { await page.click('#menu'); await page.selectOption('#meterMode', mode); await page.click('#menu') }
+const setMeter = async (mode) => { await openSettings(page); await page.selectOption('#meterMode', mode); await page.click('#menu') }
 let tb = await topBar()
 console.log(`${!tb.hidden && tb.bar && !tb.moves ? 'OK  ' : 'FAIL'} top bar default "Solo barra": ${JSON.stringify(tb)}`)
 await setMeter('both'); tb = await topBar()
@@ -143,16 +145,16 @@ const cols = () => page.evaluate(() => ({
   sfEval: [...document.querySelectorAll('#sfCol tr[data-move] td:last-child')].map((t) => t.textContent),
 }))
 let c = await cols()
-const colsOk = c.maiaHead[1] === 'Δ eval' && c.deltas.every((d) => /^(0\.0|↓\d+\.\d|↓M[+−]\d+|↓M\?|⇵.+)$/.test(d)) && !c.deltas.includes('↓0.0') && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
+const colsOk = c.maiaHead[1] === 'Δ eval' && c.deltas.every((d) => /^(★|↓\d+\.\d|↓M[+−]\d+|↓M\?|⇵.+)$/.test(d)) && !c.deltas.includes('↓0.0') && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
   c.sfHead[0].startsWith('SF') && c.sfHead[1] === 'Maia' && c.sfMid.every((p) => /^\d+%$/.test(p)) && c.sfEval.every((e) => /^([+−]?\d+\.\d|[+−]M\d+)$/.test(e))
 console.log(`${colsOk ? 'OK  ' : 'FAIL'} middle columns: ${JSON.stringify(c)}`)
-await page.click('#menu'); await page.uncheck('#showDeltaCol'); await page.uncheck('#showMaiaCol'); await page.click('#menu')
+await openSettings(page); await page.uncheck('#showDeltaCol'); await page.uncheck('#showMaiaCol'); await page.click('#menu')
 c = await cols()
 console.log(`${c.maiaHead.length === 2 && c.sfHead.length === 2 ? 'OK  ' : 'FAIL'} middle columns hidden: ${JSON.stringify([c.maiaHead, c.sfHead])}`)
 await page.screenshot({ path: `${outDir}/06-columns-hidden.png`, fullPage: true })
-await page.click('#menu'); await page.check('#showDeltaCol'); await page.check('#showMaiaCol'); await page.click('#menu')
+await openSettings(page); await page.check('#showDeltaCol'); await page.check('#showMaiaCol'); await page.click('#menu')
 await page.screenshot({ path: `${outDir}/04-threats-only-moves.png`, fullPage: true })
-await page.click('#menu')
+await openSettings(page)
 await page.selectOption('#threatsMode', 'bar')
 await page.click('#menu')
 await page.waitForFunction(() => !document.getElementById('meterThreats').textContent.includes('calculando'), null, { timeout: 120_000 })
@@ -160,7 +162,7 @@ console.log('threats "bar and moves": bar present =', await page.locator('#meter
 console.log('maia rows =', await page.locator('#maiaCol tr[data-move]').count(), '; sf rows =', await page.locator('#sfCol tr[data-move]').count())
 await page.screenshot({ path: `${outDir}/05-threats-bar.png`, fullPage: true })
 // Back to the default so the persistent test profile keeps it.
-await page.click('#menu')
+await openSettings(page)
 await page.selectOption('#threatsMode', 'moves')
 await page.click('#menu')
 
@@ -194,31 +196,35 @@ await page.click('#prev')
 await page.waitForFunction(() => document.getElementById('text').textContent.length > 20)
 console.log(`back to start (cached) in ${Date.now() - t1} ms`)
 
-/**
- * Opens a panel (its button: ⚙ or 📋) and makes sure it opened: in WebKit's iPhone emulation a
- * tap is sometimes delivered without a click (see i18n-test.mjs; traced 2026-10-26), so
- * it retries after a pause. A person would simply tap again.
- */
-async function openPanel(button, panel) {
-  for (let i = 0; i < 3 && (await page.isHidden(panel)); i++) {
-    if (i) await page.waitForTimeout(700)
-    await page.click(button)
-  }
-}
 /** 📋 Position and game (FEN, editor, new game, PGN; moved out of ⚙ on 2026-10-26). */
-const openPosition = () => openPanel('#positionBtn', '#positionPanel')
+const openPosition = () => openPanel(page, '#positionBtn', '#positionPanel')
 
 // Δ eval with mates (José, 2026-10-26): Scholar's mate position, Qxf7# = +M1.
-// The mating move shows "0.0"; moves that give the mate away show "⇵" + their eval.
+// The mating move shows "★" (nothing lost); moves that give the mate away show "⇵" + their eval.
 await openPosition()
 await page.fill('#fenInput', 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4')
 await page.click('#loadFen')
 await page.waitForFunction(() => document.getElementById('meterMain').dataset.done === 'true', null, { timeout: 120_000 })
 const mateRows = await page.$$eval('#maiaCol tr[data-move]', (trs) => trs.map((tr) => [tr.dataset.move, tr.querySelectorAll('td')[1]?.textContent]))
 const qxf7 = mateRows.find(([m]) => m === 'h5f7')
-console.log(`${qxf7?.[1] === '0.0' && mateRows.some(([m, d]) => m !== 'h5f7' && /^⇵[+−]?\d+\.\d$/.test(d)) ? 'OK  ' : 'FAIL'} Δ eval with a mate: ${JSON.stringify(mateRows)}`)
+console.log(`${qxf7?.[1] === '★' && mateRows.some(([m, d]) => m !== 'h5f7' && /^⇵[+−]?\d+\.\d$/.test(d)) ? 'OK  ' : 'FAIL'} Δ eval with a mate: ${JSON.stringify(mateRows)}`)
 await page.screenshot({ path: `${outDir}/07-delta-mate.png`, fullPage: true })
 await openPosition(); await page.click('#newGame')
 
+
+// ⚙ in groups, theme, speed test, language flags (José, 2026-10-28).
+const groups = await page.$$eval('#settings details.settings-group summary', (ss) => ss.map((x) => x.textContent))
+const topLevel = await page.$$eval('#settings > .settings-grid select, #settings > .settings-grid input', (es) => es.map((e) => e.id))
+const flags = await page.$$eval('#lang option', (os) => os.map((o) => o.textContent))
+console.log(`${groups.join('|') === 'Motor|Interfaz' && topLevel.join(',') === 'lang,lichessUserSetting,chesscomUserSetting,elo' && flags[0] === '🇪🇸 Español' && flags.length === 7 ? 'OK  ' : 'FAIL'} ⚙ groups ${JSON.stringify(groups)}, always visible ${JSON.stringify(topLevel)}, flags ${flags.join(' ')}`)
+const themeAfter = async (v) => { await openSettings(page); await page.selectOption('#theme', v); return page.evaluate(() => document.documentElement.dataset.theme) }
+const dark = await themeAfter('dark'), light = await themeAfter('light'), system = await themeAfter('system')
+const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
+console.log(`${dark === 'dark' && light === 'light' && ['light', 'dark'].includes(system) ? 'OK  ' : 'FAIL'} theme: dark → ${dark}, light → ${light}, system → ${system} (body ${bg})`)
+await page.click('#sfMeasure')
+await page.waitForFunction(() => /nodos\/s/.test(document.getElementById('sfSpeed').textContent), null, { timeout: 30_000 })
+const speed = await page.textContent('#sfSpeed')
+console.log(`${/^[\d.,]+ M nodos\/s$/.test(speed) ? 'OK  ' : 'FAIL'} Stockfish speed measured: ${speed}`)
+await page.click('#menu')
 
 await browser.close()
