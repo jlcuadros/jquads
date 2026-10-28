@@ -20,7 +20,7 @@ or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
   (the mate comes later / sooner), "⇵−M6" / "⇵+0.4" when a mate appears, disappears or changes side
   (the same for Stockfish's mates and the endgame tables'). In the Stockfish column, Maia's % of each move.
 - **h-eval** and **💣**: how a move scores in practice against an opponent of the selected rating — the
-  opponent's likely replies (Maia at that rating) valued by Maia 2600, shown like an evaluation; the best one gets 💣.
+  opponent's likely replies (Maia at that rating) valued by Maia 2600, shown like an evaluation; the best one gets 💣. Off by default (Settings → Engine).
 - **Threats**: the same analysis as if the opponent were to move (orange arrow, triangles).
 - Explanatory text generated from both engines (in the selected language), in paragraphs with a
   first icon (📖 book, ♙ White, ♟ Black), including a summary of the previous move (best / good /

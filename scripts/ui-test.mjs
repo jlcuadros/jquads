@@ -5,7 +5,8 @@
 // 2. Plays Maia's first suggestion by tapping it, and checks that the move
 //    strip and the analysis update; waits for the threats bar too.
 // 3. Checks the threats modes: "only moves" (default, no bar) and "bar and moves".
-// 3b. Iteration 5: top bar modes (default "only the bar", both, moves, off) and
+// 3b. h-eval off by default, then on for the column checks (2026-10-28).
+// 3c. Iteration 5: top bar modes (default "only the bar", both, moves, off) and
 //    the middle columns ("↓x.x" in Maia, Maia % in SF, SF eval with one decimal),
 //    which can be hidden.
 // 4. Saves screenshots (01-start, 02-after-move, 03-settings,
@@ -152,6 +153,12 @@ const cols = () => page.evaluate(() => ({
   sfMid: [...document.querySelectorAll('#sfCol tr[data-move] td.num')].filter((_, i) => i % 2 === 0).map((t) => t.textContent),
   sfEval: [...document.querySelectorAll('#sfCol tr[data-move] td:last-child')].map((t) => t.textContent),
 }))
+// h-eval (2026-10-28): off by default ("No calcular": no column, no 💣); then turned on (10) for the checks below.
+const hevalOff = await page.evaluate(() => ({ value: document.getElementById('hevalCandidates').value, heads: [...document.querySelectorAll('#maiaCol th')].map((t) => t.textContent), bombs: document.querySelectorAll('.heval-mark').length }))
+console.log(`${hevalOff.value === '0' && !hevalOff.heads.includes('h-eval') && hevalOff.bombs === 0 ? 'OK  ' : 'FAIL'} h-eval off by default: ${JSON.stringify(hevalOff)}`)
+await openSettings(page); await page.selectOption('#hevalCandidates', '10'); await page.click('#menu')
+// (wait for the 💣 and for Stockfish's Δ eval of every Maia row, which comes right after)
+await page.waitForFunction(() => document.querySelector('#maiaCol .heval-mark') && [...document.querySelectorAll('#maiaCol tr[data-move]')].every((r) => r.cells[1].textContent), null, { timeout: 120_000 })
 let c = await cols()
 const colsOk = c.maiaHead[1] === 'Δ eval' && c.maiaHead[2] === 'h-eval' && c.hevals.every((h) => /^([+−]?\d+\.\d|[+−]M\d+)$/.test(h)) /* every Maia move is an h-eval candidate */ && c.bombs.startsWith('1/') && c.maiaPct.length === c.sfEval.length /* the 💣 move replaces Maia's least likely one: same length as SF's list */ && c.deltas.every((d) => /^(★|↓\d+\.\d|↓M[+−]\d+|↓M\?|⇵.+)$/.test(d)) && !c.deltas.includes('↓0.0') && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
   c.sfHead[0].startsWith('SF') && c.sfHead[1] === 'Maia' && c.sfMid.every((p) => /^\d+%$/.test(p)) && c.sfEval.every((e) => /^([+−]?\d+\.\d|[+−]M\d+)$/.test(e))
@@ -161,6 +168,7 @@ c = await page.evaluate(() => [[...document.querySelectorAll('#maiaCol th')].map
 console.log(`${c[0].length === 2 && c[1].length === 2 ? 'OK  ' : 'FAIL'} middle columns hidden: ${JSON.stringify(c)}`)
 await page.screenshot({ path: `${outDir}/06-columns-hidden.png`, fullPage: true })
 await openSettings(page); await page.check('#showDeltaCol'); await page.check('#showHevalCol'); await page.check('#showMaiaCol'); await page.click('#menu')
+await openSettings(page); await page.selectOption('#hevalCandidates', '0'); await page.click('#menu') // back to the default for the persistent profile
 await page.screenshot({ path: `${outDir}/04-threats-only-moves.png`, fullPage: true })
 await openSettings(page)
 await page.selectOption('#threatsMode', 'bar')

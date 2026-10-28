@@ -72,7 +72,7 @@ const DEFAULTS: AppSettings = {
   meterMode: 'bar', // top bar (Maia's moves): only the bar by default (José, iteration 5)
   deltaCol: true, // "Δ eval" column in the Maia panel (iteration 5, can be hidden)
   maiaCol: true, // "Maia" % column in the Stockfish panel (iteration 5, can be hidden)
-  hevalCandidates: 10, // h-eval: Stockfish candidates at depth 7 (José, 2026-10-28); 0 = off
+  hevalCandidates: 0, // h-eval: how many candidates (both columns + Stockfish depth 7); 0 = off, the default (José, 2026-10-28)
   hevalCol: true, // "h-eval" column in the Maia panel (can be hidden)
   hashMb: 16,
   sfThreads: Math.min(4, CORES), // ⚙ (José, 2026-10-26)
@@ -88,7 +88,7 @@ const DEFAULTS: AppSettings = {
 }
 
 /** Bumped when a default changes and saved settings must be migrated (see loadSettings). */
-const SETTINGS_VERSION = 3
+const SETTINGS_VERSION = 4
 
 /** How threats are shown: bar + moves, only the moves (legend), or not computed. */
 type ThreatsMode = 'bar' | 'moves' | 'off'
@@ -133,6 +133,9 @@ function loadSettings(): AppSettings {
       if (saved.depth === 18) delete saved.depth
       if (saved.threatDepth === 12) delete saved.threatDepth
     }
+    // Version 4 (2026-10-28): h-eval is off by default. Its first default (10)
+    // was saved like any choice the same day: it becomes the new default.
+    if ((saved.version ?? 1) < 4 && saved.hevalCandidates === 10) delete saved.hevalCandidates
     saved.version = SETTINGS_VERSION
     return { ...DEFAULTS, ...saved }
   } catch {
