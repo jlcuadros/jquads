@@ -3,7 +3,9 @@
  * how much a move is worth in practice against an opponent of the selected Elo,
  * counting on how they are likely to answer.
  *
- *   1. Candidates: Stockfish at depth 6, the N best moves (⚙, default 10).
+ *   1. Candidates: Stockfish at depth 6, the N best moves (⚙, default 10),
+ *      plus always the moves shown in the Maia column (José, 2026-10-28), so
+ *      every move there has its h-eval.
  *   2. For each candidate, the opponent's replies according to Maia at the
  *      selected Elo, most likely first, until they cover ≥ 90 % (at most 8).
  *   3. Each reply's position is valued by Maia at 2600 (expected score for
@@ -71,9 +73,10 @@ export function likelyReplies(policy: Array<{ uci: string; prob: number }>): Arr
   return taken
 }
 
-export async function hEval(fen: string, elo: number, n: number, engines: HevalEngines): Promise<HevalResult> {
+/** `extra`: moves that are always candidates (the Maia column's), besides Stockfish's N. */
+export async function hEval(fen: string, elo: number, n: number, engines: HevalEngines, extra: string[] = []): Promise<HevalResult> {
   const moverWhite = fen.split(' ')[1] === 'w'
-  const cands = await engines.candidates(fen, HEVAL_DEPTH, n)
+  const cands = [...new Set([...(await engines.candidates(fen, HEVAL_DEPTH, n)), ...extra])]
   const expected = new Map<string, number>() // candidate → expected score for the mover (0..1)
 
   // Step 2: Maia (selected Elo) on the positions after each candidate.

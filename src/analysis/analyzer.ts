@@ -207,11 +207,12 @@ export class Analyzer {
 
     // 2c. h-eval (José, 2026-10-28): Stockfish's candidates at depth 6, the
     //     opponent's likely replies (Maia, this Elo) valued by Maia 2600.
+    //     The Maia column's moves are always candidates too.
     if (hevalCandidates > 0) {
       side.heval = await hEval(side.fen, elo, hevalCandidates, {
         candidates: async (fen, d, n) => (await this.stockfish.analyse(fen, d, n)).lines.map((l) => l.pv[0]).filter(Boolean),
         maia: async (items) => (items.length ? (await this.maia.predictMany(items)).predictions : []),
-      })
+      }, shownMaiaMoves(side.maia.policy).map((p) => p.uci))
       if (!alive()) return
       emit()
     }

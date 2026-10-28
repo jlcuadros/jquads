@@ -21,7 +21,7 @@ export const pt: Messages = {
   'set.heval': 'Candidatos h-eval',
   'set.heval.off': 'Não calcular',
   'set.hevalCol': 'Coluna «h-eval» no Maia',
-  'help.heval.html': '<b>h-eval</b> (avaliação «humana»): para os melhores lances do Stockfish (profundidade 6; quantos, em Motor), tomam-se as respostas mais prováveis do adversário do seu Elo segundo o Maia (até cobrir 90 %), avalia-se cada posição resultante como a avaliaria um jogador de 2600 (Maia 2600) e faz-se a média com a probabilidade de cada resposta. Mostra-se como uma avaliação do Stockfish. O lance com a melhor h-eval leva <b>💣</b>: o mais prático contra um adversário do seu nível, mesmo que o Stockfish prefira outro; aparece sempre na coluna do Maia.',
+  'help.heval.html': '<b>h-eval</b> (avaliação «humana»): para os melhores lances do Stockfish (profundidade 6; quantos, em Motor) e para os da coluna do Maia, tomam-se as respostas mais prováveis do adversário do seu Elo segundo o Maia (até cobrir 90 %), avalia-se cada posição resultante como a avaliaria um jogador de 2600 (Maia 2600) e faz-se a média com a probabilidade de cada resposta. Mostra-se como uma avaliação do Stockfish. O lance com a melhor h-eval leva <b>💣</b>: o mais prático contra um adversário do seu nível, mesmo que o Stockfish prefira outro; aparece sempre na coluna do Maia, no lugar do menos provável se não estava.',
   'set.group.engine': 'Motor',
   'set.group.ui': 'Interface',
   'set.sfSpeed': 'Velocidade do Stockfish',

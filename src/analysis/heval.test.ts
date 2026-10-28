@@ -55,6 +55,15 @@ describe('h-eval (José\'s design, 2026-10-28)', () => {
     expect(r.best).toBe('h5f7')
   })
 
+  it('the Maia column\'s moves are always candidates, without repeating', async () => {
+    const engines: HevalEngines = {
+      candidates: async () => ['e2e4', 'd2d4'],
+      maia: async (items) => items.map(() => ({ policy: [{ uci: 'e7e5', prob: 1 }], whiteWinProb: 0.5 })),
+    }
+    const r = await hEval(START, 1500, 2, engines, ['d2d4', 'g1f3'])
+    expect([...r.scores.keys()]).toEqual(['e2e4', 'd2d4', 'g1f3'])
+  })
+
   it('replies: until 90 % or 8 moves; the formula and its limits', () => {
     expect(likelyReplies([{ uci: 'a', prob: 0.5 }, { uci: 'b', prob: 0.45 }, { uci: 'c', prob: 0.05 }]).map((r) => r.uci)).toEqual(['a', 'b'])
     expect(likelyReplies(Array.from({ length: 20 }, (_, i) => ({ uci: `m${i}`, prob: 0.05 })))).toHaveLength(MAX_REPLIES)

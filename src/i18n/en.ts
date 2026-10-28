@@ -21,7 +21,7 @@ export const en: Messages = {
   'set.heval': 'h-eval candidates',
   'set.heval.off': 'Off',
   'set.hevalCol': '«h-eval» column in Maia',
-  'help.heval.html': '<b>h-eval</b> («human» evaluation): for Stockfish’s best moves (at depth 6; how many, in Engine), the opponent’s likeliest replies at your rating according to Maia are taken (until they cover 90 %), each resulting position is valued as a 2600 player would (Maia 2600), and they are averaged with each reply’s probability. It is shown like a Stockfish evaluation. The move with the best h-eval carries <b>💣</b>: the most practical one against an opponent of your level, even if Stockfish prefers another; it always appears in the Maia column.',
+  'help.heval.html': '<b>h-eval</b> («human» evaluation): for Stockfish’s best moves (at depth 6; how many, in Engine) and for the Maia column’s moves, the opponent’s likeliest replies at your rating according to Maia are taken (until they cover 90 %), each resulting position is valued as a 2600 player would (Maia 2600), and they are averaged with each reply’s probability. It is shown like a Stockfish evaluation. The move with the best h-eval carries <b>💣</b>: the most practical one against an opponent of your level, even if Stockfish prefers another; it always appears in the Maia column, replacing the least likely move if it wasn’t there.',
   'set.group.engine': 'Engine',
   'set.group.ui': 'Interface',
   'set.sfSpeed': 'Stockfish speed',

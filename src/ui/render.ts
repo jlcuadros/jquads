@@ -214,10 +214,13 @@ export function renderGameView(tree: GameTree, headers: PgnHeaders, markOf?: Mar
  */
 export function renderMaiaCol(side: SideAnalysis | undefined, elo: number, count: number): string {
   const best = side && bestScore(side.classified)
-  // The 💣 move (best h-eval) is always listed, even if Maia doesn't pick it (José, 2026-10-28).
+  // The 💣 move (best h-eval) is always listed, even if Maia doesn't pick it: it
+  // takes the place of the least likely move, so the list keeps its length
+  // (José, 2026-10-28). The policy is sorted, so that move is the last one, and
+  // the 💣 move, being less likely than all of them, also goes last.
   const bomb = side?.heval?.best
   const shown = side?.maia ? side.maia.policy.slice(0, count) : []
-  if (side?.maia && bomb && !shown.some((p) => p.uci === bomb)) shown.push({ uci: bomb, prob: probOf(side.maia.policy, bomb) ?? 0 })
+  if (side?.maia && bomb && !shown.some((p) => p.uci === bomb)) shown.splice(Math.max(0, shown.length - 1), 1, { uci: bomb, prob: probOf(side.maia.policy, bomb) ?? 0 })
   const rows = side?.maia
     ? shown
         .map((p) => {

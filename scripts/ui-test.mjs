@@ -153,7 +153,7 @@ const cols = () => page.evaluate(() => ({
   sfEval: [...document.querySelectorAll('#sfCol tr[data-move] td:last-child')].map((t) => t.textContent),
 }))
 let c = await cols()
-const colsOk = c.maiaHead[1] === 'Δ eval' && c.maiaHead[2] === 'h-eval' && c.hevals.every((h) => h === '' || /^([+−]?\d+\.\d|[+−]M\d+)$/.test(h)) && c.hevals.some((h) => h) && c.bombs.startsWith('1/') && c.deltas.every((d) => /^(★|↓\d+\.\d|↓M[+−]\d+|↓M\?|⇵.+)$/.test(d)) && !c.deltas.includes('↓0.0') && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
+const colsOk = c.maiaHead[1] === 'Δ eval' && c.maiaHead[2] === 'h-eval' && c.hevals.every((h) => /^([+−]?\d+\.\d|[+−]M\d+)$/.test(h)) /* every Maia move is an h-eval candidate */ && c.bombs.startsWith('1/') && c.maiaPct.length === c.sfEval.length /* the 💣 move replaces Maia's least likely one: same length as SF's list */ && c.deltas.every((d) => /^(★|↓\d+\.\d|↓M[+−]\d+|↓M\?|⇵.+)$/.test(d)) && !c.deltas.includes('↓0.0') && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
   c.sfHead[0].startsWith('SF') && c.sfHead[1] === 'Maia' && c.sfMid.every((p) => /^\d+%$/.test(p)) && c.sfEval.every((e) => /^([+−]?\d+\.\d|[+−]M\d+)$/.test(e))
 console.log(`${colsOk ? 'OK  ' : 'FAIL'} middle columns: ${JSON.stringify(c)}`)
 await openSettings(page); await page.uncheck('#showDeltaCol'); await page.uncheck('#showHevalCol'); await page.uncheck('#showMaiaCol'); await page.click('#menu')
