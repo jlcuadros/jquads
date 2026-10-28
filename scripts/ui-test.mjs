@@ -93,7 +93,12 @@ await iter4((await page.textContent('#hideMoves')) === '🙈', 'hide button back
 // Tap Maia's most likely move.
 const first = await page.textContent('#maiaCol tr[data-move] .move-chip')
 const tMove = Date.now()
-await page.click('#maiaCol tr[data-move]')
+// Retry if the tap is lost (WebKit's emulation sometimes drops a tap right after another, see lib/ui-helpers.mjs).
+for (let i = 0; i < 3; i++) {
+  await page.click('#maiaCol tr[data-move]')
+  const played = await page.waitForFunction(() => document.querySelectorAll('#moves .mv').length === 1, null, { timeout: 2000 }).then(() => true, () => false)
+  if (played) break
+}
 await page.waitForFunction(() => document.querySelectorAll('#moves .mv').length === 1)
 await page.waitForFunction(() => document.getElementById('text').textContent.length > 20, null, { timeout: 120_000 })
 console.log(`played ${first}; strip: ${await page.textContent('#moves')}`)
