@@ -31,11 +31,17 @@ import { BOOK_MIN_SHARE } from '../book/openingBook'
  *  - book: the opening book's moves of a position (iteration 6), or undefined
  *    while it isn't loaded or when it is turned off in ⚙.
  */
-const view: { notation: Notation; hideMoves: boolean; deltaCol: boolean; maiaCol: boolean; book?: (fen: string) => BookMove[] } = {
+const view: { notation: Notation; hideMoves: boolean; deltaCol: boolean; maiaCol: boolean; hevalCol: boolean; book?: (fen: string) => BookMove[] } = {
   notation: 'figurine',
   hideMoves: false,
   deltaCol: true,
   maiaCol: true,
+  hevalCol: true,
+}
+
+/** 💣 after the move with the best h-eval (José, 2026-10-28), in both columns. */
+function bombMark(side: SideAnalysis, uci: string): string {
+  return side.heval?.best === uci ? '<span class="heval-mark" title="h-eval">💣</span>' : ''
 }
 
 /** 📖 after a move that is in the opening book (Maia and Stockfish columns). */
@@ -208,18 +214,25 @@ export function renderGameView(tree: GameTree, headers: PgnHeaders, markOf?: Mar
  */
 export function renderMaiaCol(side: SideAnalysis | undefined, elo: number, count: number): string {
   const best = side && bestScore(side.classified)
+  // The 💣 move (best h-eval) is always listed, even if Maia doesn't pick it (José, 2026-10-28).
+  const bomb = side?.heval?.best
+  const shown = side?.maia ? side.maia.policy.slice(0, count) : []
+  if (side?.maia && bomb && !shown.some((p) => p.uci === bomb)) shown.push({ uci: bomb, prob: probOf(side.maia.policy, bomb) ?? 0 })
   const rows = side?.maia
-    ? side.maia.policy
-        .slice(0, count)
+    ? shown
         .map((p) => {
           const c = side.classified.get(p.uci)
           const delta = best && c ? deltaEval(best, c.score) : ''
-          return `<tr${rowMove(p.uci)}><td>${chip(p.uci, sanOf(side.fen, p.uci), c?.color, shapeOf(p.prob))}${bookMark(side.fen, p.uci)}</td>${midCell(view.deltaCol, delta)}<td class="num">${pct(p.prob)}</td></tr>`
+          const h = side.heval?.scores.get(p.uci)
+          return (
+            `<tr${rowMove(p.uci)}><td>${chip(p.uci, sanOf(side.fen, p.uci), c?.color, shapeOf(p.prob))}${bookMark(side.fen, p.uci)}${bombMark(side, p.uci)}</td>` +
+            `${midCell(view.deltaCol, delta)}${midCell(view.hevalCol, h ? formatScore(h, 1) : '')}<td class="num">${pct(p.prob)}</td></tr>`
+          )
         })
         .join('')
-    : `<tr><td colspan="3">${t('panel.calculating')}</td></tr>`
-  // The header row is also the title: "Maia 1500 | Δ eval | prob" ("Δ eval" is not translated).
-  return `<table><tr><th>Maia ${elo}</th>${midCell(view.deltaCol, 'Δ eval', 'th')}<th class="num">${t('panel.prob')}</th></tr>${rows}</table>`
+    : `<tr><td colspan="4">${t('panel.calculating')}</td></tr>`
+  // The header row is also the title: "Maia 1500 | Δ eval | h-eval | prob" ("Δ eval" and "h-eval" are not translated).
+  return `<table><tr><th>Maia ${elo}</th>${midCell(view.deltaCol, 'Δ eval', 'th')}${midCell(view.hevalCol, 'h-eval', 'th')}<th class="num">${t('panel.prob')}</th></tr>${rows}</table>`
 }
 
 /** Maia's probability for a move of the Stockfish column: "0%" if Maia doesn't list it, "…" before Maia answers. */
@@ -248,7 +261,7 @@ export function renderSfCol(side: SideAnalysis | undefined, engineName: string):
         .map((l) => {
           const uci = l.pv[0]
           const c = side.classified.get(uci)
-          return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), c?.color, shapeIn(side, uci))}${bookMark(side.fen, uci)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${formatScore(lineScoreOf(l), 1)}</td></tr>`
+          return `<tr${rowMove(uci)}><td>${chip(uci, sanOf(side.fen, uci), c?.color, shapeIn(side, uci))}${bookMark(side.fen, uci)}${bombMark(side, uci)}</td>${midCell(view.maiaCol, maiaPct(side, uci))}<td class="num">${formatScore(lineScoreOf(l), 1)}</td></tr>`
         })
         .join('')
     : `<tr><td colspan="3">${t('panel.calculating')}</td></tr>`

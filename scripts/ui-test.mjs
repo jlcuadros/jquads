@@ -144,20 +144,23 @@ console.log(`${okBoth && !tbMoves.bar && tbMoves.moves && tbOff.hidden ? 'OK  ' 
 const cols = () => page.evaluate(() => ({
   maiaHead: [...document.querySelectorAll('#maiaCol th')].map((t) => t.textContent),
   sfHead: [...document.querySelectorAll('#sfCol th')].map((t) => t.textContent),
-  deltas: [...document.querySelectorAll('#maiaCol tr[data-move] td.num')].filter((_, i) => i % 2 === 0).map((t) => t.textContent),
+  // Maia rows: move · Δ eval · h-eval · prob (cells by position in each row)
+  deltas: [...document.querySelectorAll('#maiaCol tr[data-move]')].map((r) => r.cells[1].textContent),
+  hevals: [...document.querySelectorAll('#maiaCol tr[data-move]')].map((r) => r.cells[2].textContent),
+  bombs: document.querySelectorAll('#maiaCol .heval-mark').length + '/' + document.querySelectorAll('#sfCol .heval-mark').length,
   maiaPct: [...document.querySelectorAll('#maiaCol tr[data-move] td:last-child')].map((t) => t.textContent),
   sfMid: [...document.querySelectorAll('#sfCol tr[data-move] td.num')].filter((_, i) => i % 2 === 0).map((t) => t.textContent),
   sfEval: [...document.querySelectorAll('#sfCol tr[data-move] td:last-child')].map((t) => t.textContent),
 }))
 let c = await cols()
-const colsOk = c.maiaHead[1] === 'Δ eval' && c.deltas.every((d) => /^(★|↓\d+\.\d|↓M[+−]\d+|↓M\?|⇵.+)$/.test(d)) && !c.deltas.includes('↓0.0') && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
+const colsOk = c.maiaHead[1] === 'Δ eval' && c.maiaHead[2] === 'h-eval' && c.hevals.every((h) => h === '' || /^([+−]?\d+\.\d|[+−]M\d+)$/.test(h)) && c.hevals.some((h) => h) && c.bombs.startsWith('1/') && c.deltas.every((d) => /^(★|↓\d+\.\d|↓M[+−]\d+|↓M\?|⇵.+)$/.test(d)) && !c.deltas.includes('↓0.0') && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
   c.sfHead[0].startsWith('SF') && c.sfHead[1] === 'Maia' && c.sfMid.every((p) => /^\d+%$/.test(p)) && c.sfEval.every((e) => /^([+−]?\d+\.\d|[+−]M\d+)$/.test(e))
 console.log(`${colsOk ? 'OK  ' : 'FAIL'} middle columns: ${JSON.stringify(c)}`)
-await openSettings(page); await page.uncheck('#showDeltaCol'); await page.uncheck('#showMaiaCol'); await page.click('#menu')
-c = await cols()
-console.log(`${c.maiaHead.length === 2 && c.sfHead.length === 2 ? 'OK  ' : 'FAIL'} middle columns hidden: ${JSON.stringify([c.maiaHead, c.sfHead])}`)
+await openSettings(page); await page.uncheck('#showDeltaCol'); await page.uncheck('#showHevalCol'); await page.uncheck('#showMaiaCol'); await page.click('#menu')
+c = await page.evaluate(() => [[...document.querySelectorAll('#maiaCol th')].map((t) => t.textContent), [...document.querySelectorAll('#sfCol th')].map((t) => t.textContent)])
+console.log(`${c[0].length === 2 && c[1].length === 2 ? 'OK  ' : 'FAIL'} middle columns hidden: ${JSON.stringify(c)}`)
 await page.screenshot({ path: `${outDir}/06-columns-hidden.png`, fullPage: true })
-await openSettings(page); await page.check('#showDeltaCol'); await page.check('#showMaiaCol'); await page.click('#menu')
+await openSettings(page); await page.check('#showDeltaCol'); await page.check('#showHevalCol'); await page.check('#showMaiaCol'); await page.click('#menu')
 await page.screenshot({ path: `${outDir}/04-threats-only-moves.png`, fullPage: true })
 await openSettings(page)
 await page.selectOption('#threatsMode', 'bar')

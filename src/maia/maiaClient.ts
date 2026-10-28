@@ -59,7 +59,13 @@ export class MaiaClient {
   }
 
   /** One prediction per Elo, all computed in a single model run. */
+  /** One position at several Elos (one batch). */
   predict(fen: string, elos: number[]): Promise<MaiaPredictResult> {
-    return this.call({ type: 'predict', fen, elos })
+    return this.predictMany(elos.map((elo) => ({ fen, elo })))
+  }
+
+  /** Several (position, Elo) items in one batch; predictions in the same order (h-eval, 2026-10-28). */
+  predictMany(items: Array<{ fen: string; elo: number }>): Promise<MaiaPredictResult> {
+    return this.call({ type: 'predict', items })
   }
 }

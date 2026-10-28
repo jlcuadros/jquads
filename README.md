@@ -19,6 +19,8 @@ or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
 - **Δ eval** next to Maia's moves: how much worse than Stockfish's best — "↓1.6" pawns, "↓M+3" / "↓M−6"
   (the mate comes later / sooner), "⇵−M6" / "⇵+0.4" when a mate appears, disappears or changes side
   (the same for Stockfish's mates and the endgame tables'). In the Stockfish column, Maia's % of each move.
+- **h-eval** and **💣**: how a move scores in practice against an opponent of the selected rating — the
+  opponent's likely replies (Maia at that rating) valued by Maia 2600, shown like an evaluation; the best one gets 💣.
 - **Threats**: the same analysis as if the opponent were to move (orange arrow, triangles).
 - Explanatory text generated from both engines (in the selected language), in paragraphs with a
   first icon (📖 book, ♙ White, ♟ Black), including a summary of the previous move (best / good /

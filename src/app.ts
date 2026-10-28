@@ -55,6 +55,8 @@ const DEPTHS = Array.from({ length: MAX_DEPTH - MIN_DEPTH + 1 }, (_, i) => MIN_D
 const THREAT_DEPTHS = Array.from({ length: MAX_DEPTH - THREAT_OFFSET - MIN_THREAT_DEPTH + 1 }, (_, i) => MIN_THREAT_DEPTH + i)
 const HASH_SIZES = [16, 32, 64, 128, 256] // MB
 const LINE_COUNTS = [3, 4, 5, 6] // moves shown per engine column
+/** h-eval candidates offered in ⚙ (0 = don't compute). */
+const HEVAL_CANDIDATES = [0, 5, 10, 15, 20]
 /**
  * Cores the browser reports. Stockfish uses min(4, cores) threads by default
  * (as before ⚙ had the option, 2026-10-26); ⚙ offers 1 … cores (at most 8).
@@ -70,6 +72,8 @@ const DEFAULTS: AppSettings = {
   meterMode: 'bar', // top bar (Maia's moves): only the bar by default (José, iteration 5)
   deltaCol: true, // "Δ eval" column in the Maia panel (iteration 5, can be hidden)
   maiaCol: true, // "Maia" % column in the Stockfish panel (iteration 5, can be hidden)
+  hevalCandidates: 10, // h-eval: Stockfish candidates at depth 6 (José, 2026-10-28); 0 = off
+  hevalCol: true, // "h-eval" column in the Maia panel (can be hidden)
   hashMb: 16,
   sfThreads: Math.min(4, CORES), // ⚙ (José, 2026-10-26)
   theme: 'system', // ⚙ → Interfaz → Tema (José, 2026-10-28); applied by index.html
@@ -100,6 +104,7 @@ interface AppSettings extends Omit<Settings, 'threats' | 'depth' | 'threatDepth'
   meterMode: MeterMode
   deltaCol: boolean // show "Δ eval" in the Maia panel
   maiaCol: boolean // show Maia's % in the Stockfish panel
+  hevalCol: boolean // show h-eval in the Maia panel
   hashMb: number // Stockfish hash (shared by the main analysis and the threats)
   sfThreads: number // Stockfish threads (Maia keeps min(4, cores))
   theme: 'system' | 'light' | 'dark'
@@ -184,6 +189,12 @@ async function measureSpeed(restart: boolean) {
     fillDepthSelects()
     if (restart) positionChanged()
   }
+}
+
+/** h-eval candidates (⚙ → Motor): "No calcular" (0) or how many Stockfish candidates. */
+function fillHevalSelect() {
+  $<HTMLSelectElement>('hevalCandidates').innerHTML = HEVAL_CANDIDATES.map((n) => `<option value="${n}">${n || t('set.heval.off')}</option>`).join('')
+  $<HTMLSelectElement>('hevalCandidates').value = String(settings.hevalCandidates)
 }
 
 /** Depth selects: "Auto (N)" (N = what Auto means now on this device) and every depth. */
@@ -381,6 +392,7 @@ function renderPanel() {
     hideMoves,
     deltaCol: settings.deltaCol,
     maiaCol: settings.maiaCol,
+    hevalCol: settings.hevalCol && settings.hevalCandidates > 0,
     book: settings.book && openingBook ? (fen) => openingBook!.lookup(fen) : undefined,
   })
   $('numbers').innerHTML = renderNumbers(analysis)
@@ -459,6 +471,12 @@ function fillSelect(id: string, values: number[], selected: number, label: (v: n
 function setupControls() {
   fillSelect('elo', ELOS, settings.elo, (v) => String(v))
   fillDepthSelects()
+  fillHevalSelect()
+  $('hevalCandidates').onchange = (ev) => {
+    settings.hevalCandidates = Number((ev.target as HTMLSelectElement).value)
+    saveSettings()
+    positionChanged()
+  }
   fillSelect('hashMb', HASH_SIZES, settings.hashMb, (v) => `${v} MB`)
   fillSelect('sfThreads', SF_THREADS, Math.min(settings.sfThreads, CORES), (v) => String(v))
   $('sfThreadsCores').textContent = t('set.sfThreads.cores', { n: CORES })
@@ -470,7 +488,7 @@ function setupControls() {
   $<HTMLInputElement>('evalBar').checked = settings.evalBar
   // Middle columns of the panels (iteration 5): on/off, only redraw needed.
   // (checkbox ids "show…": "maiaCol" is already the Maia panel's id)
-  const COL_SETTING = { deltaCol: 'showDeltaCol', maiaCol: 'showMaiaCol' } as const
+  const COL_SETTING = { deltaCol: 'showDeltaCol', maiaCol: 'showMaiaCol', hevalCol: 'showHevalCol' } as const
   for (const [key, id] of Object.entries(COL_SETTING) as [keyof typeof COL_SETTING, string][]) {
     $<HTMLInputElement>(id).checked = settings[key]
     $(id).onchange = (ev) => {
@@ -544,6 +562,7 @@ function setupControls() {
     $('sfThreadsCores').textContent = t('set.sfThreads.cores', { n: CORES }) // generated text, not in the HTML
     showSpeed()
     fillDepthSelects() // "Auto (N)" is translated
+    fillHevalSelect()
     $('hideMoves').title = t(hideMoves ? 'btn.show' : 'btn.hide')
     $('hideMoves').setAttribute('aria-label', $('hideMoves').title)
     retranslateEditor()

@@ -17,6 +17,7 @@
  * through a game is instant.
  */
 import type { MaiaClient } from '../maia/maiaClient'
+import { hEval, type HevalResult } from './heval'
 import type { EngineLine, StockfishClient } from '../stockfish/stockfishClient'
 import { blunderMeter, classifyMoves, type ClassifiedMove, type Score } from './classify'
 import { nullMoveFen } from '../game/tree'
@@ -48,6 +49,7 @@ export interface Settings {
   threats: boolean // compute threats at all (⚙ "Amenazas" ≠ "No calcular")
   lines: number // Stockfish MultiPV for the main analysis (= rows shown per engine)
   tablebase: boolean // use Lichess' online endgame tables when possible (⚙, default on)
+  hevalCandidates: number // h-eval: Stockfish candidates (⚙, default 10); 0 = not computed
 }
 
 /** Everything known about one position (main side to move, or threats). */
@@ -60,6 +62,8 @@ export interface SideAnalysis {
   meter?: ReturnType<typeof blunderMeter>
   /** Exact endgame-table result when it replaced Stockfish (≤ 7 pieces). */
   tb?: TbResult
+  /** h-eval of the candidate moves and the best one (💣), main position only (2026-10-28). */
+  heval?: HevalResult
   done: boolean
 }
 
@@ -72,7 +76,7 @@ export interface PositionAnalysis {
 const lineScore = (l: EngineLine): Score => (l.mate !== undefined ? { mate: l.mate } : { cp: l.scoreCp })
 
 /** Cache key: the position and every setting that changes the result. */
-const cacheKey = (fen: string, s: Settings) => `${fen}|${s.elo}|${s.depth}|${s.threatDepth}|${s.lines}|${s.tablebase}`
+const cacheKey = (fen: string, s: Settings) => `${fen}|${s.elo}|${s.depth}|${s.threatDepth}|${s.lines}|${s.tablebase}|${s.hevalCandidates}`
 
 export class Analyzer {
   private generation = 0
@@ -119,7 +123,7 @@ export class Analyzer {
     if (result.threats !== undefined) return // everything was cached
 
     if (!result.main.done) {
-      await this.analyseSide(result.main, s.elo, s.depth, s.lines, s.tablebase, alive, emit)
+      await this.analyseSide(result.main, s.elo, s.depth, s.lines, s.tablebase, s.hevalCandidates, alive, emit)
       if (!alive()) return
     }
 
@@ -130,7 +134,7 @@ export class Analyzer {
     } else {
       result.threats = emptySide(nullFen)
       // Threats only need the opponent's best moves (arrow + colours): 3 lines.
-      await this.analyseSide(result.threats, s.elo, s.threatDepth, 3, s.tablebase, alive, emit)
+      await this.analyseSide(result.threats, s.elo, s.threatDepth, 3, s.tablebase, 0, alive, emit)
       if (!alive()) return
     }
     emit()
@@ -143,6 +147,7 @@ export class Analyzer {
     depth: number,
     multiPv: number,
     useTablebase: boolean,
+    hevalCandidates: number, // 0: no h-eval (the threats never compute it)
     alive: () => boolean,
     emit: () => void,
   ) {
@@ -200,10 +205,21 @@ export class Analyzer {
     if (!alive()) return
     for (const l of side.lines) if (l.pv[0]) scores.set(l.pv[0], lineScore(l))
 
-    // 3. Every shown Maia move that Stockfish's own lines didn't cover.
-    const candidates = shownMaiaMoves(side.maia.policy)
-      .map((p) => p.uci)
-      .filter((uci) => !scores.has(uci))
+    // 2c. h-eval (José, 2026-10-28): Stockfish's candidates at depth 6, the
+    //     opponent's likely replies (Maia, this Elo) valued by Maia 2600.
+    if (hevalCandidates > 0) {
+      side.heval = await hEval(side.fen, elo, hevalCandidates, {
+        candidates: async (fen, d, n) => (await this.stockfish.analyse(fen, d, n)).lines.map((l) => l.pv[0]).filter(Boolean),
+        maia: async (items) => (items.length ? (await this.maia.predictMany(items)).predictions : []),
+      })
+      if (!alive()) return
+      emit()
+    }
+
+    // 3. Every shown Maia move that Stockfish's own lines didn't cover, and the
+    //    h-eval 💣 move (it is always shown in the Maia column, with its colour).
+    const candidates = [...shownMaiaMoves(side.maia.policy).map((p) => p.uci), ...(side.heval?.best ? [side.heval.best] : [])]
+      .filter((uci, i, all) => !scores.has(uci) && all.indexOf(uci) === i)
     if (candidates.length) {
       const extra = await this.stockfish.analyse(side.fen, Math.min(depth, CANDIDATE_DEPTH), candidates.length, undefined, candidates)
       if (!alive()) return
