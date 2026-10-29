@@ -390,12 +390,16 @@ function previousMove(): PreviousMoveRef | undefined {
 }
 
 function renderPanel() {
+  // The h-eval column is shown only if it is computed and not hidden; the
+  // columns' widths depend on it (style.css → .cols.with-heval).
+  const hevalCol = settings.hevalCol && settings.hevalCandidates > 0
+  $('cols').classList.toggle('with-heval', hevalCol)
   setViewOptions({
     notation: settings.notation,
     hideMoves,
     deltaCol: settings.deltaCol,
     maiaCol: settings.maiaCol,
-    hevalCol: settings.hevalCol && settings.hevalCandidates > 0,
+    hevalCol,
     book: settings.book && openingBook ? (fen) => openingBook!.lookup(fen) : undefined,
   })
   $('numbers').innerHTML = renderNumbers(analysis)

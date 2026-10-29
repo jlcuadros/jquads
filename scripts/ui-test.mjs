@@ -154,11 +154,16 @@ const cols = () => page.evaluate(() => ({
   sfEval: [...document.querySelectorAll('#sfCol tr[data-move] td:last-child')].map((t) => t.textContent),
 }))
 // h-eval (2026-10-28): off by default ("No calcular": no column, no 💣); then turned on (10) for the checks below.
+// Maia : SF widths — 1 : 1 without the h-eval column, 1.2 : 0.8 with it (2026-10-29).
+const widthRatio = () => page.evaluate(() => +(document.getElementById('maiaCol').getBoundingClientRect().width / document.getElementById('sfCol').getBoundingClientRect().width).toFixed(2))
 const hevalOff = await page.evaluate(() => ({ value: document.getElementById('hevalCandidates').value, heads: [...document.querySelectorAll('#maiaCol th')].map((t) => t.textContent), bombs: document.querySelectorAll('.heval-mark').length }))
-console.log(`${hevalOff.value === '0' && !hevalOff.heads.includes('h-eval') && hevalOff.bombs === 0 ? 'OK  ' : 'FAIL'} h-eval off by default: ${JSON.stringify(hevalOff)}`)
+hevalOff.ratio = await widthRatio()
+console.log(`${hevalOff.value === '0' && !hevalOff.heads.includes('h-eval') && hevalOff.bombs === 0 && Math.abs(hevalOff.ratio - 1) < 0.05 ? 'OK  ' : 'FAIL'} h-eval off by default: ${JSON.stringify(hevalOff)}`)
 await openSettings(page); await page.selectOption('#hevalCandidates', '10'); await page.click('#menu')
 // (wait for the 💣 and for Stockfish's Δ eval of every Maia row, which comes right after)
 await page.waitForFunction(() => document.querySelector('#maiaCol .heval-mark') && [...document.querySelectorAll('#maiaCol tr[data-move]')].every((r) => r.cells[1].textContent), null, { timeout: 120_000 })
+const ratioOn = await widthRatio()
+console.log(`${ratioOn > 1.3 ? 'OK  ' : 'FAIL'} Maia column wider with h-eval: Maia/SF = ${ratioOn}`)
 let c = await cols()
 const colsOk = c.maiaHead[1] === 'Δ eval' && c.maiaHead[2] === 'h-eval' && c.hevals.every((h) => /^([+−]?\d+\.\d|[+−]M\d+)$/.test(h)) /* every Maia move is an h-eval candidate */ && c.bombs.startsWith('1/') && c.maiaPct.length === c.sfEval.length /* the 💣 move replaces Maia's least likely one: same length as SF's list */ && c.deltas.every((d) => /^(★|↓\d+\.\d|↓M[+−]\d+|↓M\?|⇵.+)$/.test(d)) && !c.deltas.includes('↓0.0') && c.maiaPct.every((p) => /^\d+%$/.test(p)) &&
   c.sfHead[0].startsWith('SF') && c.sfHead[1] === 'Maia' && c.sfMid.every((p) => /^\d+%$/.test(p)) && c.sfEval.every((e) => /^([+−]?\d+\.\d|[+−]M\d+)$/.test(e))

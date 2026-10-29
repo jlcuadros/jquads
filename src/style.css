@@ -110,9 +110,12 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 .moves .empty { color: var(--muted); }
 
 /* --- Maia / Stockfish columns -------------------------------------------- */
-.cols { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; margin-top: 6px; } /* Maia has more columns (Δ eval, h-eval) */
-/* Keep a move with its marks (📖 💣) on one line */
-.col.maia td:first-child { white-space: nowrap; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+/* With the h-eval column shown (app.ts adds .with-heval) Maia has 4 columns: more
+   room for it, and a move keeps its marks (📖 💣) on one line. Without it, the
+   original 1 : 1 layout (José, 2026-10-29). */
+.cols.with-heval { grid-template-columns: 1.2fr 0.8fr; }
+.cols.with-heval .col.maia td:first-child { white-space: nowrap; }
 .col table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 /* Header row doubles as the column title: "Maia 1500 | prob", "Stockfish 17 d18 | eval" */
 .col th { text-align: left; font-weight: 600; font-size: 0.85rem; padding-bottom: 2px; }
@@ -297,9 +300,9 @@ html, body { overflow-x: hidden; }
 .sf-speed { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .heval-mark { font-size: 0.75em; margin-left: 2px; vertical-align: 1px; }
 
-/* 320 px screens (first iPhone SE): smaller text so the 4 + 3 columns fit (last: it overrides the rules above) */
+/* 320 px screens (first iPhone SE) with the h-eval column: smaller text so the 4 + 3 columns fit (last: it overrides the rules above) */
 @media (max-width: 359px) {
-  .cols { gap: 6px; }
-  .col table { font-size: 0.74rem; }
-  .col th, .col th.num, .col th:last-child { font-size: 0.68rem; }
+  .cols.with-heval { gap: 6px; }
+  .cols.with-heval .col table { font-size: 0.74rem; }
+  .cols.with-heval .col th, .cols.with-heval .col th.num, .cols.with-heval .col th:last-child { font-size: 0.68rem; }
 }
