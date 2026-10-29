@@ -21,6 +21,11 @@ import { loadBook } from './book/openingBook'
 import { MAX_DEPTH, MIN_DEPTH, MIN_THREAT_DEPTH, THREAT_OFFSET, autoDepth, autoThreatDepth } from './stockfish/autoDepth'
 import { askChoice } from './ui/choice'
 import { findNode, openGameView, refreshGameView } from './ui/gameView'
+import { annotateOpen, closeAnnotate, openAnnotate, refreshAnnotate } from './ui/annotate'
+import type { DrawColor, Drawing } from './game/drawing'
+import { mergedNags } from './game/annotations'
+import { autoNags } from './analysis/autoSymbols'
+import { scoreToCp } from './analysis/heval'
 import type { PolyglotBook } from './book/polyglot'
 import { gamePgn, parsePgnHeaders, treeFromPgn, type PgnHeaders } from './game/pgn'
 import type { Notation } from './game/notation'
@@ -33,7 +38,7 @@ import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analy
 import { openEditor, retranslateEditor } from './ui/editor'
 import { openGames, ownerName, retranslateGames } from './ui/gamesPanel'
 import { userColor, type OnlineSite } from './games/common'
-import { setViewOptions, markFrom, renderGameView, sanOf, type MarkOf, type PreviousMoveRef, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
+import { setViewOptions, markFrom, renderGameView, sanOf, shownNags, type MarkOf, type PreviousMoveRef, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T
 
@@ -85,6 +90,10 @@ const DEFAULTS: AppSettings = {
   lang: detectLang(), // device language if supported, otherwise English (José, 2026-10-25)
   lichessUser: '', // ⚙ / 📂: the board faces this player when opening their Lichess games
   chesscomUser: '', // same for Chess.com
+  arrowSF: true, // all arrows by default (José, iteration 7)
+  arrowMaia: true,
+  arrowThreat: true,
+  autoSymbols: true, // on by default (José, 2026-10-29)
 }
 
 /** Bumped when a default changes and saved settings must be migrated (see loadSettings). */
@@ -116,6 +125,10 @@ interface AppSettings extends Omit<Settings, 'threats' | 'depth' | 'threatDepth'
   lang: Lang // UI language (⚙)
   lichessUser: string // Lichess username (⚙ and 📂 panel)
   chesscomUser: string // Chess.com username (⚙ and 📂 panel)
+  arrowSF: boolean // board arrows shown (⚙ → Interfaz, iteration 7): Stockfish's best move…
+  arrowMaia: boolean // …Maia's most likely move…
+  arrowThreat: boolean // …and the threat (only when threats are computed)
+  autoSymbols: boolean // automatic chess symbols (analysis/autoSymbols.ts, iteration 7)
 }
 
 function loadSettings(): AppSettings {
@@ -170,6 +183,10 @@ let openingBook: PolyglotBook | null = null
 // a game made here) and its favourite id if it was saved with 📂 → 💾 Guardar.
 let gameHeaders: PgnHeaders = {}
 let savedId: string | undefined
+// ✏️ annotations changed since the game was opened, saved (💾) or exported (2026-10-29).
+let annotationsDirty = false
+/** Before another game replaces this one: asks if its annotations would be lost (José, 2026-10-29). */
+const mayDiscardAnnotations = () => !annotationsDirty || confirm(t('msg.unsavedAnnotations'))
 
 /**
  * Measures Stockfish's speed on this device (1 s, ⚙ → Motor) and keeps it:
@@ -226,11 +243,15 @@ function togglePanel(panel: Panel) {
   showPanel($(panel).hidden ? panel : null)
 }
 
-/** A new game (editor, FEN, "Nueva partida"): forgets the headers and the saved favourite. */
-function startNewGame(next: GameTree) {
+/**
+ * Another game on the board (editor, FEN, "Nueva partida", 📂): its headers and favourite id
+ * ({} and none for a new one). Callers ask mayDiscardAnnotations() first.
+ */
+function startNewGame(next: GameTree, headers: PgnHeaders = {}, id?: string) {
   tree = next
-  gameHeaders = {}
-  savedId = undefined
+  gameHeaders = headers
+  savedId = id
+  annotationsDirty = false
 }
 let orientation: 'white' | 'black' = 'white'
 let enginesReady = false
@@ -250,6 +271,9 @@ const board: Api = Chessground($('board'), {
   draggable: { showGhost: true },
   highlight: { lastMove: true, check: true },
   animation: { duration: 150 },
+  // Drawing is ours (✏️, ui/boardDraw.ts, also by touch): chessground's right-click drawing
+  // off, and a tap must not erase the drawings (2026-10-29).
+  drawable: { enabled: false, eraseOnClick: false },
 })
 // Extra brush for the threat arrow, added to chessground's default brushes
 // (DrawBrushes allows extra keys; the config type would require all defaults).
@@ -311,6 +335,25 @@ async function stepForward() {
   if (chosen) (tree.goTo(chosen), positionChanged())
 }
 
+/**
+ * A move's automatic symbols (iteration 7, analysis/autoSymbols.ts), from the analyses already
+ * in the cache (no engine work): the position before and after it, and the book. [] when off.
+ */
+function autoOf(node: MoveNode): number[] {
+  if (!settings.autoSymbols || !node.parent) return []
+  const s = analysisSettings()
+  const bookMoves = settings.book && openingBook ? openingBook.lookup(node.parent.fen) : []
+  return autoNags({
+    uci: node.uci,
+    whiteMoved: node.parent.fen.split(' ')[1] === 'w',
+    before: analyzer.cached(node.parent.fen, s),
+    after: analyzer.cached(node.fen, s),
+    leftBook: bookMoves.length > 0 && !bookMoves.some((m) => m.uci === node.uci),
+  })
+}
+/** The game as PGN with your symbols and the automatic ones (José: export both, 2026-10-29). */
+const pgnWithSymbols = (date: Date, headers: PgnHeaders) => gamePgn(tree, date, headers, (n) => mergedNags(n.nags, autoOf(n)))
+
 /** Strip and game-view marks, from the analyses already in the cache (no engine work). */
 const markOf: MarkOf = (node) =>
   node.parent ? markFrom(node, analyzer.cached(node.parent.fen, analysisSettings()), analyzer.cached(node.fen, analysisSettings())) : undefined
@@ -318,6 +361,8 @@ const markOf: MarkOf = (node) =>
 /** Arrows: red = Maia's most likely move, blue = Stockfish's best move, orange = threat. */
 function arrows(): DrawShape[] {
   const shapes: DrawShape[] = []
+  // ✏️ open: only the arrow being drawn (the engines' would mix with the drawing).
+  if (annotateOpen()) return drawPreview ? [drawPreview] : shapes
   if (hideMoves) return shapes // arrows would give the moves away
   const m = analysis?.main
   const maiaTop = m?.maia?.policy[0]?.uci
@@ -330,18 +375,25 @@ function arrows(): DrawShape[] {
   })
   // Threat: the opponent's best move if it were their turn (orange, thinner, under the others).
   const threat = analysis?.threats?.lines[0]?.pv[0]
-  if (threat && settings.threatsMode !== 'off') shapes.push(arrow(threat, 'threat'))
-  if (sfTop) shapes.push(arrow(sfTop, 'blue'))
+  if (threat && settings.threatsMode !== 'off' && settings.arrowThreat) shapes.push(arrow(threat, 'threat'))
+  if (sfTop && settings.arrowSF) shapes.push(arrow(sfTop, 'blue'))
   // Drawn after (on top of) Stockfish's; thinner when both are the same move,
   // so the red line shows inside the blue one.
-  if (maiaTop) shapes.push(arrow(maiaTop, 'red', maiaTop === sfTop ? 5 : undefined))
+  if (maiaTop && settings.arrowMaia) shapes.push(arrow(maiaTop, 'red', maiaTop === sfTop && settings.arrowSF ? 5 : undefined))
   return shapes
 }
+
+/** Lichess's colours for the drawings (✏️): chessground's default brushes and the square classes in style.css. */
+const BRUSH: Record<DrawColor, string> = { G: 'green', R: 'red', B: 'blue', Y: 'yellow' }
+const arrowShape = (d: Drawing): DrawShape => ({ orig: d.from as Key, dest: d.to as Key | undefined, brush: BRUSH[d.color] })
+// The arrow (or square) being dragged in the ✏️ panel; kept here so an analysis update doesn't wipe it.
+let drawPreview: DrawShape | undefined
 
 function updateBoard() {
   const node = tree.current
   const chess = new Chess(node.fen)
   const turn = chess.turn() === 'w' ? 'white' : 'black'
+  const drawn = node.drawings ?? []
   board.set({
     fen: node.fen,
     orientation,
@@ -349,6 +401,10 @@ function updateBoard() {
     check: chess.inCheck(),
     lastMove: node.uci ? [node.uci.slice(0, 2) as Key, node.uci.slice(2, 4) as Key] : undefined,
     movable: { color: turn, dests: legalDests(chess) },
+    viewOnly: annotateOpen(), // ✏️ open: the board draws instead of moving pieces
+    // This position's drawings: arrows as shapes, coloured squares as square classes.
+    drawable: { shapes: drawn.filter((d) => d.to).map(arrowShape) },
+    highlight: { custom: new Map(drawn.filter((d) => !d.to).map((d) => [d.from as Key, `ann-${d.color}`])) },
   })
   board.setAutoShapes(arrows())
 }
@@ -369,7 +425,9 @@ function renderEvalBar() {
   const m = analysis?.main
   const best = m?.lines[0]
   const sf = best ? whiteWinProb(best.mate !== undefined ? { mate: best.mate } : { cp: best.scoreCp }) : 0.5
-  const maiaWp = m?.maia?.whiteWinProb
+  // Maia's mark: its evaluation (as in the top line, iteration 8) placed with the same
+  // formula as Stockfish's fill, so both read on one scale (±10 at the ends).
+  const maiaWp = m?.maia ? whiteWinProb({ cp: scoreToCp(m.maia.whiteWinProb) }) : undefined
   bar.classList.toggle('black-bottom', orientation === 'black')
   bar.style.setProperty('--white-pos', `${(sf * 100).toFixed(1)}%`)
   bar.style.setProperty('--maia-pos', maiaWp === undefined ? '-100%' : `${(maiaWp * 100).toFixed(1)}%`)
@@ -386,6 +444,7 @@ function previousMove(): PreviousMoveRef | undefined {
     number: whiteMove ? `${number}.` : `${number}…`,
     whiteMoved: whiteMove,
     analysis: analyzer.cached(node.parent.fen, analysisSettings()),
+    nags: shownNags(node),
   }
 }
 
@@ -401,6 +460,7 @@ function renderPanel() {
     maiaCol: settings.maiaCol,
     hevalCol,
     book: settings.book && openingBook ? (fen) => openingBook!.lookup(fen) : undefined,
+    autoNags: settings.autoSymbols ? autoOf : undefined,
   })
   $('numbers').innerHTML = renderNumbers(analysis)
   renderEvalBar()
@@ -426,7 +486,7 @@ function renderPanel() {
 }
 
 function renderMoveStrip() {
-  setViewOptions({ notation: settings.notation, hideMoves })
+  setViewOptions({ notation: settings.notation, hideMoves, autoNags: settings.autoSymbols ? autoOf : undefined })
   const el = $('moves')
   el.innerHTML = renderMoves(tree, markOf)
   // Centre the current move by scrolling ONLY the strip. scrollIntoView() also
@@ -446,6 +506,7 @@ function positionChanged() {
   updateBoard()
   renderMoveStrip()
   renderPanel()
+  refreshAnnotate()
   runAnalysis()
 }
 
@@ -504,6 +565,16 @@ function setupControls() {
       renderPanel()
     }
   }
+  // Arrows and automatic symbols (iteration 7): on/off, only a redraw is needed.
+  for (const key of ['arrowSF', 'arrowMaia', 'arrowThreat', 'autoSymbols'] as const) {
+    $<HTMLInputElement>(key).checked = settings[key]
+    $(key).onchange = (ev) => {
+      settings[key] = (ev.target as HTMLInputElement).checked
+      saveSettings()
+      renderMoveStrip()
+      renderPanel() // also the arrows (board.setAutoShapes)
+    }
+  }
   $<HTMLInputElement>('tablebase').checked = settings.tablebase
   $<HTMLInputElement>('book').checked = settings.book
   $('book').onchange = (ev) => {
@@ -537,23 +608,25 @@ function setupControls() {
         saveSettings()
       },
       onPick: (game) => {
+        let next: GameTree
         try {
-          tree = treeFromPgn(game.pgn)
+          next = treeFromPgn(game.pgn)
         } catch {
           alert(t('msg.invalidFen'))
           return
         }
-        gameHeaders = parsePgnHeaders(game.pgn)
-        savedId = game.site === 'local' ? game.id : undefined
+        if (!mayDiscardAnnotations()) return
+        startNewGame(next, parsePgnHeaders(game.pgn), game.site === 'local' ? game.id : undefined)
         orientation = userColor(game, ownerName(game, (s) => settings[USER_SETTING[s].key])) ?? 'white'
         positionChanged()
         renderEvalBar()
       },
       current: () => ({ headers: gameHeaders, savedId }),
-      buildPgn: (headers) => gamePgn(tree, new Date(), headers),
+      buildPgn: (headers) => pgnWithSymbols(new Date(), headers),
       onSaved: (id, headers) => {
         savedId = id
         gameHeaders = headers
+        annotationsDirty = false
       },
     })
   }
@@ -573,6 +646,7 @@ function setupControls() {
     $('hideMoves').title = t(hideMoves ? 'btn.show' : 'btn.hide')
     $('hideMoves').setAttribute('aria-label', $('hideMoves').title)
     retranslateEditor()
+    refreshAnnotate()
     retranslateGames()
     renderMoveStrip()
     renderPanel()
@@ -668,8 +742,34 @@ function setupControls() {
       },
     })
   $('last').onclick = () => (tree.toEnd(), positionChanged())
+  // ✏️ Symbols and comment of the current move (José, 2026-10-29): a panel from the
+  // bottom; its ◀ ▶ are the navigation bar's. Changes go straight into the tree.
+  $('annotateBtn').onclick = () => {
+    if (annotateOpen()) return closeAnnotate()
+    openAnnotate({
+      node: () => tree.current,
+      label: numberedSan,
+      changed: () => {
+        annotationsDirty = true
+        updateBoard()
+        renderMoveStrip()
+        renderPanel()
+      },
+      prev: () => $('prev').click(),
+      next: () => $('next').click(),
+      board: () => $('board').querySelector<HTMLElement>('cg-board')!,
+      orientation: () => orientation,
+      // The arrow being dragged, where the engines' arrows go (hidden while drawing).
+      preview: (d) => {
+        drawPreview = d && arrowShape(d)
+        board.setAutoShapes(arrows())
+      },
+      modeChanged: updateBoard,
+      auto: autoOf,
+    })
+  }
   document.addEventListener('keydown', (e) => {
-    if ((e.target as HTMLElement).tagName === 'INPUT') return
+    if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return // typing, not navigating
     if (e.key === 'ArrowLeft') $('prev').click()
     if (e.key === 'ArrowRight') $('next').click()
   })
@@ -694,22 +794,42 @@ function setupControls() {
   // Export the whole game with its variations: the iPhone share sheet
   // (copy, Notes, Mail, other apps…) or, where not available, the clipboard.
   $('exportPgn').onclick = async () => {
-    const pgn = gamePgn(tree, new Date(), gameHeaders) // keeps the headers of an opened game
+    const pgn = pgnWithSymbols(new Date(), gameHeaders) // keeps the headers of an opened game
     try {
       if (navigator.share) await navigator.share({ title: t('pgn.title'), text: pgn })
       else {
         await navigator.clipboard.writeText(pgn)
         alert(t('msg.pgnCopied'))
       }
+      annotationsDirty = false // the annotations are in the exported PGN
     } catch (e) {
       if (e instanceof Error && e.name === 'AbortError') return // user closed the share sheet
       await navigator.clipboard.writeText(pgn).catch(() => undefined)
       alert(t('msg.pgnCopied'))
     }
   }
-  // Same URL format as task_01: FEN with "_" instead of spaces.
-  $('lichess').onclick = () =>
-    window.open(`https://lichess.org/analysis/${tree.current.fen.replace(/ /g, '_')}?color=${orientation}`, '_blank')
+  // Open the current position, oriented like our board, on the site's analysis board
+  // (📋, next to the FEN; José, 2026-10-29). Lichess: same format as task_01, FEN with
+  // "_" instead of spaces. Chess.com: ?fen=… and flip=true for Black at the bottom
+  // (both checked in WebKit on 2026-10-29).
+  const SITE_URL = {
+    lichess: (fen: string) => `https://lichess.org/analysis/${fen.replace(/ /g, '_')}?color=${orientation}`,
+    chesscom: (fen: string) => `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}${orientation === 'black' ? '&flip=true' : ''}`,
+  }
+  for (const site of ['lichess', 'chesscom'] as const) $(site).onclick = () => window.open(SITE_URL[site](tree.current.fen), '_blank')
+  // 📋 next to the FEN: copies it (José, iteration 8); ✓ for a moment when done.
+  $('copyFen').onclick = async () => {
+    const fen = $<HTMLInputElement>('fenInput').value.trim() || tree.current.fen
+    try {
+      await navigator.clipboard.writeText(fen)
+    } catch {
+      // Older browsers / no permission: select the text and copy it the old way.
+      $<HTMLInputElement>('fenInput').select()
+      document.execCommand('copy')
+    }
+    $('copyFen').textContent = '✓'
+    setTimeout(() => ($('copyFen').textContent = '📋'), 1500)
+  }
 
   // Footer link "Ver créditos: ⚙ > Créditos y licencias": open ⚙ with the credits unfolded.
   $('openCredits').onclick = (e) => {
@@ -727,6 +847,7 @@ function setupControls() {
   // Position editor (full screen): starts from the current position; "Analizar"
   // starts a new game from the edited position, like "Cargar FEN".
   $('editPosition').onclick = () => {
+    if (!mayDiscardAnnotations()) return
     showPanel(null)
     analyzer.cancel() // no engine work while editing
     openEditor(tree.current.fen, orientation, (fen) => {
@@ -735,6 +856,7 @@ function setupControls() {
     })
   }
   $('loadFen').onclick = () => {
+    if (!mayDiscardAnnotations()) return
     try {
       startNewGame(new GameTree($<HTMLInputElement>('fenInput').value.trim()))
       showPanel(null)
@@ -744,6 +866,7 @@ function setupControls() {
     }
   }
   $('newGame').onclick = () => {
+    if (!mayDiscardAnnotations()) return
     startNewGame(new GameTree())
     showPanel(null)
     positionChanged()

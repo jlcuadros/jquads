@@ -25,7 +25,9 @@ or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
 - Explanatory text generated from both engines (in the selected language), in paragraphs with a
   first icon (📖 book, ♙ White, ♟ Black), including a summary of the previous move (best / good /
   inaccuracy / mistake, evaluation before → after, typical or rare for the chosen rating).
-- **Position editor** (full screen), FEN loading, PGN export (variations and comments), "open in Lichess".
+- **Position editor** (full screen), FEN loading, PGN export (variations, comments and symbols), open the position in Lichess or Chess.com.
+- **Automatic chess symbols** (?! ? ?? with [Lichess's thresholds](https://github.com/lichess-org/lila/blob/898ad2cdee0aa803d7959d83868efc00097a648b/modules/tree/src/main/Advice.scala#L44-L49); !, !!, !?, □ using Maia; N out of the book; ⨀ zugzwang from the threats; =, ⩲, ±, +− when the evaluation changes), in grey, exported with the PGN; choose which arrows are shown.
+- **✏️ Annotations**: chess symbols (!, ?!, ±, N…), a comment, and arrows / coloured squares drawn on the board (tap or drag), on any move, saved as standard PGN (`[%cal]` / `[%csl]`).
 - **Variations**: playing another move asks "new variation" or "overwrite"; ▶ asks which continuation to
   follow; 📜 shows the whole game large (variations, comments) and jumps to a tapped move. Every move shown
   carries the same code: colour = quality (Stockfish), shape = how likely it is for the chosen rating
@@ -60,6 +62,7 @@ npm test           # unit tests (vitest)
 npm run build      # production build in dist/
 npm run preview    # serve dist/ at http://localhost:4173
 npm run deploy     # publish to Cloudflare Pages (author's project)
+npm run deploy:preview  # same, to the preview branch (test URL, production untouched)
 ```
 Browser end-to-end tests (Playwright, WebKit emulating an iPhone) are described in
 [docs/SCRIPTS.md](docs/SCRIPTS.md).

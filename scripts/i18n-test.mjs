@@ -70,7 +70,7 @@ for (const [lang, exp] of Object.entries(EXPECT)) {
     // The opening book line (iteration 6) comes first; the engines' text follows it.
     book: (await page.textContent('#text .book-line').catch(() => '')) ?? '',
     // The engines' paragraph (about the side to move), without its first icon (♙/♟, 2026-10-26).
-    text: ((await page.textContent('#text .side-text').catch(() => '')) ?? '').replace(/^[♙♟]\uFE0E?\s*/, '').trim(),
+    text: ((await page.textContent('#text .side-text').catch(() => '')) ?? '').replace(/^[♙♟]\uFE0E?\s*/, '').replace(/^(=|⩲|⩱|±|∓|\+−|−\+)\s*/, '').trim(), // pawn and evaluation symbol (iteration 7) first
     htmlLang: await page.getAttribute('html', 'lang'),
   }
   const widths = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, vp: document.documentElement.clientWidth, top: document.getElementById('numbers').scrollWidth <= document.getElementById('numbers').clientWidth }))

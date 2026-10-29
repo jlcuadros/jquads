@@ -13,6 +13,7 @@
  * Output is a list of segments so moves can be rendered coloured and clickable.
  */
 import type { ClassifiedMove, Score } from './classify'
+import { evalLevel } from './autoSymbols'
 import { formatScore } from './classify'
 import { t, type MessageKey } from '../i18n/i18n'
 
@@ -63,11 +64,10 @@ function outcome(input: DescribeInput): string {
   if (best.mate !== undefined) {
     return t(best.mate > 0 ? 'd.mate.white' : 'd.mate.black', { n: Math.abs(best.mate) })
   }
-  const cp = best.cp ?? 0
-  const side = cp > 0 ? 'white' : 'black'
-  const abs = Math.abs(cp)
-  if (abs <= 35) return t('d.balanced')
-  const level = abs <= 150 ? 'slight' : abs <= 300 ? 'clear' : 'decisive'
+  // Same scale as the evaluation symbols (=, ⩲, ±, +−; autoSymbols.ts → EVAL_BANDS, José's
+  // choice "B" 2026-10-29: 0.35 / 0.90 / 2.00; until then 0.35 / 1.50 / 3.00).
+  const { level, side } = evalLevel(best)
+  if (!side) return t('d.balanced')
   // One full sentence per side and level: the verb agrees differently in each
   // language ("Las blancas tienen" / "White has" / "Les Blancs ont"…).
   return t(`d.${level}.${side}` as MessageKey, { score: formatScore(best) })

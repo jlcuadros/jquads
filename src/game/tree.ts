@@ -7,6 +7,7 @@
  * that node (no duplicates).
  */
 import { Chess } from 'chess.js'
+import type { Drawing } from './drawing'
 
 export const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
@@ -21,6 +22,12 @@ export interface MoveNode {
   // Comment from the PGN after this move (on the root: before the first move).
   // Shown with ✏️ in the text and kept when exporting (2026-10-26).
   comment?: string
+  // Chess symbols of this move ("!", "±", "N"…) as PGN NAG codes (game/annotations.ts),
+  // set in the ✏️ panel or read from a PGN (2026-10-29).
+  nags?: number[]
+  // Arrows and coloured squares drawn on this position (game/drawing.ts), saved in the
+  // PGN comment as [%cal …] / [%csl …] (✏️ phase 2, 2026-10-29).
+  drawings?: Drawing[]
 }
 
 export class GameTree {

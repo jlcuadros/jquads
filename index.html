@@ -20,12 +20,11 @@
     <!-- No zoom (José, iteration 4): maximum-scale/user-scalable stop most zooming; iOS Safari ignores
          user-scalable for accessibility, so app.ts also blocks pinch gestures and CSS uses touch-action. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <!-- Home-screen web app: name "jquads" and José's icon (iteration 4) -->
+    <!-- Home-screen web app: name "jquads" and José's icon (iteration 4; the pawn with a bomb since iteration 9) -->
     <meta name="apple-mobile-web-app-title" content="jquads" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#161512" media="(prefers-color-scheme: dark)" />
@@ -46,13 +45,19 @@
           <button id="gamesBtn" data-i18n-title="btn.games" data-i18n-aria="btn.games">📂</button>
           <button id="hideMoves" data-i18n-title="btn.hide" data-i18n-aria="btn.hide" aria-pressed="false">🙈</button>
           <button id="flip" data-i18n-title="btn.flip" data-i18n-aria="btn.flip">⇅</button>
-          <button id="lichess" data-i18n-title="btn.lichess" data-i18n-aria="btn.lichess">↗Li</button>
           <button id="menu" data-i18n-title="btn.menu" data-i18n-aria="btn.menu">⚙</button>
         </header>
 
         <!-- Position and game panel (hidden until 📋 is tapped) -->
         <div id="positionPanel" class="settings position-panel" hidden>
-          <label class="fen">FEN <input id="fenInput" type="text" spellcheck="false" autocapitalize="off" /></label>
+          <!-- FEN + open the position in Lichess / Chess.com (moved here from the top bar, José, 2026-10-29) -->
+          <div class="fen">
+            <label for="fenInput">FEN</label> <input id="fenInput" type="text" spellcheck="false" autocapitalize="off" />
+            <!-- Copy the FEN to the clipboard (José, iteration 8) -->
+            <button id="copyFen" class="copy-fen" data-i18n-title="btn.copyFen" data-i18n-aria="btn.copyFen">📋</button>
+            <button id="lichess" class="site-link" data-i18n-title="btn.lichess" data-i18n-aria="btn.lichess"><img src="icons/lichess.svg" alt="" /></button>
+            <button id="chesscom" class="site-link" data-i18n-title="btn.chesscom" data-i18n-aria="btn.chesscom"><img src="icons/chesscom.svg" alt="" /></button>
+          </div>
           <div class="settings-actions">
             <button id="editPosition" data-i18n="set.editPosition">Introducir posición</button>
             <button id="loadFen" data-i18n="set.loadFen">Cargar FEN</button>
@@ -128,6 +133,13 @@
                 </select>
               </label>
               <label class="check"><input type="checkbox" id="evalBar" /> <span data-i18n="set.evalBar">Barra de evaluación junto al tablero</span></label>
+              <!-- Iteration 7 (2026-10-29): which arrows, and the automatic symbols -->
+              <div class="arrows-setting"><span data-i18n="set.arrows">Flechas</span>
+                <label class="check"><input type="checkbox" id="arrowSF" /> SF</label>
+                <label class="check"><input type="checkbox" id="arrowMaia" /> Maia</label>
+                <label class="check"><input type="checkbox" id="arrowThreat" /> <span data-i18n="set.arrows.threats">Amenazas</span></label>
+              </div>
+              <label class="check"><input type="checkbox" id="autoSymbols" /> <span data-i18n="set.autoSymbols">Símbolos automáticos (!, ?, ±, N…)</span></label>
               <label class="check"><input type="checkbox" id="showDeltaCol" /> <span data-i18n="set.deltaCol">Columna «Δ eval» en Maia</span></label>
               <label class="check"><input type="checkbox" id="showHevalCol" /> <span data-i18n="set.hevalCol">Columna «h-eval» en Maia</span></label>
               <label class="check"><input type="checkbox" id="showMaiaCol" /> <span data-i18n="set.maiaCol">Columna «Maia» en Stockfish</span></label>
@@ -151,7 +163,9 @@
               <li data-i18n-html="help.columns.html"></li>
               <li data-i18n-html="help.evalBar.html"><b>Barra vertical</b> (opcional): blanco/negro según la evaluación de Stockfish; la marca roja es la probabilidad de victoria de las blancas según Maia.</li>
               <li data-i18n-html="help.games.html"></li>
-              <li data-i18n-html="help.pgn.html"><b>Exportar PGN</b>: la partida con sus variantes; se puede copiar o enviar a otra app (para Lichess: pegarla en lichess.org/paste). <b>↗Li</b> abre la posición actual en Lichess.</li>
+              <li data-i18n-html="help.annotate.html"></li>
+              <li data-i18n-html="help.symbols.html"></li>
+              <li data-i18n-html="help.pgn.html"><b>Exportar PGN</b>: la partida con sus variantes; se puede copiar o enviar a otra app (para Lichess: pegarla en lichess.org/paste). Los logos de Lichess y Chess.com junto al FEN (📋) abren la posición actual en esas webs.</li>
               <li data-i18n-html="help.memory.html"><b>Memoria</b>: el hash de Stockfish sirve para el análisis y para las amenazas (es el mismo motor). La versión clásica ahorra unos 80 MB de redes neuronales; cambiarla recarga la página.</li>
             </ul>
           </details>
@@ -159,7 +173,7 @@
           <details class="help" id="creditsDetails">
             <summary data-i18n="credits.title">Créditos y licencias</summary>
             <ul>
-              <li data-i18n-html="credits.source.html"><b>Código fuente</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/maia-stockfish-analysis" target="_blank" rel="noopener">github.com/jlcuadros/maia-stockfish-analysis</a></li>
+              <li data-i18n-html="credits.source.html"><b>Código fuente</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/jquads" target="_blank" rel="noopener">github.com/jlcuadros/jquads</a></li>
               <li data-i18n-html="credits.author.html"><b>Creado por José Luis Cuadros.</b> ¿Ideas, fallos o te apetece jugar? Mándame una solicitud de amistad en <a href="https://lichess.org/@/Ousland" target="_blank" rel="noopener">Lichess (Ousland)</a> o contáctame por <a href="https://www.linkedin.com/in/jose-luis-cuadros-fernandez/" target="_blank" rel="noopener">LinkedIn</a>.</li>
               <li data-i18n-html="credits.maia.html">Uso personal, no oficial. Basado en <a href="https://www.maiachess.com" target="_blank" rel="noopener">maiachess.com</a> (<a href="https://github.com/CSSLab/maia-platform-frontend" target="_blank" rel="noopener">código</a>, GPL-3.0) del CSSLab de la Universidad de Toronto.</li>
               <li data-i18n-html="credits.model.html">Modelo <a href="https://github.com/CSSLab/maia3" target="_blank" rel="noopener">Maia-3</a> (CSSLab, AGPL-3.0). Investigación: <a href="https://arxiv.org/abs/2605.19091" target="_blank" rel="noopener">Maia-3</a> (ICLR 2026), <a href="https://www.cs.toronto.edu/~ashton/pubs/maia2-neurips2024.pdf" target="_blank" rel="noopener">Maia-2</a> (NeurIPS 2024), <a href="https://arxiv.org/abs/2006.01855" target="_blank" rel="noopener">Maia</a> (KDD 2020).</li>
@@ -176,7 +190,7 @@
         <!-- Optional thin evaluation bar (iteration 4): white/black fill = Stockfish,
              red marker = Maia's win probability for White -->
         <div class="board-row">
-          <div class="evalbar" id="evalBarEl" aria-hidden="true"><div class="fill"></div><div class="maia-mark"></div></div>
+          <div class="evalbar" id="evalBarEl" aria-hidden="true"><div class="fill"></div><div class="sf-mark"></div><div class="maia-mark"></div></div>
           <div class="board-wrap"><div id="board"></div></div>
         </div>
         <div class="status" id="status"></div>
@@ -188,10 +202,11 @@
         <section class="meter-block" id="meterThreats" data-i18n-title="meter.threats"></section>
 
         <nav class="nav">
-          <!-- ⏮, 📜 and ⏭ small, ◀ ▶ big (José, 2026-10-26); 📜 opens the whole game -->
+          <!-- ⏮, 📜, ✏️ and ⏭ small, ◀ ▶ big (José, 2026-10-26); 📜 opens the whole game, ✏️ annotates the move (2026-10-29) -->
           <button id="first" class="small" data-i18n-aria="nav.first">⏮</button>
           <button id="prev" data-i18n-aria="nav.prev">◀</button>
           <button id="gameViewBtn" class="small" data-i18n-title="btn.gameView" data-i18n-aria="btn.gameView">📜</button>
+          <button id="annotateBtn" class="small" data-i18n-title="btn.annotate" data-i18n-aria="btn.annotate" aria-pressed="false">✏️</button>
           <button id="next" data-i18n-aria="nav.next">▶</button>
           <button id="last" class="small" data-i18n-aria="nav.last">⏭</button>
         </nav>
@@ -212,6 +227,23 @@
           <a href="#" id="openCredits" class="credits-link" data-i18n="credits.link">Ver créditos: ⚙ &gt; Créditos y licencias</a>
         </footer>
       </div>
+    </div>
+
+    <!-- ✏️ Annotate the current move: symbols + comment, from the bottom (src/ui/annotate.ts, 2026-10-29) -->
+    <div id="annotate" class="annotate-sheet" hidden>
+      <header class="annotate-top">
+        <button id="annPrev" data-i18n-aria="nav.prev">◀</button>
+        <b id="annMove"></b>
+        <button id="annNext" data-i18n-aria="nav.next">▶</button>
+        <!-- Drawing colour (Lichess's four) and "erase the drawings of this move" (phase 2) -->
+        <span id="annColors" class="ann-colors"></span>
+        <button id="annClear" class="ann-clear" data-i18n-title="ann.clear" data-i18n-aria="ann.clear">🗑</button>
+        <span class="spacer"></span>
+        <button id="annDone" class="primary" data-i18n="ann.done">Hecho</button>
+      </header>
+      <div id="annNags"></div>
+      <p id="annMeaning" class="ann-meaning"></p>
+      <textarea id="annComment" rows="2"></textarea>
     </div>
 
     <!-- The whole game, large (src/ui/gameView.ts) -->

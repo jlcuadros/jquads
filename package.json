@@ -1,5 +1,5 @@
 {
-  "name": "maia-stockfish-analysis",
+  "name": "jquads",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,7 +9,8 @@
     "build": "npm run copy-vendor && tsc --noEmit && vite build",
     "preview": "vite preview --host",
     "test": "vitest run",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name jquads --branch main --commit-dirty=true"
+    "deploy": "npm run build && wrangler pages deploy dist --project-name jquads --branch main --commit-dirty=true",
+    "deploy:preview": "npm run build && wrangler pages deploy dist --project-name jquads --branch preview --commit-dirty=true"
   },
   "dependencies": {
     "chess.js": "1.4.0",

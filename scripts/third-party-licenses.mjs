@@ -25,7 +25,8 @@ const TEXTS = {
 
 // [component, author, licence, URL, how it is used]
 const COMPONENTS = [
-  ['This app (jquads)', 'José Luis Cuadros', 'AGPL-3.0-or-later', 'https://github.com/jlcuadros/maia-stockfish-analysis', 'source code'],
+  ['This app (jquads)', 'José Luis Cuadros', 'AGPL-3.0-or-later', 'https://github.com/jlcuadros/jquads', 'source code'],
+  ['App icon (icons/icon-512.png, icon-192.png, apple-touch-icon.png)', 'José Luis Cuadros', 'AGPL-3.0-or-later (part of this app)', 'https://github.com/jlcuadros/jquads', 'a white pawn with a lit bomb (iteration 9)'],
   ['Maia-3 model (maia3_simplified.onnx)', 'CSSLab, University of Toronto', 'AGPL-3.0', 'https://github.com/CSSLab/maia3', 'downloaded at run time from maia-platform-frontend'],
   ['maia-platform-frontend (maiachess.com)', 'CSSLab, University of Toronto', 'GPL-3.0', 'https://github.com/CSSLab/maia-platform-frontend', 'move encoding and move list ported; design and colour code adapted'],
   ['Stockfish 17', 'The Stockfish developers', 'GPL-3.0', 'https://github.com/official-stockfish/Stockfish', 'chess engine (WebAssembly build)'],
@@ -36,6 +37,8 @@ const COMPONENTS = [
   ['chess.js', 'Jeff Hlywa', 'BSD-2-Clause', 'https://github.com/jhlywa/chess.js', 'chess rules (bundled)'],
   ['onnxruntime-web', 'Microsoft Corporation', 'MIT', 'https://github.com/microsoft/onnxruntime', 'runs Maia (bundled + vendor/ort/)'],
   ['Opening book (book/lichess-2300-slow-v1.bin)', 'built for jquads (scripts/book/build_book.py) from Lichess games', 'CC0-1.0 (as its source, the Lichess game database)', 'https://database.lichess.org/', 'Polyglot book: rated games, both players 2300+, rapid and classical'],
+  ['Lichess logo (icons/lichess.svg)', 'sadsnake1 (Lichess)', '"Only use to refer to lichess.org" (lila COPYING.md)', 'https://github.com/lichess-org/lila/blob/master/public/logo/lichess-favicon.svg', 'link that opens the position on lichess.org'],
+  ['Chess.com logo (icons/chesscom.svg)', 'Chess.com', 'trademark of Chess.com, used only to refer to it', 'https://www.chess.com', 'link that opens the position on chess.com'],
   ['Polyglot Random64 numbers (src/book/polyglotRandom.ts)', 'Polyglot book format; copied from python-chess', 'GPL-3.0 (python-chess)', 'https://github.com/niklasf/python-chess', 'position keys to look positions up in the book'],
 ]
 

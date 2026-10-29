@@ -51,6 +51,11 @@ async function gameView() {
   return text
 }
 
+// This test is about moves and variations: the automatic symbols (iteration 7) off, since
+// whether they show depends on which analyses finished in time. Restored at the end.
+const autoWasOn = await page.evaluate(() => document.getElementById('autoSymbols').checked)
+if (autoWasOn) await page.evaluate(() => document.getElementById('autoSymbols').click())
+
 // 1. Navigation bar widths.
 const w = await page.evaluate(() => Object.fromEntries(['first', 'prev', 'gameViewBtn', 'next', 'last'].map((id) => [id, Math.round(document.getElementById(id).getBoundingClientRect().width)])))
 check(['first', 'gameViewBtn', 'last'].every((id) => w[id] < w.prev / 2), `⏮ 📜 ⏭ small (< half of ◀ ▶): ${JSON.stringify(w)}`)
@@ -119,5 +124,6 @@ const exported = await page.waitForFunction(() => window.__shared).then((h) => h
 check(exported.includes('{Una partida de prueba} 1. e4 {El peón rey} 1... e5 (1... c5 {La siciliana}) 2. Nf3'), 'exported PGN keeps comments and variations (no clocks)')
 
 await page.evaluate(() => localStorage.removeItem('favoriteGames')) // clean up
+if (autoWasOn) await page.evaluate(() => document.getElementById('autoSymbols').click())
 await ctx.close()
 process.exit(failed ? 1 : 0)

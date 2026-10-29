@@ -12,12 +12,16 @@
  * Import (`treeFromPgn`): our own movetext reader, because chess.js's
  * loadPgn drops the variations (checked 2026-10-25) and a saved game must
  * come back with them. Comments are kept (shown with ✏️, exported again),
- * without the engine/clock commands inside them ([%clk …], [%eval …]); NAGs
- * are skipped.
+ * without the engine/clock commands inside them ([%clk …], [%eval …]). The
+ * symbols ("$1", or "!" stuck to the move) are kept as NAGs and exported as
+ * "$n" (2026-10-29; until then they were skipped). Arrows and coloured squares
+ * travel inside the comment as [%cal …] / [%csl …] (game/drawing.ts).
  */
 import { Chess } from 'chess.js'
 import { GameTree, START_FEN, type MoveNode } from './tree'
 import { t } from '../i18n/i18n'
+import { normalizeNags, SUFFIX_NAG } from './annotations'
+import { drawingsCommands, parseDrawings } from './drawing'
 
 /**
  * The movetext as tokens (DRY: the PGN export writes them as text, the full
@@ -30,7 +34,7 @@ import { t } from '../i18n/i18n'
  */
 export type MovetextToken =
   | { kind: 'move'; node: MoveNode; text: string }
-  | { kind: 'comment'; text: string }
+  | { kind: 'comment'; text: string; commands: string } // commands: "[%csl …][%cal …]" (drawings), only in the PGN
   | { kind: 'open' }
   | { kind: 'close' }
 
@@ -41,11 +45,16 @@ function moveText(tree: GameTree, node: MoveNode, forceNumber: boolean): string 
   return forceNumber ? `${number}... ${node.san}` : node.san
 }
 
+/** A node's comment token (its text and its drawings), or none. */
+function commentTokens(node: MoveNode): MovetextToken[] {
+  const commands = drawingsCommands(node.drawings)
+  return node.comment || commands ? [{ kind: 'comment', text: node.comment ?? '', commands }] : []
+}
+
 /** A move and, if it has one, its comment. After a comment a black move needs "N...". */
 function moveTokens(tree: GameTree, node: MoveNode, forceNumber: boolean): { tokens: MovetextToken[]; commented: boolean } {
-  const tokens: MovetextToken[] = [{ kind: 'move', node, text: moveText(tree, node, forceNumber) }]
-  if (node.comment) tokens.push({ kind: 'comment', text: node.comment })
-  return { tokens, commented: !!node.comment }
+  const tokens: MovetextToken[] = [{ kind: 'move', node, text: moveText(tree, node, forceNumber) }, ...commentTokens(node)]
+  return { tokens, commented: tokens.length > 1 }
 }
 
 /** Movetext from `parent` onwards (its main continuation and the variations). */
@@ -70,14 +79,19 @@ function lineFrom(tree: GameTree, parent: MoveNode, forceNumber: boolean): Movet
 
 /** The whole game's movetext as tokens: the root comment (before the first move), then the moves. */
 export function movetextTokens(tree: GameTree): MovetextToken[] {
-  const intro: MovetextToken[] = tree.root.comment ? [{ kind: 'comment', text: tree.root.comment }] : []
+  const intro = commentTokens(tree.root)
   return [...intro, ...lineFrom(tree, tree.root, true)]
 }
 
-/** Tokens → PGN movetext: "1. e4 {comment} e5 (1... c5) 2. Nf3". "}" can't appear inside a comment. */
-function movetextString(tokens: MovetextToken[]): string {
+/** A node's NAGs to write: its own, or (iteration 7) its own + the automatic ones (`nagsOf`). */
+export type NagsOf = (node: MoveNode) => number[]
+const ownNags: NagsOf = (node) => node.nags ?? []
+
+
+/** Tokens → PGN movetext: "1. e4 $1 {comment} e5 (1... c5) 2. Nf3". "}" can't appear inside a comment. */
+function movetextString(tokens: MovetextToken[], nagsOf: NagsOf = ownNags): string {
   return tokens
-    .map((tk) => (tk.kind === 'move' ? tk.text : tk.kind === 'comment' ? `{${tk.text.replace(/}/g, ')')}}` : tk.kind === 'open' ? '(' : ')'))
+    .map((tk) => (tk.kind === 'move' ? tk.text + nagsOf(tk.node).map((c) => ` $${c}`).join('') : tk.kind === 'comment' ? `{${[tk.commands, tk.text.replace(/}/g, ')')].filter(Boolean).join(' ')}}` : tk.kind === 'open' ? '(' : ')'))
     .join(' ')
     .replace(/\( /g, '(')
     .replace(/ \)/g, ')')
@@ -113,7 +127,7 @@ const escapeTag = (v: string) => v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
  * left out, except the roster, which gets "?"). The movetext ends with the
  * Result tag, as PGN requires.
  */
-export function gamePgn(tree: GameTree, date = new Date(), headers: PgnHeaders = {}): string {
+export function gamePgn(tree: GameTree, date = new Date(), headers: PgnHeaders = {}, nagsOf: NagsOf = ownNags): string {
   const all: PgnHeaders = { ...defaultHeaders(date) }
   for (const [k, v] of Object.entries(headers)) if (!COMPUTED.includes(k)) all[k] = v.trim()
   if (!RESULTS.includes(all.Result)) all.Result = '*'
@@ -122,7 +136,7 @@ export function gamePgn(tree: GameTree, date = new Date(), headers: PgnHeaders =
     ...Object.entries(all).filter(([k, v]) => !(ROSTER as readonly string[]).includes(k) && v),
   ]
   if (tree.root.fen !== START_FEN) pairs.push(['SetUp', '1'], ['FEN', tree.root.fen])
-  const moves = movetextString(movetextTokens(tree))
+  const moves = movetextString(movetextTokens(tree), nagsOf)
   return `${pairs.map(([k, v]) => `[${k} "${escapeTag(v)}"]`).join('\n')}\n\n${moves ? `${moves} ` : ''}${all.Result}\n`
 }
 
@@ -141,29 +155,48 @@ export function treeFromPgn(pgn: string): GameTree {
   const movetext = pgn
     .replace(/^\s*\[.*\]\s*$/gm, '') // headers
     .replace(/;([^\n]*)/g, (_, c: string) => `{${c.replace(/}/g, ')')}}`) // ; comments to end of line → {…}
-    .replace(/\$\d+/g, ' ') // NAGs ($1…)
   // Where the next move is played from, and the last move played (a variation
   // replaces that last move, so it starts from its parent).
   let from = tree.root
   let last = tree.root
   const stack: { from: typeof from; last: typeof last }[] = []
-  for (const token of movetext.match(/\{[^}]*\}|\(|\)|[^\s(){}]+/g) ?? []) {
+  // The move a NAG goes with: the one just played; none at the start or right after "(" / ")".
+  let nagTarget: MoveNode | null = null
+  const addNag = (code: number) => {
+    if (!nagTarget) return
+    const nags = normalizeNags([...(nagTarget.nags ?? []), code])
+    nagTarget.nags = nags.length ? nags : undefined
+  }
+  for (const token of movetext.match(/\{[^}]*\}|\(|\)|\$\d+|[^\s(){}$]+/g) ?? []) {
+    if (token.startsWith('$')) {
+      addNag(Number(token.slice(1))) // "$1" (unknown codes are dropped by normalizeNags)
+      continue
+    }
+    if (Object.hasOwn(SUFFIX_NAG, token)) {
+      addNag(SUFFIX_NAG[token]) // "e4 !" (symbol written apart)
+      continue
+    }
     if (token.startsWith('{')) {
       // A comment belongs to the move before it (to the root before the first move).
       const text = commentText(token.slice(1, -1))
       if (text) last.comment = last.comment ? `${last.comment} ${text}` : text
+      const drawn = parseDrawings(token)
+      if (drawn.length) last.drawings = [...(last.drawings ?? []), ...drawn]
       continue
     }
     if (token === '(') {
       stack.push({ from, last })
       from = last.parent ?? tree.root
       last = from // a comment right after "(" goes with the position the variation starts from
+      nagTarget = null
       continue
     }
     if (token === ')') {
       ;({ from, last } = stack.pop() ?? { from, last })
+      nagTarget = null
       continue
     }
+    const suffix = token.match(/[!?]+$/)?.[0] // "e4!?" → "!?" (a NAG once the move is played)
     const san = token.replace(/^\d+\.+/, '').replace(/[!?]+$/, '') // "12.e4", "e4!?" → "e4"
     if (!san || RESULTS.includes(san)) continue // move number alone, or the result
     let uci: string
@@ -174,7 +207,8 @@ export function treeFromPgn(pgn: string): GameTree {
       throw new Error(`Illegal move in PGN: ${san}`)
     }
     tree.goTo(from)
-    last = from = tree.play(uci)!
+    last = from = nagTarget = tree.play(uci)!
+    if (suffix && Object.hasOwn(SUFFIX_NAG, suffix)) addNag(SUFFIX_NAG[suffix])
   }
   tree.toStart()
   return tree

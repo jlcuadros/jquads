@@ -91,8 +91,9 @@ describe('PGN headers and import with variations', () => {
 
   it('reads Lichess / Chess.com style movetext: clocks, comments, NAGs, "1...", custom FEN', () => {
     const t = treeFromPgn('[FEN "4k3/8/8/8/8/8/8/K3R3 b - - 0 1"]\n\n1... Kd7 {[%clk 0:03:00]} 2.Re2!? $1 ; note\n(2. Ka2 Kc6) 2... Kd6 *')
-    // The "; note" comment is kept (2026-10-26); the clock is not.
-    expect(gamePgn(t, date)).toContain('1... Kd7 2. Re2 {note} (2. Ka2 Kc6) 2... Kd6 *')
+    // The "; note" comment is kept (2026-10-26); the clock is not. The symbols "!?" and
+    // "$1" are kept too since 2026-10-29 (both, as read: a PGN may bring two).
+    expect(gamePgn(t, date)).toContain('1... Kd7 2. Re2 $1 $5 {note} (2. Ka2 Kc6) 2... Kd6 *')
   })
 
   it('throws on an illegal move', () => {

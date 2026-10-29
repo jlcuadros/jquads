@@ -6,6 +6,10 @@
  * with a single delegated click listener.
  */
 import { Chess } from 'chess.js'
+import { scoreToCp } from '../analysis/heval'
+import { displayNags, nagSymbol, NAGS } from '../game/annotations'
+import { evalNag } from '../analysis/autoSymbols'
+import { nagName } from './annotate'
 import { shownMaiaMoves, type PositionAnalysis, type SideAnalysis } from '../analysis/analyzer'
 import { bestScore, deltaEval, formatScore, type MoveClass } from '../analysis/classify'
 import { describePosition, type Segment } from '../analysis/describe'
@@ -29,9 +33,11 @@ import { BOOK_MIN_SHARE } from '../book/openingBook'
  *  - deltaCol / maiaCol: the middle columns of the Maia ("Δ eval") and
  *    Stockfish ("Maia") panels, each can be hidden in ⚙ (José, iteration 5);
  *  - book: the opening book's moves of a position (iteration 6), or undefined
- *    while it isn't loaded or when it is turned off in ⚙.
+ *    while it isn't loaded or when it is turned off in ⚙;
+ *  - autoNags: a move's automatic symbols (iteration 7, analysis/autoSymbols.ts),
+ *    or undefined when they are off in ⚙.
  */
-const view: { notation: Notation; hideMoves: boolean; deltaCol: boolean; maiaCol: boolean; hevalCol: boolean; book?: (fen: string) => BookMove[] } = {
+const view: { notation: Notation; hideMoves: boolean; deltaCol: boolean; maiaCol: boolean; hevalCol: boolean; book?: (fen: string) => BookMove[]; autoNags?: (n: MoveNode) => number[] } = {
   notation: 'figurine',
   hideMoves: false,
   deltaCol: true,
@@ -101,8 +107,10 @@ const pct = (p: number) => `${Math.round(p * 100)}%`
 /** Line above the board: Maia's win % and Stockfish's eval as numbers. */
 export function renderNumbers(a: PositionAnalysis | undefined): string {
   const m = a?.main
-  // "blancas" dropped to make room for the hide-moves button (iteration 4).
-  const maia = m?.maia ? `Maia: ${Math.round(m.maia.whiteWinProb * 100)}%` : 'Maia: …'
+  // "blancas" dropped to make room for the hide-moves button (iteration 4). Since iteration 8
+  // (José, 2026-10-29) Maia's expected score is written like Stockfish's evaluation (50 % =
+  // +0.00), with the Lichess formula reversed (heval.ts → scoreToCp): "Maia +0.07".
+  const maia = m?.maia ? `Maia ${formatScore({ cp: scoreToCp(m.maia.whiteWinProb) })}` : 'Maia …'
   const best = m?.lines[0]
   const sf = m?.tb ? `TB ${tbLabel(tbPositionScore(m.tb, m.fen), m.tb.outcome)}` : best ? `SF ${formatScore(lineScoreOf(best))}` : 'SF: …' // depth in the SF column's header (2026-10-26: room for 📋)
   return `<span class="maia">${maia}</span><span class="sf">${sf}</span>`
@@ -158,6 +166,20 @@ export function markFrom(node: MoveNode, before?: PositionAnalysis, after?: Posi
   return moveMark(prevData(before?.main), node.uci, node.parent.fen.split(' ')[1] === 'w', current && lineScoreOf(current))
 }
 
+/** A node's symbols as shown: yours (✏️) and the automatic ones (grey), merged per group. */
+export const shownNags = (n: MoveNode) => displayNags(n.nags, view.autoNags?.(n))
+const isMoveNag = (code: number) => NAGS.find((x) => x.code === code)?.group === 'move'
+
+/**
+ * A move's chess symbols after its SAN, in the strip and the game view: "Nxe5! ±" — the
+ * move's own symbol stuck to it, the rest after a space; automatic ones in grey (.auto).
+ */
+function nagsHtml(n: MoveNode): string {
+  return shownNags(n)
+    .map((d) => `${isMoveNag(d.code) ? '' : ' '}<span class="nag${d.auto ? ' auto' : ''}">${nagSymbol(d.code)}</span>`)
+    .join('')
+}
+
 /** The move list in a single horizontal row; the current move highlighted; marks where analysed. */
 export function renderMoves(tree: GameTree, markOf?: MarkOf): string {
   const line = tree.displayLine()
@@ -167,12 +189,32 @@ export function renderMoves(tree: GameTree, markOf?: MarkOf): string {
       const { number, whiteMove } = tree.moveNumber(n)
       const num = whiteMove ? `<span class="num">${number}.</span>` : i === 0 ? `<span class="num">${number}…</span>` : ''
       const cur = n === tree.current ? ' current' : ''
-      return `${num}<span class="mv${cur}" data-node="${n.id}">${markHtml(markOf?.(n))}${figHtml(formatSan(n.san, whiteMove, view.notation))}</span>`
+      return `${num}<span class="mv${cur}" data-node="${n.id}">${markHtml(markOf?.(n))}${figHtml(formatSan(n.san, whiteMove, view.notation))}${nagsHtml(n)}</span>`
     })
     .join('')
 }
 
 const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+
+/**
+ * Where a PGN comes from (iteration 7): Lichess's games have Site "https://lichess.org/…",
+ * Chess.com's Site "Chess.com" and a Link to the game.
+ */
+export function pgnSite(headers: PgnHeaders): 'lichess' | 'chesscom' | undefined {
+  if (/lichess\.org/i.test(headers.Site ?? '')) return 'lichess'
+  if (/chess\.com/i.test(`${headers.Site ?? ''} ${headers.Link ?? ''}`)) return 'chesscom'
+  return undefined
+}
+
+/** A player in 📜: name (a link to their profile for Lichess / Chess.com games) and Elo: "Ousland (2150)". */
+function playerHtml(headers: PgnHeaders, color: 'White' | 'Black'): string {
+  const name = headers[color] ?? '?'
+  const elo = headers[`${color}Elo`]
+  const site = pgnSite(headers)
+  const url = name === '?' ? undefined : site === 'lichess' ? `https://lichess.org/@/${encodeURIComponent(name)}` : site === 'chesscom' ? `https://www.chess.com/member/${encodeURIComponent(name)}` : undefined
+  const shown = url ? `<a href="${url}" target="_blank" rel="noopener">${escapeHtml(name)}</a>` : escapeHtml(name)
+  return elo && elo !== '?' ? `${shown} (${escapeHtml(elo)})` : shown
+}
 
 /**
  * The whole game in large type (José, 2026-10-26), opened with the button in
@@ -181,10 +223,12 @@ const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '
  * tappable (data-node) to go there; the current move highlighted.
  */
 export function renderGameView(tree: GameTree, headers: PgnHeaders, markOf?: MarkOf): string {
-  const players = headers.White || headers.Black ? `${escapeHtml(headers.White ?? '?')} – ${escapeHtml(headers.Black ?? '?')}` : ''
-  const about = [players, headers.Event, headers.Date, headers.Result && headers.Result !== '*' ? headers.Result : '']
-    .filter((x) => x && x !== '?')
-    .map((x) => escapeHtml(x!))
+  const players = headers.White || headers.Black ? `${playerHtml(headers, 'White')} – ${playerHtml(headers, 'Black')}` : ''
+  const about = [
+    players,
+    ...[headers.Event, headers.Date, headers.Result && headers.Result !== '*' ? headers.Result : ''].filter((x) => x && x !== '?').map((x) => escapeHtml(x!)),
+  ]
+    .filter(Boolean)
     .join(' · ')
   const tokens = movetextTokens(tree)
   const body = tokens
@@ -199,11 +243,11 @@ export function renderGameView(tree: GameTree, headers: PgnHeaders, markOf?: Mar
   function tokenHtml(tk: (typeof tokens)[number]): string {
     if (tk.kind === 'open') return '<span class="pv-var">('
     if (tk.kind === 'close') return ')</span>'
-    if (tk.kind === 'comment') return `<span class="pv-comment">${escapeHtml(tk.text)}</span>`
+    if (tk.kind === 'comment') return tk.text ? `<span class="pv-comment">${escapeHtml(tk.text)}</span>` : '' // only drawings: nothing to read
     const n = tk.node
     const number = tk.text.slice(0, tk.text.length - n.san.length) // "1. ", "1... " or ""
     const cur = n === tree.current ? ' current' : ''
-    return `<span class="pv-mv${cur}" data-node="${n.id}">${number}${markHtml(markOf?.(n))}${figHtml(formatSan(n.san, tree.moveNumber(n).whiteMove, view.notation))}</span>`
+    return `<span class="pv-mv${cur}" data-node="${n.id}">${number}${markHtml(markOf?.(n))}${figHtml(formatSan(n.san, tree.moveNumber(n).whiteMove, view.notation))}${nagsHtml(n)}</span>`
   }
 }
 
@@ -310,6 +354,7 @@ export interface PreviousMoveRef {
   number: string // "12." or "12…"
   whiteMoved: boolean
   analysis?: PositionAnalysis
+  nags?: Array<{ code: number; auto: boolean }> // the move's symbols as shown (shownNags)
 }
 
 /**
@@ -328,7 +373,7 @@ export function renderPreviousMove(ref: PreviousMoveRef | undefined, a: Position
   const current = a?.main.done ? a.main.lines[0] : undefined
   const segs: Segment[] = describePreviousMove({
     uci: ref.uci,
-    san: ref.number + sanOf(ref.fen, ref.uci),
+    san: ref.number + sanOf(ref.fen, ref.uci) + (ref.nags ?? []).filter((d) => isMoveNag(d.code)).map((d) => nagSymbol(d.code)).join(''),
     whiteMoved: ref.whiteMoved,
     elo,
     inBook: !!view.book?.(ref.fen).some((m) => m.uci === ref.uci),
@@ -336,7 +381,10 @@ export function renderPreviousMove(ref: PreviousMoveRef | undefined, a: Position
     currentBest: current && lineScoreOf(current),
   })
   if (!segs.length) return ''
-  return `<div class="prev-move">${sideIcon(ref.whiteMoved)}${segs.map((s) => ('text' in s ? s.text : playedChip(s.san, s.color, shapeIn(prev, ref.uci)))).join('')}</div>`
+  // Symbols the sentence doesn't already say (errors it does): "□ Única jugada · ⨀ Zugzwang".
+  const notes = (ref.nags ?? []).filter((d) => [3, 1, 5, 7, 146, 22].includes(d.code)).map((d) => `${nagSymbol(d.code)} ${nagName(d.code)}`)
+  const notesHtml = notes.length ? ` <span class="pm-symbols">${notes.join(' · ')}.</span>` : ''
+  return `<div class="prev-move">${sideIcon(ref.whiteMoved)}${segs.map((s) => ('text' in s ? s.text : playedChip(s.san, s.color, shapeIn(prev, ref.uci)))).join('')}${notesHtml}</div>`
 }
 
 /**
@@ -362,7 +410,8 @@ function renderEnginesText(a: PositionAnalysis | undefined, elo: number): string
     san: (uci) => sanOf(m.fen, uci),
   })
   const body = segs.map((s) => ('text' in s ? s.text : chip(s.move, s.san, s.color, shapeIn(m, s.move)))).join('')
-  // About the side to move: its pawn first.
-  const icon = sideIcon(m.fen.split(' ')[1] === 'w')
+  // About the side to move: its pawn first, then the evaluation symbol (=, ⩲, ±, +−; iteration 7,
+  // same scale as the sentence).
+  const icon = sideIcon(m.fen.split(' ')[1] === 'w') + `<span class="eval-sym">${nagSymbol(evalNag(lineScoreOf(m.lines[0])))}</span> `
   return `<div class="side-text">${icon}${m.tb ? `<b>${t('panel.tbExact')}</b> ${body}` : body}</div>`
 }

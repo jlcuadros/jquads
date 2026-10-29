@@ -64,6 +64,9 @@ const evalBar = await page.evaluate(() => {
   return { visible: !el.hidden && el.offsetWidth > 0, width: el.offsetWidth, white: el.style.getPropertyValue('--white-pos'), maia: el.style.getPropertyValue('--maia-pos') }
 })
 await iter4(evalBar.visible && evalBar.white && evalBar.maia, `vertical eval bar: ${JSON.stringify(evalBar)}`)
+// Iteration 8: Maia written as an evaluation ("Maia +0.07") and Stockfish's blue line in the bar.
+const iter8 = await page.evaluate(() => ({ numbers: document.getElementById('numbers').textContent, sfMark: getComputedStyle(document.querySelector('#evalBarEl .sf-mark')).backgroundColor }))
+await iter4(/^Maia [+−-]?\d+\.\d\d/.test(iter8.numbers) && /rgb\(/.test(iter8.sfMark), `Maia as an evaluation and blue SF line: ${JSON.stringify(iter8)}`)
 
 // The page must never be wider than the screen: otherwise it can shift sideways
 // after a move and hide the eval bar (bug reported by José on 2026-10-25).
@@ -194,6 +197,19 @@ await page.click('#exportPgn')
 await page.waitForFunction(() => window.__shared !== null, null, { timeout: 5000 }).catch(() => {})
 const pgn = await page.evaluate(() => window.__shared)
 console.log(`${pgn && pgn.includes('[Site "https://jquads.pages.dev"]') && /1\. e4/.test(pgn) ? 'OK  ' : 'FAIL'} export PGN: ${JSON.stringify((pgn ?? '').split('\n').pop() || pgn)}`)
+
+// Lichess / Chess.com logos next to the FEN (José, 2026-10-29): not in the top bar any more;
+// each opens the current position (after 1. e4, White at the bottom) on its site.
+await page.evaluate(() => { window.__opened = []; window.open = (url) => { window.__opened.push(url); return null } })
+await page.click('#lichess')
+await page.click('#chesscom')
+// 📋 copies the FEN (iteration 8): clipboard intercepted.
+await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = async (t) => { window.__copied = t } })
+await page.click('#copyFen')
+const copied = await page.evaluate(() => window.__copied)
+const sites = await page.evaluate(() => ({ inTopBar: document.querySelectorAll('.infobar #lichess, .infobar #chesscom').length, opened: window.__opened }))
+const fenE4 = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'
+console.log(`${sites.inTopBar === 0 && sites.opened[0] === `https://lichess.org/analysis/${fenE4.replace(/ /g, '_')}?color=white` && sites.opened[1] === `https://www.chess.com/analysis?fen=${encodeURIComponent(fenE4)}` && copied === fenE4 ? 'OK  ' : 'FAIL'} Lichess / Chess.com links and 📋 copy in 📋: ${JSON.stringify({ ...sites, copied })}`)
 await page.click('#positionBtn')
 
 // 📋 panel and Stockfish threads (José, 2026-10-26): 📋 first in the top line, FEN/editor/new
