@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.jlcuadros.jquads",
+      "sha256_cert_fingerprints": [
+        "20:24:7C:D4:DA:7A:36:79:72:B0:1C:81:0D:BC:73:25:12:4C:D7:43:2E:6B:0A:15:E8:AC:9D:FA:CF:16:4D:36"
+      ]
+    }
+  }
+]

@@ -1,0 +1,47 @@
+{
+  "packageId": "com.jlcuadros.jquads",
+  "host": "jquads.pages.dev",
+  "name": "jquads",
+  "launcherName": "jquads",
+  "display": "standalone",
+  "themeColor": "#1e3fc4",
+  "themeColorDark": "#161512",
+  "navigationColor": "#f4f4f4",
+  "navigationColorDark": "#161512",
+  "navigationDividerColor": "#00000000",
+  "navigationDividerColorDark": "#00000000",
+  "backgroundColor": "#1e3fc4",
+  "enableNotifications": false,
+  "startUrl": "/?app=android",
+  "iconUrl": "https://jquads.pages.dev/icons/icon-512.png",
+  "maskableIconUrl": "https://jquads.pages.dev/icons/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "/Users/jquads/Documents/jquads-claves/jquads-upload.jks",
+    "alias": "upload"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://jquads.pages.dev/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://jquads.pages.dev/",
+  "minSdkVersion": 24,
+  "orientation": "default",
+  "fingerprints": [
+    {
+      "name": "upload key (Jos\u00e9, 2026-10-30)",
+      "value": "20:24:7C:D4:DA:7A:36:79:72:B0:1C:81:0D:BC:73:25:12:4C:D7:43:2E:6B:0A:15:E8:AC:9D:FA:CF:16:4D:36"
+    }
+  ],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}

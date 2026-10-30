@@ -13,12 +13,17 @@
     "deploy:preview": "npm run build && wrangler pages deploy dist --project-name jquads --branch preview --commit-dirty=true"
   },
   "dependencies": {
+    "@capacitor/core": "8.6.0",
+    "@capacitor/ios": "8.6.0",
     "chess.js": "1.4.0",
     "chessground": "9.2.1",
     "lila-stockfish-web": "0.0.7",
     "onnxruntime-web": "1.23.0"
   },
   "devDependencies": {
+    "@bubblewrap/cli": "1.27.0",
+    "@bubblewrap/core": "1.27.0",
+    "@capacitor/cli": "8.6.0",
     "playwright": "1.64.1",
     "typescript": "5.9.3",
     "vite": "6.4.5",

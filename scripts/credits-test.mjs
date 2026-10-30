@@ -36,6 +36,16 @@ check(res.ok() && texts.every((t) => body.includes(t)), `licenses.txt served (${
 // ☕ Donations (2026-10-30): one line with the Ko-fi page, opening in a new tab.
 const support = await page.$eval('#creditsSupport', (li) => ({ text: li.textContent, href: li.querySelector('a')?.href, target: li.querySelector('a')?.target }))
 check(support.text.startsWith('☕ Apoya jquads') && support.href === 'https://ko-fi.com/jquads' && support.target === '_blank', `donations line: "${support.text.slice(0, 40)}…" → ${support.href}`)
+const footer = await page.$eval('#footerKofi', (a) => ({ text: a.textContent, href: a.href, visible: !!a.offsetParent }))
+check(footer.visible && footer.href === 'https://ko-fi.com/jquads' && footer.text.includes('Ko-fi'), `footer: "${footer.text}" → ${footer.href}`)
 await credits.screenshot({ path: `${outDir}/credits.png` })
+await page.locator('footer.credits').screenshot({ path: `${outDir}/credits-footer.png` })
+
+// Inside the Google Play app (TWA start URL ?app=android) the donation links must not exist (store rules).
+const play = await browser.newPage({ ...devices['iPhone 13'], locale: 'es-ES' })
+await play.goto(`${base}/?app=android`)
+await play.waitForSelector('#openCredits')
+const left = await play.$$eval('[data-donations], a[href*="ko-fi.com"]', (els) => els.length)
+check(left === 0 && (await play.textContent('#creditsDetails')).includes('jquads.pages.dev'), `store app (?app=android): no donation links (${left}), website named in the credits`)
 await browser.close()
 process.exit(failed ? 1 : 0)

@@ -96,7 +96,7 @@ const exportPgn = async () => {
 let pgn = await exportPgn()
 const dragonComments = (pgn.match(/\{Sicilian Defense: Dragon Variation\}/g) ?? []).length
 check(pgn.includes('[ECO "B70"]') && pgn.includes('[Opening "Sicilian Defense: Dragon Variation"]'), 'PGN headers ECO + Opening')
-check(pgn.includes("1. e4 {King's Pawn Game}") && pgn.includes('g6 {Sicilian Defense: Dragon Variation} 6. a3') /* + $146 (N) if the automatic symbols are on */ && !/a6 \{/.test(pgn) && dragonComments === 1,
+check(pgn.includes("1. e4 {King's Pawn Game}") && /g6( \$\d+)* \{Sicilian Defense: Dragon Variation\} 6\. a3/.test(pgn) /* automatic symbols ($14, $146…) may sit between, depending on which analyses finished */ && !/a6 \{/.test(pgn) && dragonComments === 1,
   `comments where the name changes: ${pgn.trim().split('\n').pop()}`)
 
 // 4. 📜 shows them too.

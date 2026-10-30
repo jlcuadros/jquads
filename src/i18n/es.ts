@@ -96,9 +96,10 @@ export const es = {
 
   // --- Credits ----------------------------------------------------------------
   'credits.title': 'Créditos y licencias',
-  'credits.source.html': '<b>Código fuente</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/jquads" target="_blank" rel="noopener">github.com/jlcuadros/jquads</a>',
+  'credits.source.html': '<b>Código fuente</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/jquads" target="_blank" rel="noopener">github.com/jlcuadros/jquads</a> · Web: jquads.pages.dev',
   'credits.author.html': '<b>Creado por José Luis Cuadros.</b> ¿Ideas, fallos o te apetece jugar? Mándame una solicitud de amistad en <a href="https://lichess.org/@/Ousland" target="_blank" rel="noopener">Lichess (Ousland)</a> o contáctame por <a href="https://www.linkedin.com/in/jose-luis-cuadros-fernandez/" target="_blank" rel="noopener">LinkedIn</a>.',
   'credits.support.html': '<b>☕ Apoya jquads</b>: es gratis, de código abierto y sin anuncios. Si te resulta útil, puedes hacer una donación en <a href="https://ko-fi.com/jquads" target="_blank" rel="noopener">Ko-fi</a>: me ayuda a seguir mejorándola.', // ☕ Ko-fi (2026-10-30)
+  'credits.privacy.html': '<a href="privacy.html" target="_blank" rel="noopener">Política de privacidad</a> (todo se queda en tu dispositivo) · <a href="support.html" target="_blank" rel="noopener">Soporte y contacto</a>.', // store release (2026-10-30)
   'credits.maia.html': 'Uso personal, no oficial. Basado en <a href="https://www.maiachess.com" target="_blank" rel="noopener">maiachess.com</a> (<a href="https://github.com/CSSLab/maia-platform-frontend" target="_blank" rel="noopener">código</a>, GPL-3.0) del CSSLab de la Universidad de Toronto.',
   'credits.model.html': 'Modelo <a href="https://github.com/CSSLab/maia3" target="_blank" rel="noopener">Maia-3</a> (CSSLab, AGPL-3.0). Investigación: <a href="https://arxiv.org/abs/2605.19091" target="_blank" rel="noopener">Maia-3</a> (ICLR 2026), <a href="https://www.cs.toronto.edu/~ashton/pubs/maia2-neurips2024.pdf" target="_blank" rel="noopener">Maia-2</a> (NeurIPS 2024), <a href="https://arxiv.org/abs/2006.01855" target="_blank" rel="noopener">Maia</a> (KDD 2020).',
   'credits.design': 'El diseño del panel de análisis, el código de colores y la forma de ejecutar Maia en el navegador están tomados de maiachess.com.',
@@ -107,6 +108,7 @@ export const es = {
   'credits.notice.html': 'Proyecto no oficial: sin relación con Maia Chess, la Universidad de Toronto, Stockfish, Lichess ni Chess.com; sus nombres pertenecen a sus dueños. Se ofrece sin ninguna garantía. <a href="licenses.txt" target="_blank" rel="noopener">Textos completos de las licencias</a>.',
   'credits.stats.html': 'Estadísticas de visitas anónimas, sin cookies ni datos personales: <a href="https://www.cloudflare.com/web-analytics/" target="_blank" rel="noopener">Cloudflare Web Analytics</a>.',
   'credits.link': 'Ver créditos: ⚙ > Créditos y licencias',
+  'credits.kofiLink': '☕ Apoya jquads en Ko-fi', // footer, 2026-10-30
 
   // --- Panel ------------------------------------------------------------------
   'panel.calculating': 'calculando…',

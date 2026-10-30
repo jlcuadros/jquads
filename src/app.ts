@@ -19,6 +19,7 @@ import { Chess } from 'chess.js'
 import { GameTree, type MoveNode } from './game/tree'
 import { loadBook } from './book/openingBook'
 import { loadOpenings, type OpeningNames } from './book/openingNames'
+import { openOwnPagesOnWebsite, storeApp } from './lib/storeApp'
 import { MAX_DEPTH, MIN_DEPTH, MIN_THREAT_DEPTH, THREAT_OFFSET, autoDepth, autoThreatDepth } from './stockfish/autoDepth'
 import { askChoice } from './ui/choice'
 import { findNode, openGameView, refreshGameView } from './ui/gameView'
@@ -1005,6 +1006,11 @@ for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
 
 setLang(settings.lang)
 applyStaticTranslations()
+// Inside the Google Play / App Store apps the stores forbid outside payment links: no ☕ Ko-fi
+// there (the credits line and the footer link, both marked data-donations).
+if (storeApp()) document.querySelectorAll('[data-donations]').forEach((el) => el.remove())
+// iOS app: the app's own pages (privacy, support, licences) open on the website, in Safari.
+if (storeApp() === 'ios') openOwnPagesOnWebsite()
 setupControls()
 positionChanged()
 void loadEngines()

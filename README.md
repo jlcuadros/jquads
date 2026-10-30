@@ -1,5 +1,7 @@
 # Maia + Stockfish analysis (web app)
 
+[![Support jquads on Ko-fi](https://img.shields.io/badge/Ko--fi-support%20jquads-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/jquads)
+
 A lightweight, mobile-first chess analysis board that runs **entirely in the browser**:
 **Maia** predicts the moves a human of a chosen rating would play, and **Stockfish 17**
 evaluates them. It is a reduced, personal take on the analysis page of

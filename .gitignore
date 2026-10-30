@@ -1,6 +1,8 @@
 # Generated
 node_modules/
 dist/
+# Xcode build output of the iOS app (xcodebuild -derivedDataPath build/ios)
+build/
 public/vendor/
 .wrangler/
 
@@ -18,3 +20,14 @@ public/licenses.txt
 
 # Python environment for scripts/book/ (see scripts/book/book.md)
 .venv-book/
+
+# Android app (Bubblewrap TWA, android/): build output, Gradle caches and local SDK path
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+# Signed builds (scripts/android/sign-twa.mjs): uploaded to Google Play, not versioned
+android/release/
+# Signing keys: NEVER in the repository (José keeps them in his password manager, with a backup)
+*.jks
+*.keystore

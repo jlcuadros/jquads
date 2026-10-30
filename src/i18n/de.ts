@@ -84,9 +84,10 @@ export const de: Messages = {
   'help.memory.html': '<b>Speicher</b>: Stockfishs Hash dient der Analyse und den Drohungen (dieselbe Engine). Die klassische Version spart etwa 80 MB neuronale Netze; ein Wechsel lädt die Seite neu. Unter <b>Engine</b> misst „Messen“ die Geschwindigkeit von Stockfish auf diesem Gerät (Knoten pro Sekunde, mit den gewählten Threads). Unter <b>Oberfläche</b> kann das Design hell, dunkel oder das des Systems sein. Die Tiefe „Auto“ ergibt sich aus dieser Geschwindigkeit: 15 bei 1,83 Mio. Knoten/s (iPhone 15), 10 bei 0,4 Mio., nie unter 10; die der Drohungen 3 weniger (mindestens 9).',
 
   'credits.title': 'Danksagungen und Lizenzen',
-  'credits.source.html': '<b>Quellcode</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/jquads" target="_blank" rel="noopener">github.com/jlcuadros/jquads</a>',
+  'credits.source.html': '<b>Quellcode</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/jquads" target="_blank" rel="noopener">github.com/jlcuadros/jquads</a> · Web: jquads.pages.dev',
   'credits.author.html': '<b>Erstellt von José Luis Cuadros.</b> Ideen, Fehler oder Lust auf eine Partie? Schick mir eine Freundschaftsanfrage auf <a href="https://lichess.org/@/Ousland" target="_blank" rel="noopener">Lichess (Ousland)</a> oder kontaktiere mich auf <a href="https://www.linkedin.com/in/jose-luis-cuadros-fernandez/" target="_blank" rel="noopener">LinkedIn</a>.',
   'credits.support.html': '<b>☕ jquads unterstützen</b>: kostenlos, quelloffen und ohne Werbung. Wenn sie dir nützt, kannst du auf <a href="https://ko-fi.com/jquads" target="_blank" rel="noopener">Ko-fi</a> spenden: das hilft mir, sie weiter zu verbessern.', // ☕ Ko-fi (2026-10-30)
+  'credits.privacy.html': '<a href="privacy.html" target="_blank" rel="noopener">Datenschutzerklärung</a> (alles bleibt auf deinem Gerät) · <a href="support.html" target="_blank" rel="noopener">Hilfe und Kontakt</a>.', // store release (2026-10-30)
   'credits.maia.html': 'Private, inoffizielle Nutzung. Basiert auf <a href="https://www.maiachess.com" target="_blank" rel="noopener">maiachess.com</a> (<a href="https://github.com/CSSLab/maia-platform-frontend" target="_blank" rel="noopener">Code</a>, GPL-3.0) vom CSSLab der Universität Toronto.',
   'credits.model.html': 'Modell <a href="https://github.com/CSSLab/maia3" target="_blank" rel="noopener">Maia-3</a> (CSSLab, AGPL-3.0). Forschung: <a href="https://arxiv.org/abs/2605.19091" target="_blank" rel="noopener">Maia-3</a> (ICLR 2026), <a href="https://www.cs.toronto.edu/~ashton/pubs/maia2-neurips2024.pdf" target="_blank" rel="noopener">Maia-2</a> (NeurIPS 2024), <a href="https://arxiv.org/abs/2006.01855" target="_blank" rel="noopener">Maia</a> (KDD 2020).',
   'credits.design': 'Das Design des Analysepanels, der Farbcode und die Art, Maia im Browser auszuführen, stammen von maiachess.com.',
@@ -95,6 +96,7 @@ export const de: Messages = {
   'credits.notice.html': 'Inoffizielles Projekt: nicht verbunden mit Maia Chess, der Universität Toronto, Stockfish, Lichess oder Chess.com; die Namen gehören ihren Inhabern. Ohne jede Gewährleistung. <a href="licenses.txt" target="_blank" rel="noopener">Vollständige Lizenztexte</a>.',
   'credits.stats.html': 'Anonyme Besuchsstatistik, ohne Cookies oder personenbezogene Daten: <a href="https://www.cloudflare.com/web-analytics/" target="_blank" rel="noopener">Cloudflare Web Analytics</a>.',
   'credits.link': 'Danksagungen ansehen: ⚙ > Danksagungen und Lizenzen',
+  'credits.kofiLink': '☕ jquads auf Ko-fi unterstützen', // footer, 2026-10-30
 
   'panel.calculating': 'berechne…',
   'panel.prob': 'Wahrsch.',

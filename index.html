@@ -2,6 +2,9 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <!-- iOS app (WKWebView, 2026-10-30): restores the global name SharedArrayBuffer in the page and
+         its workers (public/sab-polyfill.js explains why); does nothing where the name exists. -->
+    <script src="/sab-polyfill.js"></script>
     <!-- Theme (José, 2026-10-28): "system" (default), "light" or "dark", from the saved settings.
          Applied here, before the page is painted (no flash of the wrong theme). It is the only
          implementation: app.ts calls window.applyTheme() when ⚙ changes it. -->
@@ -182,7 +185,7 @@
               <li data-i18n-html="credits.source.html"><b>Código fuente</b> (AGPL-3.0): <a href="https://github.com/jlcuadros/jquads" target="_blank" rel="noopener">github.com/jlcuadros/jquads</a></li>
               <!-- ☕ Donations through Ko-fi (José, 2026-10-30). Must be hidden inside the future store apps:
                    their rules forbid links to outside payments (task_03.1 → Investigation 1). -->
-              <li id="creditsSupport" data-i18n-html="credits.support.html"></li>
+              <li id="creditsSupport" data-donations data-i18n-html="credits.support.html"></li>
               <li data-i18n-html="credits.author.html"><b>Creado por José Luis Cuadros.</b> ¿Ideas, fallos o te apetece jugar? Mándame una solicitud de amistad en <a href="https://lichess.org/@/Ousland" target="_blank" rel="noopener">Lichess (Ousland)</a> o contáctame por <a href="https://www.linkedin.com/in/jose-luis-cuadros-fernandez/" target="_blank" rel="noopener">LinkedIn</a>.</li>
               <li data-i18n-html="credits.maia.html">Uso personal, no oficial. Basado en <a href="https://www.maiachess.com" target="_blank" rel="noopener">maiachess.com</a> (<a href="https://github.com/CSSLab/maia-platform-frontend" target="_blank" rel="noopener">código</a>, GPL-3.0) del CSSLab de la Universidad de Toronto.</li>
               <li data-i18n-html="credits.model.html">Modelo <a href="https://github.com/CSSLab/maia3" target="_blank" rel="noopener">Maia-3</a> (CSSLab, AGPL-3.0). Investigación: <a href="https://arxiv.org/abs/2605.19091" target="_blank" rel="noopener">Maia-3</a> (ICLR 2026), <a href="https://www.cs.toronto.edu/~ashton/pubs/maia2-neurips2024.pdf" target="_blank" rel="noopener">Maia-2</a> (NeurIPS 2024), <a href="https://arxiv.org/abs/2006.01855" target="_blank" rel="noopener">Maia</a> (KDD 2020).</li>
@@ -192,6 +195,8 @@
               <li data-i18n-html="credits.book.html"></li>
               <li data-i18n-html="credits.openings.html"></li>
               <li data-i18n-html="credits.stats.html"></li>
+              <!-- Privacy policy and support pages (public/privacy.html, public/support.html): the stores require them, reachable from the app -->
+              <li data-i18n-html="credits.privacy.html"></li>
               <li data-i18n-html="credits.notice.html">Proyecto no oficial: sin relación con Maia Chess, la Universidad de Toronto, Stockfish, Lichess ni Chess.com; sus nombres pertenecen a sus dueños. Se ofrece sin ninguna garantía. <a href="licenses.txt" target="_blank" rel="noopener">Textos completos de las licencias</a>.</li>
             </ul>
           </details>
@@ -235,6 +240,8 @@
              and Maia Chess credits live in ⚙ → "Créditos y licencias". Tapping it opens them. -->
         <footer class="credits">
           <a href="#" id="openCredits" class="credits-link" data-i18n="credits.link">Ver créditos: ⚙ &gt; Créditos y licencias</a>
+          <!-- ☕ Ko-fi one tap away (José, 2026-10-30: "lo que me interesa es que lleguen rápido a donaciones"); hidden in store apps -->
+          <span data-donations> · <a href="https://ko-fi.com/jquads" target="_blank" rel="noopener" class="credits-link" id="footerKofi" data-i18n="credits.kofiLink">☕ Apoya jquads en Ko-fi</a></span>
         </footer>
       </div>
     </div>
