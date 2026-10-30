@@ -16,6 +16,7 @@ import { webkit, devices } from 'playwright'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { plainPgn } from './lib/ui-helpers.mjs'
 
 const base = process.argv[2] ?? 'http://localhost:4173'
 const outDir = process.argv[3] ?? '.'
@@ -30,6 +31,8 @@ await page.goto(base)
 await page.evaluate(() => { localStorage.removeItem('favoriteGames'); localStorage.removeItem('favoritesPgn') })
 await page.reload()
 await page.waitForSelector('#board .cg-wrap, #board.cg-wrap')
+// Exact PGNs are compared: the automatic symbols and the opening names on the moves off (restored at the end).
+const restoreAuto = await plainPgn(page)
 
 // Centre of a square on the main board (white at the bottom).
 async function tapSquare(sq) {
@@ -55,7 +58,7 @@ await page.waitForFunction(() => document.querySelector('#moves .mv.current')?.t
 
 // 2. Save it.
 await page.tap('#gamesBtn')
-await page.tap('#site-save')
+await page.tap('#gamesSaveBtn')
 check(await page.isVisible('#gamesSave') && await page.isHidden('#gamesBrowse'), '💾 Guardar shows the header form instead of the list')
 const defaults = { event: await page.inputValue(field('Event')), white: await page.inputValue(field('White')), result: await page.inputValue(field('Result')) }
 check(defaults.event === 'Análisis' && defaults.white === '?' && defaults.result === '*', `default headers: ${JSON.stringify(defaults)}`)
@@ -70,11 +73,11 @@ let favs = await favRows()
 check(await page.isVisible('#gamesBrowse') && (await page.getAttribute('#tabFavorites', 'class')).includes('active'), 'after saving: the favourites tab is shown')
 check(favs.length === 1 && favs[0].site === 'local' && favs[0].meta.startsWith('Guardada') && favs[0].players.includes('Ousland 1900'), `favourite saved: ${JSON.stringify(favs[0])}`)
 check((await page.textContent('#gamesStatus')).includes('guardada'), `status: "${await page.textContent('#gamesStatus')}"`)
-check(await page.isVisible('#favDownload'), '⬇ Descargar PGN visible in the favourites')
+check(await page.isVisible('#listDownload'), '⬇ Descargar PGN visible in the favourites')
 await page.screenshot({ path: `${outDir}/save-02-favorites.png` })
 
 // 3. Save again: update, not duplicate.
-await page.tap('#site-save')
+await page.tap('#gamesSaveBtn')
 check((await page.textContent('#saveGame')).includes('Guardar cambios') && (await page.inputValue(field('White'))) === 'Ousland', 'second time: "Guardar cambios", with the edited headers')
 await page.fill(field('Black'), 'Rival2')
 await page.tap('#saveGame')
@@ -92,12 +95,12 @@ await page.evaluate(() => {
   navigator.canShare = () => true
   navigator.share = async (d) => { window.__shared = { name: d.files[0].name, type: d.files[0].type, text: await d.files[0].text() } }
 })
-await page.tap('#favDownload')
+await page.tap('#listDownload')
 const shared = await page.waitForFunction(() => window.__shared).then((h) => h.jsonValue())
 check(shared.name.endsWith('.pgn') && shared.type === 'application/vnd.chess-pgn' && shared.text === localPgn, `share sheet gets ${shared.name} (${shared.type}) = the local PGN`)
 // b) Without file sharing: an ordinary download.
 await page.evaluate(() => { navigator.canShare = () => false })
-const [download] = await Promise.all([page.waitForEvent('download'), page.tap('#favDownload')])
+const [download] = await Promise.all([page.waitForEvent('download'), page.tap('#listDownload')])
 const file = await download.path()
 const text = readFileSync(file, 'utf8')
 check(download.suggestedFilename().match(/^jquads-favoritas-\d{4}-\d{2}-\d{2}\.pgn$/) && text === localPgn, `downloaded ${download.suggestedFilename()} = the local PGN (${text.length} chars)`)
@@ -107,7 +110,7 @@ await page.tap(`#gamesList li[data-id="${favs[0].id}"] .info`)
 await page.waitForFunction(() => document.getElementById('games').hidden)
 const opened = await page.evaluate(() => ({ moves: document.querySelectorAll('#moves .mv').length, current: document.querySelectorAll('#moves .mv.current').length }))
 check(opened.moves >= 3 && opened.current === 0, `opened from the favourites at the initial position (${opened.moves} moves)`)
-await page.tap('#gamesBtn'); await page.tap('#site-save')
+await page.tap('#gamesBtn'); await page.tap('#gamesSaveBtn')
 check((await page.inputValue(field('Black'))) === 'Rival2' && (await page.textContent('#saveGame')).includes('Guardar cambios'), 'reopened game keeps its headers and its favourite (update)')
 await page.tap('#saveGame')
 const after = await page.evaluate(() => localStorage.getItem('favoritesPgn'))
@@ -117,12 +120,13 @@ check(after.includes('1. e4 e5 (1... c5) 2. Nf3 1-0'), 'saving the reopened game
 await page.tap('#gamesClose')
 await page.tap('#positionBtn'); await page.tap('#newGame')
 await move('d2', 'd4')
-await page.tap('#gamesBtn'); await page.tap('#site-save')
+await page.tap('#gamesBtn'); await page.tap('#gamesSaveBtn')
 check((await page.inputValue(field('White'))) === '?' && (await page.textContent('#saveGame')).includes('Guardar en favoritas'), 'new game: default headers, saves as a new favourite')
 await page.tap('#saveGame')
 favs = await favRows()
 check(favs.length === 2, `two favourites now (${favs.map((f) => f.players).join(' | ')})`)
 
 await page.evaluate(() => { localStorage.removeItem('favoriteGames'); localStorage.removeItem('favoritesPgn') }) // clean up
+await restoreAuto()
 await ctx.close()
 process.exit(failed ? 1 : 0)

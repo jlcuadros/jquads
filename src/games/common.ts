@@ -13,7 +13,7 @@ import { parsePgnHeaders } from '../game/pgn'
 export type OnlineSite = 'lichess' | 'chesscom'
 export const SITES: OnlineSite[] = ['lichess', 'chesscom']
 export const SITE_NAMES: Record<OnlineSite, string> = { lichess: 'Lichess', chesscom: 'Chess.com' }
-/** Where a game comes from: a site, or 'local' = saved from the board (📂 → Guardar). */
+/** Where a game comes from: a site, or 'local' = saved from the board (📂 → Guardar) or from a 📁 Local database. */
 export type Site = OnlineSite | 'local'
 
 export type Speed = 'bullet' | 'blitz' | 'rapid' | 'classical' | 'correspondence'
@@ -36,6 +36,7 @@ export interface GameSummary {
   white: { name: string; rating?: number }
   black: { name: string; rating?: number }
   pgn: string
+  source?: string // 📁 Local: name of the database it comes from (shown in the favourites)
 }
 
 export interface GamesQuery {

@@ -18,6 +18,7 @@ import './style.css'
 import { Chess } from 'chess.js'
 import { GameTree, type MoveNode } from './game/tree'
 import { loadBook } from './book/openingBook'
+import { loadOpenings, type OpeningNames } from './book/openingNames'
 import { MAX_DEPTH, MIN_DEPTH, MIN_THREAT_DEPTH, THREAT_OFFSET, autoDepth, autoThreatDepth } from './stockfish/autoDepth'
 import { askChoice } from './ui/choice'
 import { findNode, openGameView, refreshGameView } from './ui/gameView'
@@ -36,7 +37,7 @@ import { MaiaClient } from './maia/maiaClient'
 import { StockfishClient, type StockfishVariant } from './stockfish/stockfishClient'
 import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analyzer'
 import { openEditor, retranslateEditor } from './ui/editor'
-import { openGames, ownerName, retranslateGames } from './ui/gamesPanel'
+import { forgetPicked, openGames, ownerName, pickNeighbour, pickedInfo, retranslateGames } from './ui/gamesPanel'
 import { userColor, type OnlineSite } from './games/common'
 import { setViewOptions, markFrom, renderGameView, sanOf, shownNags, type MarkOf, type PreviousMoveRef, renderMaiaCol, renderMeter, renderMoves, renderNumbers, renderSfCol, renderText } from './ui/render'
 
@@ -94,6 +95,8 @@ const DEFAULTS: AppSettings = {
   arrowMaia: true,
   arrowThreat: true,
   autoSymbols: true, // on by default (José, 2026-10-29)
+  openingName: true, // opening name in the text and the PGN headers (José, iteration 11)
+  openingComments: true, // opening name as a comment on the moves where it changes (José, iteration 11)
 }
 
 /** Bumped when a default changes and saved settings must be migrated (see loadSettings). */
@@ -129,6 +132,8 @@ interface AppSettings extends Omit<Settings, 'threats' | 'depth' | 'threatDepth'
   arrowMaia: boolean // …Maia's most likely move…
   arrowThreat: boolean // …and the threat (only when threats are computed)
   autoSymbols: boolean // automatic chess symbols (analysis/autoSymbols.ts, iteration 7)
+  openingName: boolean // "🏷 Apertura: …" in the text, [ECO] + [Opening] in the PGN (book/openingNames.ts)
+  openingComments: boolean // {opening name} on each move where it changes, in the PGN and 📜
 }
 
 function loadSettings(): AppSettings {
@@ -179,8 +184,10 @@ const settings = loadSettings()
 let tree = new GameTree()
 // Opening book (iteration 6): loaded in the background after the engines; null until then or when off.
 let openingBook: PolyglotBook | null = null
+// Opening names (iteration 11): loaded like the book, when either of its two settings is on.
+let openingNames: OpeningNames | null = null
 // PGN headers of the game on the board (from the PGN it was opened from; {} for
-// a game made here) and its favourite id if it was saved with 📂 → 💾 Guardar.
+// a game made here) and where it is saved: a favourite id or a 📁 Local game id.
 let gameHeaders: PgnHeaders = {}
 let savedId: string | undefined
 // ✏️ annotations changed since the game was opened, saved (💾) or exported (2026-10-29).
@@ -248,6 +255,7 @@ function togglePanel(panel: Panel) {
  * ({} and none for a new one). Callers ask mayDiscardAnnotations() first.
  */
 function startNewGame(next: GameTree, headers: PgnHeaders = {}, id?: string) {
+  forgetPicked() // 📂 sets it again when the game comes from one of its lists
   tree = next
   gameHeaders = headers
   savedId = id
@@ -351,8 +359,33 @@ function autoOf(node: MoveNode): number[] {
     leftBook: bookMoves.length > 0 && !bookMoves.some((m) => m.uci === node.uci),
   })
 }
-/** The game as PGN with your symbols and the automatic ones (José: export both, 2026-10-29). */
-const pgnWithSymbols = (date: Date, headers: PgnHeaders) => gamePgn(tree, date, headers, (n) => mergedNags(n.nags, autoOf(n)))
+/**
+ * The opening's name is the first paragraph of the text while in the theory and for this many
+ * half-moves after leaving it; then the last one (José, 2026-10-30).
+ */
+const PLIES_NAME_FIRST = 2
+
+/**
+ * Half-moves since the last position in the theory (0 = this one): the book (📖) when it is on,
+ * otherwise the opening list. Infinity past PLIES_NAME_FIRST (it only matters up to there).
+ */
+function pliesSinceTheory(node: MoveNode): number {
+  const inTheory = (fen: string) => (settings.book && openingBook ? openingBook.lookup(fen).length > 0 : !!openingNames?.exact(fen))
+  let n: MoveNode | null = node
+  for (let k = 0; n && k <= PLIES_NAME_FIRST; n = n.parent, k++) if (inTheory(n.fen)) return k
+  return Infinity // out of it for longer, or never in it (a game started from a position of its own)
+}
+
+/** {Opening name} on the moves where it changes (iteration 11), or nothing when off. */
+const openingCommentOf = (n: MoveNode) => (settings.openingComments ? openingNames?.changeAt(n) : undefined)
+
+/**
+ * The game as PGN with your symbols and the automatic ones (José: export both, 2026-10-29) and,
+ * when on, the opening: [ECO] + [Opening] computed from the moves (they replace those of the
+ * game it came from: the moves may have changed) and its name on the moves where it changes.
+ */
+const pgnWithSymbols = (date: Date, headers: PgnHeaders) =>
+  gamePgn(tree, date, { ...headers, ...(settings.openingName && openingNames ? openingNames.headers(tree) : {}) }, (n) => mergedNags(n.nags, autoOf(n)), openingCommentOf)
 
 /** Strip and game-view marks, from the analyses already in the cache (no engine work). */
 const markOf: MarkOf = (node) =>
@@ -461,6 +494,7 @@ function renderPanel() {
     hevalCol,
     book: settings.book && openingBook ? (fen) => openingBook!.lookup(fen) : undefined,
     autoNags: settings.autoSymbols ? autoOf : undefined,
+    openingComment: openingCommentOf,
   })
   $('numbers').innerHTML = renderNumbers(analysis)
   renderEvalBar()
@@ -478,7 +512,9 @@ function renderPanel() {
   )
   $('maiaCol').innerHTML = renderMaiaCol(analysis?.main, settings.elo, settings.lines)
   $('sfCol').innerHTML = renderSfCol(analysis?.main, settings.variant === 'sf17' ? 'SF' : t('panel.sfClassic')) // or the endgame tables
-  $('text').innerHTML = renderText(analysis, settings.elo, tree.current.fen, previousMove(), tree.current.comment)
+  const name = settings.openingName ? openingNames?.at(tree.current) : undefined
+  const opening = name && { name, last: pliesSinceTheory(tree.current) > PLIES_NAME_FIRST }
+  $('text').innerHTML = renderText(analysis, settings.elo, tree.current.fen, previousMove(), tree.current.comment, opening)
   // A finished analysis can give the strip (and the game view) a new mark.
   if (analysis?.main.done) renderMoveStrip()
   refreshGameView()
@@ -583,6 +619,17 @@ function setupControls() {
     if (settings.book) void loadOpeningBook()
     renderPanel()
   }
+  // Opening names (iteration 11): the text and the PGN headers; the comments on the moves.
+  for (const key of ['openingName', 'openingComments'] as const) {
+    $<HTMLInputElement>(key).checked = settings[key]
+    $(key).onchange = (ev) => {
+      settings[key] = (ev.target as HTMLInputElement).checked
+      saveSettings()
+      if (settings[key]) void loadOpeningNames()
+      renderPanel()
+      refreshGameView()
+    }
+  }
   // Usernames per site (also editable in the 📂 panel; same saved values).
   const USER_SETTING: Record<OnlineSite, { key: 'lichessUser' | 'chesscomUser'; input: string }> = {
     lichess: { key: 'lichessUser', input: 'lichessUserSetting' },
@@ -595,41 +642,44 @@ function setupControls() {
       saveSettings()
     }
   }
-  // 📂 Lichess / Chess.com games: open one at the initial position, board facing
-  // the user whose username is set (José: "always oriented for that player").
-  $('gamesBtn').onclick = () => {
+  // 📂 Lichess / Chess.com / ⭐ / 📁 Local games: open one at the initial position, board
+  // facing the user whose username is set (José: "always oriented for that player").
+  const gamesHooks: Parameters<typeof openGames>[0] = {
+    getUser: (site) => settings[USER_SETTING[site].key],
+    setUser: (site, name) => {
+      settings[USER_SETTING[site].key] = name
+      $<HTMLInputElement>(USER_SETTING[site].input).value = name
+      saveSettings()
+    },
+    onPick: (game) => {
+      let next: GameTree
+      try {
+        next = treeFromPgn(game.pgn)
+      } catch {
+        alert(t('msg.invalidFen'))
+        return false
+      }
+      if (!mayDiscardAnnotations()) return false
+      startNewGame(next, parsePgnHeaders(game.pgn), game.site === 'local' ? game.id : undefined)
+      orientation = userColor(game, ownerName(game, (s) => settings[USER_SETTING[s].key])) ?? 'white'
+      positionChanged()
+      renderEvalBar()
+      return true
+    },
+    current: () => ({ headers: gameHeaders, savedId }),
+    buildPgn: (headers) => pgnWithSymbols(new Date(), headers),
+    onSaved: (id, headers) => {
+      savedId = id
+      gameHeaders = headers
+      annotationsDirty = false
+    },
+  }
+  const showGames = (start?: 'save' | 'picked') => {
     showPanel(null)
     analyzer.cancel()
-    openGames({
-      getUser: (site) => settings[USER_SETTING[site].key],
-      setUser: (site, name) => {
-        settings[USER_SETTING[site].key] = name
-        $<HTMLInputElement>(USER_SETTING[site].input).value = name
-        saveSettings()
-      },
-      onPick: (game) => {
-        let next: GameTree
-        try {
-          next = treeFromPgn(game.pgn)
-        } catch {
-          alert(t('msg.invalidFen'))
-          return
-        }
-        if (!mayDiscardAnnotations()) return
-        startNewGame(next, parsePgnHeaders(game.pgn), game.site === 'local' ? game.id : undefined)
-        orientation = userColor(game, ownerName(game, (s) => settings[USER_SETTING[s].key])) ?? 'white'
-        positionChanged()
-        renderEvalBar()
-      },
-      current: () => ({ headers: gameHeaders, savedId }),
-      buildPgn: (headers) => pgnWithSymbols(new Date(), headers),
-      onSaved: (id, headers) => {
-        savedId = id
-        gameHeaders = headers
-        annotationsDirty = false
-      },
-    })
+    openGames(gamesHooks, start)
   }
+  $('gamesBtn').onclick = () => showGames()
 
   // Language: re-translate the static texts and redraw everything generated in code.
   $<HTMLSelectElement>('lang').innerHTML = LANGUAGES.map((l) => `<option value="${l.code}">${l.flag} ${l.name}</option>`).join('')
@@ -740,6 +790,11 @@ function setupControls() {
         const node = findNode(tree.root, id)
         if (node) (tree.goTo(node), positionChanged())
       },
+      // Iteration 10: ⏪ ⏩ the games of the list it came from, 📂 that list, 💾 its headers.
+      source: pickedInfo,
+      neighbour: pickNeighbour,
+      openList: () => showGames('picked'),
+      editHeaders: () => showGames('save'),
     })
   $('last').onclick = () => (tree.toEnd(), positionChanged())
   // ✏️ Symbols and comment of the current move (José, 2026-10-29): a panel from the
@@ -910,6 +965,7 @@ async function loadEngines() {
     if (!settings.sfNps) await measureSpeed(false)
     runAnalysis()
     if (settings.book) void loadOpeningBook() // after the engines: they matter more on a first visit
+    if (settings.openingName || settings.openingComments) void loadOpeningNames()
   } catch (e) {
     status.textContent = t('msg.loadError', { detail: e instanceof Error ? e.message : String(e) })
   }
@@ -926,6 +982,18 @@ async function loadOpeningBook() {
     renderPanel()
   } catch (e) {
     console.warn('opening book not available', e)
+  }
+}
+
+/** Downloads the opening names once (then IndexedDB) and redraws. Without them there is just no name. */
+async function loadOpeningNames() {
+  if (openingNames) return
+  try {
+    openingNames = await loadOpenings()
+    renderPanel()
+    refreshGameView()
+  } catch (e) {
+    console.warn('opening names not available', e)
   }
 }
 

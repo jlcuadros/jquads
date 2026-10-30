@@ -248,9 +248,9 @@ html, body { overflow-x: hidden; }
 .games-tabs { display: flex; gap: 6px; margin-bottom: 6px; }
 .games-tabs .tab { flex: 1; }
 .games-tabs .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-.games-filters .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
-.games-filters .chip { padding: 3px 8px; border-radius: 12px; font-size: 0.85rem; }
-.games-filters .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.games-filters .chips, .local-bar .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.games-filters .chip, .local-bar .chip { padding: 3px 8px; border-radius: 12px; font-size: 0.85rem; }
+.games-filters .chip.on, .local-bar .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 .games-filters .dates { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; margin-bottom: 6px; }
 .games-filters .dates input { max-width: 9.5em; }
 .games-status { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; margin: 4px 0; }
@@ -273,13 +273,44 @@ html, body { overflow-x: hidden; }
 .games-save p { margin: 4px 0 8px; }
 .games-save .settings-grid input, .games-save .settings-grid select { width: 58%; min-width: 0; padding: 5px; }
 .games-save #saveGame { width: 100%; margin: 10px 0 6px; padding: 8px; }
-#favDownload { margin: 0 0 6px; }
-/* Lichess | Chess.com | 💾: one line each, also "💾 Сохранить" (Russian wrapped to two lines) */
+#listDownload { margin: 0 0 6px; }
+/* Lichess | Chess.com | ⭐ Favoritas | 📁 Local: one line each, also "💾 Сохранить" (Russian wrapped to two lines) */
 .games-sites .tab { white-space: nowrap; padding-left: 2px; padding-right: 2px; }
+.games-sites .tab .lbl, #gamesSaveBtn .lbl { margin-left: 0.3em; }
+/* The favourites and the local databases are not sites: ⭐ and 📁 take only what they need, the sites share the rest. */
+.games-sites #tabFavorites, .games-sites #tabLocal { flex: 0 0 auto; padding-left: 8px; padding-right: 8px; }
+/* Narrow screens: ⭐ and 📁 without their text (it stays as aria-label / title); the row is the screen
+   minus 12 px. With the texts it needs 343 px (Spanish) to 403 px (Russian),
+   measured 2026-10-30; scripts/local-test.mjs checks that it fits in every language. */
+@media (max-width: 419px) { .games-sites .tab .lbl { display: none; } }
+.games .games-user[hidden], .local-bar[hidden] { display: none; }
+/* 💾 Guardar at the top left of the panel (iteration 10), active while its form is shown */
+#gamesSaveBtn { white-space: nowrap; }
+#gamesSaveBtn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* 📁 Local: "📄 Abrir PGN…  ＋ Nueva … 🗑 Quitar", then one button per database */
+.local-actions { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.local-actions .spacer { flex: 1; }
+.local-bar .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The game on the board, when its list is shown again from 📜 → 📂 */
+.games-list li.picked { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+/* 📜: ⏪ previous game · 📂 its list · 💾 headers · ⏩ next game (iteration 10) */
+.game-view-bar { display: flex; gap: 6px; margin-bottom: 8px; }
+.game-view-bar button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.game-view-bar #gvDb { flex: 1; }
+.game-view-bar #gvPrevGame, .game-view-bar #gvNextGame, .game-view-bar #gvHeaders { flex: 0 0 auto; padding-left: 10px; padding-right: 10px; }
+.game-view-bar #gvHeaders .lbl { margin-left: 0.3em; }
+/* Narrow screens: 💾 without "Cabeceras", so the list name (📂) has room */
+@media (max-width: 419px) { .game-view-bar #gvHeaders .lbl { display: none; } }
+.game-view-bar button:disabled { opacity: 0.4; }
+/* ⚙ → Interfaz: a note under a setting (the h-eval column needs h-eval computed, iteration 10) */
+.setting-note { display: block; color: var(--muted); font-size: 0.78rem; margin: -2px 0 4px 1.6em; }
 
 /* Opening book (iteration 6): 📖 next to book moves in the columns, and the book line at the start of the text */
 .book-mark { font-size: 0.7em; margin-left: 2px; vertical-align: 1px; }
 .book-line { margin-bottom: 6px; }
+/* Opening name (iteration 11): "🏷 Apertura: Sicilian Defense: Dragon Variation · B70", above the book line */
+.opening-line { margin-bottom: 6px; }
+.opening-line small { color: var(--muted); }
 .book-line small { color: var(--muted); }
 
 /* Summary of the previous move (2026-10-26), between the book line and the engines' text */

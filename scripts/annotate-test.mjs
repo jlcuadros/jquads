@@ -18,6 +18,7 @@ import { webkit, devices } from 'playwright'
 import { mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { plainPgn } from './lib/ui-helpers.mjs'
 
 const base = process.argv[2] ?? 'http://localhost:4173'
 const outDir = process.argv[3] ?? '.'
@@ -71,8 +72,7 @@ const nextDialog = (accept) => new Promise((resolve) => page.once('dialog', (d) 
 
 // This test is about your own annotations: the automatic symbols (iteration 7) off, since
 // whether they show depends on which analyses finished in time. Restored at the end.
-const autoWasOn = await page.evaluate(() => document.getElementById('autoSymbols').checked)
-if (autoWasOn) await page.evaluate(() => document.getElementById('autoSymbols').click())
+const restoreAuto = await plainPgn(page) // automatic symbols and opening names off: exact strips and PGN
 
 // 1. New game, 1. e4 e5, ✏️.
 await page.tap('#positionBtn'); await page.tap('#newGame'); await analysed()
@@ -147,6 +147,6 @@ await page.tap('#newGame')
 await page.waitForTimeout(300)
 check(!askedAgain && (await page.$$('#moves .mv')).length === 0, 'after exporting, "Nueva partida" without asking')
 
-if (autoWasOn) await page.evaluate(() => document.getElementById('autoSymbols').click())
+await restoreAuto()
 await ctx.close()
 process.exit(failed ? 1 : 0)

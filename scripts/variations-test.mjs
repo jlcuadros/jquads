@@ -15,6 +15,7 @@ import { webkit, devices } from 'playwright'
 import { mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { plainPgn } from './lib/ui-helpers.mjs'
 
 const base = process.argv[2] ?? 'http://localhost:4173'
 const outDir = process.argv[3] ?? '.'
@@ -53,8 +54,7 @@ async function gameView() {
 
 // This test is about moves and variations: the automatic symbols (iteration 7) off, since
 // whether they show depends on which analyses finished in time. Restored at the end.
-const autoWasOn = await page.evaluate(() => document.getElementById('autoSymbols').checked)
-if (autoWasOn) await page.evaluate(() => document.getElementById('autoSymbols').click())
+const restoreAuto = await plainPgn(page) // automatic symbols and opening names off: exact strips and PGN
 
 // 1. Navigation bar widths.
 const w = await page.evaluate(() => Object.fromEntries(['first', 'prev', 'gameViewBtn', 'next', 'last'].map((id) => [id, Math.round(document.getElementById(id).getBoundingClientRect().width)])))
@@ -124,6 +124,6 @@ const exported = await page.waitForFunction(() => window.__shared).then((h) => h
 check(exported.includes('{Una partida de prueba} 1. e4 {El peón rey} 1... e5 (1... c5 {La siciliana}) 2. Nf3'), 'exported PGN keeps comments and variations (no clocks)')
 
 await page.evaluate(() => localStorage.removeItem('favoriteGames')) // clean up
-if (autoWasOn) await page.evaluate(() => document.getElementById('autoSymbols').click())
+await restoreAuto()
 await ctx.close()
 process.exit(failed ? 1 : 0)

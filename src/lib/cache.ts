@@ -6,47 +6,13 @@
  * (IndexedDB is available in workers), which keeps a single implementation.
  */
 
-const DB_NAME = 'maia-analysis-cache'
-const STORE = 'files'
+import { kvStore } from './idb'
 
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1)
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE)
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
-}
-
-async function getCached(url: string): Promise<ArrayBuffer | undefined> {
-  const db = await openDb()
-  return new Promise((resolve, reject) => {
-    const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(url)
-    req.onsuccess = () => resolve(req.result as ArrayBuffer | undefined)
-    req.onerror = () => reject(req.error)
-  })
-}
-
-async function putCached(url: string, data: ArrayBuffer): Promise<void> {
-  const db = await openDb()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite')
-    tx.objectStore(STORE).put(data, url)
-    tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
-  })
-}
+// Same database and store names as before the shared helper (2026-10-30): files already cached stay.
+const files = kvStore<ArrayBuffer>('maia-analysis-cache', 'files')
 
 /** Deletes every cached file (useful to measure a "first visit"). */
-export async function clearCache(): Promise<void> {
-  const db = await openDb()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite')
-    tx.objectStore(STORE).clear()
-    tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
-  })
-}
+export const clearCache = (): Promise<void> => files.clear()
 
 /**
  * Returns the file at `url`, from the cache if present, otherwise downloads
@@ -58,7 +24,7 @@ export async function fetchCached(
   onProgress?: (fraction: number) => void,
 ): Promise<{ data: ArrayBuffer; fromCache: boolean }> {
   try {
-    const cached = await getCached(url)
+    const cached = await files.get(url)
     if (cached) return { data: cached, fromCache: true }
   } catch (e) {
     console.warn('cache read failed', e)
@@ -66,7 +32,7 @@ export async function fetchCached(
 
   const data = await downloadWithRetry(url, onProgress)
   try {
-    await putCached(url, data.buffer as ArrayBuffer)
+    await files.put(url, data.buffer as ArrayBuffer)
   } catch (e) {
     console.warn('cache write failed', e)
   }

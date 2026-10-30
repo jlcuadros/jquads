@@ -29,3 +29,16 @@ export async function openSettings(page) {
 
 /** Closes ⚙. */
 export const closeSettings = (page) => closePanel(page, '#menu', '#settings')
+
+/**
+ * Turns off the ⚙ options that add to the PGN and the move strip by themselves —
+ * the automatic symbols (iteration 7) and the opening names on the moves
+ * (iteration 11) — so a test can compare an exact PGN. Returns a function that
+ * turns back on the ones that were on (call it at the end of the test).
+ */
+export async function plainPgn(page, ids = ['autoSymbols', 'openingComments']) {
+  const on = await page.evaluate((ids) => ids.filter((id) => document.getElementById(id).checked), ids)
+  const click = () => page.evaluate((on) => on.forEach((id) => document.getElementById(id).click()), on)
+  await click()
+  return click
+}

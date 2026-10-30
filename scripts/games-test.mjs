@@ -106,8 +106,12 @@ r = await rows()
 check(r[0].fav === '⭐', `☆ → ⭐ on ${lichessFav.id}`)
 await page.click('#tabFavorites')
 check((await rows()).some((x) => x.id === lichessFav.id), `"Favoritas" tab contains ${lichessFav.id}`)
+check(await page.isHidden('#gamesUserRow') && await page.isHidden('#gamesFilters') && (await page.$$eval('.games-sites .tab.active', (b) => b.map((x) => x.id))).join() === 'tabFavorites',
+  '⭐ Favoritas: in the site row, the only active one; no username or filters')
 await page.screenshot({ path: `${outDir}/games-03-favorites.png`, fullPage: true })
-await page.click('#tabRecent')
+await page.click('#site-lichess')
+check(await page.isVisible('#gamesUserRow') && (await rows()).some((x) => x.id === lichessFav.id) && (await page.getAttribute('#site-lichess', 'class')).includes('active'),
+  'Lichess again: back to its games (no reload) with the username')
 
 // 5. Open a game where the user had black. Both dates cleared quickly: with
 // the debounce this makes ONE request.
@@ -159,7 +163,7 @@ const favOf = (id) => favs.find((x) => x.id === id)
 check(favOf(ccFav.id)?.meta.startsWith('Chess.com') && favOf(lichessFav.id)?.meta.startsWith('Lichess'), `favourites mix both sites, labelled: ${favs.map((x) => x.meta.split(' · ')[0]).join(', ')}`)
 await page.screenshot({ path: `${outDir}/games-06-favorites-both.png`, fullPage: true })
 for (const id of [ccFav.id, lichessFav.id]) await page.click(`#gamesList li[data-id="${id}"] .fav`) // clean up
-await page.click('#tabRecent')
+await page.click('#site-chesscom')
 await listReady()
 
 // 10. A Chess.com game with black; then back to Lichess keeps its username.

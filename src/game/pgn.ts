@@ -45,31 +45,46 @@ function moveText(tree: GameTree, node: MoveNode, forceNumber: boolean): string 
   return forceNumber ? `${number}... ${node.san}` : node.san
 }
 
-/** A node's comment token (its text and its drawings), or none. */
-function commentTokens(node: MoveNode): MovetextToken[] {
+/**
+ * A comment the app adds to a move without storing it in the tree: the opening
+ * name where it changes (iteration 11, book/openingNames.ts). Undefined = none.
+ */
+export type ExtraComment = (node: MoveNode) => string | undefined
+const noExtra: ExtraComment = () => undefined
+
+/**
+ * A node's comment tokens: the added one (left out if the node's own comment
+ * already says it: a game exported and opened again), then its own text and
+ * drawings. None if there is nothing.
+ */
+function commentTokens(node: MoveNode, extra: ExtraComment): MovetextToken[] {
+  const added = extra(node)
   const commands = drawingsCommands(node.drawings)
-  return node.comment || commands ? [{ kind: 'comment', text: node.comment ?? '', commands }] : []
+  return [
+    ...(added && !node.comment?.includes(added) ? [{ kind: 'comment' as const, text: added, commands: '' }] : []),
+    ...(node.comment || commands ? [{ kind: 'comment' as const, text: node.comment ?? '', commands }] : []),
+  ]
 }
 
-/** A move and, if it has one, its comment. After a comment a black move needs "N...". */
-function moveTokens(tree: GameTree, node: MoveNode, forceNumber: boolean): { tokens: MovetextToken[]; commented: boolean } {
-  const tokens: MovetextToken[] = [{ kind: 'move', node, text: moveText(tree, node, forceNumber) }, ...commentTokens(node)]
+/** A move and, if it has them, its comments. After a comment a black move needs "N...". */
+function moveTokens(tree: GameTree, node: MoveNode, forceNumber: boolean, extra: ExtraComment): { tokens: MovetextToken[]; commented: boolean } {
+  const tokens: MovetextToken[] = [{ kind: 'move', node, text: moveText(tree, node, forceNumber) }, ...commentTokens(node, extra)]
   return { tokens, commented: tokens.length > 1 }
 }
 
 /** Movetext from `parent` onwards (its main continuation and the variations). */
-function lineFrom(tree: GameTree, parent: MoveNode, forceNumber: boolean): MovetextToken[] {
+function lineFrom(tree: GameTree, parent: MoveNode, forceNumber: boolean, extra: ExtraComment): MovetextToken[] {
   const out: MovetextToken[] = []
   let node = parent
   let needNumber = forceNumber
   while (node.children.length) {
     const [main, ...alternatives] = node.children
-    const m = moveTokens(tree, main, needNumber)
+    const m = moveTokens(tree, main, needNumber, extra)
     out.push(...m.tokens)
     needNumber = m.commented
     for (const alt of alternatives) {
-      const a = moveTokens(tree, alt, true)
-      out.push({ kind: 'open' }, ...a.tokens, ...lineFrom(tree, alt, a.commented), { kind: 'close' })
+      const a = moveTokens(tree, alt, true, extra)
+      out.push({ kind: 'open' }, ...a.tokens, ...lineFrom(tree, alt, a.commented, extra), { kind: 'close' })
       needNumber = true // after a variation, the next black move needs "N..."
     }
     node = main
@@ -78,9 +93,9 @@ function lineFrom(tree: GameTree, parent: MoveNode, forceNumber: boolean): Movet
 }
 
 /** The whole game's movetext as tokens: the root comment (before the first move), then the moves. */
-export function movetextTokens(tree: GameTree): MovetextToken[] {
-  const intro = commentTokens(tree.root)
-  return [...intro, ...lineFrom(tree, tree.root, true)]
+export function movetextTokens(tree: GameTree, extra: ExtraComment = noExtra): MovetextToken[] {
+  const intro = commentTokens(tree.root, noExtra) // the opening names go with moves only
+  return [...intro, ...lineFrom(tree, tree.root, true, extra)]
 }
 
 /** A node's NAGs to write: its own, or (iteration 7) its own + the automatic ones (`nagsOf`). */
@@ -127,7 +142,7 @@ const escapeTag = (v: string) => v.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
  * left out, except the roster, which gets "?"). The movetext ends with the
  * Result tag, as PGN requires.
  */
-export function gamePgn(tree: GameTree, date = new Date(), headers: PgnHeaders = {}, nagsOf: NagsOf = ownNags): string {
+export function gamePgn(tree: GameTree, date = new Date(), headers: PgnHeaders = {}, nagsOf: NagsOf = ownNags, extra: ExtraComment = noExtra): string {
   const all: PgnHeaders = { ...defaultHeaders(date) }
   for (const [k, v] of Object.entries(headers)) if (!COMPUTED.includes(k)) all[k] = v.trim()
   if (!RESULTS.includes(all.Result)) all.Result = '*'
@@ -136,7 +151,7 @@ export function gamePgn(tree: GameTree, date = new Date(), headers: PgnHeaders =
     ...Object.entries(all).filter(([k, v]) => !(ROSTER as readonly string[]).includes(k) && v),
   ]
   if (tree.root.fen !== START_FEN) pairs.push(['SetUp', '1'], ['FEN', tree.root.fen])
-  const moves = movetextString(movetextTokens(tree), nagsOf)
+  const moves = movetextString(movetextTokens(tree, extra), nagsOf)
   return `${pairs.map(([k, v]) => `[${k} "${escapeTag(v)}"]`).join('\n')}\n\n${moves ? `${moves} ` : ''}${all.Result}\n`
 }
 

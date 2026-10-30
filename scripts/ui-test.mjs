@@ -113,9 +113,10 @@ console.log(`full analysis after the move (incl. threats) in ${((Date.now() - tM
 // Summary of the previous move (2026-10-26): White's pawn first (who it is about), and Maia's
 // first suggestion from the start is a good move.
 const prevMove = (await page.textContent('#text .prev-move').catch(() => '')) ?? ''
-// Order of the paragraphs (José, 2026-10-26): book, position, previous move.
+// Order of the paragraphs (José, 2026-10-26): opening name (iteration 11, on by default), book,
+// position, previous move.
 const order = await page.$$eval('#text > div', (ds) => ds.map((d) => d.className))
-console.log(`${order.join(',') === 'book-line,side-text,prev-move' ? 'OK  ' : 'FAIL'} text paragraphs in order: ${order.join(', ')}`)
+console.log(`${order.join(',') === 'opening-line,book-line,side-text,prev-move' ? 'OK  ' : 'FAIL'} text paragraphs in order: ${order.join(', ')}`)
 console.log(`${/^♙\uFE0E? 1\.\S+ fue (la mejor jugada \([+−]?\d\.\d\)|buena jugada \([+−]?\d\.\d → [+−]?\d\.\d\))\./ /* the best move: one evaluation */.test(prevMove) ? 'OK  ' : 'FAIL'} previous move summary: "${prevMove}"`)
 // Every move shown in the bar legends must have been evaluated (coloured dot).
 const uncoloured = await page.locator('.meter-legend .move-chip.plain').allTextContents()

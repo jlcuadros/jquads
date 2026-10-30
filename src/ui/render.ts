@@ -16,7 +16,7 @@ import { describePosition, type Segment } from '../analysis/describe'
 import { describePreviousMove } from '../analysis/previousMove'
 import type { EngineLine } from '../stockfish/stockfishClient'
 import type { GameTree, MoveNode } from '../game/tree'
-import { movetextTokens, type PgnHeaders } from '../game/pgn'
+import { movetextTokens, type ExtraComment, type PgnHeaders } from '../game/pgn'
 import { moveMark, type MoveMark } from '../analysis/moveMarks'
 import { probOf, shapeOf, type Shape } from '../analysis/likelihood'
 import { formatSan, type Notation } from '../game/notation'
@@ -24,6 +24,7 @@ import { tbLabel, tbPositionScore } from '../analysis/tablebase'
 import { getLang, t } from '../i18n/i18n'
 import type { BookMove } from '../book/polyglot'
 import { BOOK_MIN_SHARE } from '../book/openingBook'
+import type { Opening } from '../book/openingNames'
 
 /**
  * Display options set by app.ts before rendering (iteration 4):
@@ -37,7 +38,7 @@ import { BOOK_MIN_SHARE } from '../book/openingBook'
  *  - autoNags: a move's automatic symbols (iteration 7, analysis/autoSymbols.ts),
  *    or undefined when they are off in ⚙.
  */
-const view: { notation: Notation; hideMoves: boolean; deltaCol: boolean; maiaCol: boolean; hevalCol: boolean; book?: (fen: string) => BookMove[]; autoNags?: (n: MoveNode) => number[] } = {
+const view: { notation: Notation; hideMoves: boolean; deltaCol: boolean; maiaCol: boolean; hevalCol: boolean; book?: (fen: string) => BookMove[]; autoNags?: (n: MoveNode) => number[]; openingComment?: ExtraComment } = {
   notation: 'figurine',
   hideMoves: false,
   deltaCol: true,
@@ -226,11 +227,12 @@ export function renderGameView(tree: GameTree, headers: PgnHeaders, markOf?: Mar
   const players = headers.White || headers.Black ? `${playerHtml(headers, 'White')} – ${playerHtml(headers, 'Black')}` : ''
   const about = [
     players,
-    ...[headers.Event, headers.Date, headers.Result && headers.Result !== '*' ? headers.Result : ''].filter((x) => x && x !== '?').map((x) => escapeHtml(x!)),
+    // Unknown values ("?", a date "????.??.??") are left out.
+    ...[headers.Event, headers.Date, headers.Result && headers.Result !== '*' ? headers.Result : ''].filter((x) => x && !/^[?.]+$/.test(x)).map((x) => escapeHtml(x!)),
   ]
     .filter(Boolean)
     .join(' · ')
-  const tokens = movetextTokens(tree)
+  const tokens = movetextTokens(tree, view.openingComment) // with the opening names where they change, as in the PGN
   const body = tokens
     .map((tk, i) => {
       // A space between tokens, but not after "(" nor before ")": "e5 (1... c5)".
@@ -393,9 +395,21 @@ export function renderPreviousMove(ref: PreviousMoveRef | undefined, a: Position
  * it), the position (always, once analysed), the previous move (when there is
  * one and data for it).
  */
-export function renderText(a: PositionAnalysis | undefined, elo: number, fen: string, previous?: PreviousMoveRef, comment?: string): string {
+export function renderText(a: PositionAnalysis | undefined, elo: number, fen: string, previous?: PreviousMoveRef, comment?: string, opening?: { name: Opening; last: boolean }): string {
   const pgnComment = comment ? `<div class="pgn-comment">✏️ ${escapeHtml(comment)}</div>` : ''
-  return pgnComment + renderBookLine(fen, a) + renderEnginesText(a, elo) + renderPreviousMove(previous, a, elo)
+  // The opening's name goes first in the theory, last once out of it (José, 2026-10-30).
+  const name = renderOpeningLine(opening?.name)
+  const [first, last] = opening?.last ? ['', name] : [name, '']
+  return pgnComment + first + renderBookLine(fen, a) + renderEnginesText(a, elo) + renderPreviousMove(previous, a, elo) + last
+}
+
+/**
+ * "🏷 Apertura: Sicilian Defense: Dragon Variation · B70" (iteration 11): the name of the
+ * position or of the last named one before it. Names are in English (the Lichess list).
+ */
+function renderOpeningLine(opening?: Opening): string {
+  if (!opening) return ''
+  return `<div class="opening-line">🏷 <b>${t('opening.title')}</b>: ${escapeHtml(opening.name)} <small>· ${opening.eco}</small></div>`
 }
 
 function renderEnginesText(a: PositionAnalysis | undefined, elo: number): string {
