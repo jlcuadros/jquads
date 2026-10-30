@@ -33,6 +33,9 @@ const res = await page.request.get(new URL(href ?? '', page.url()).href)
 const body = await res.text()
 const texts = ['GNU AFFERO GENERAL PUBLIC LICENSE', 'GNU GENERAL PUBLIC LICENSE', 'MIT License', 'Jeff Hlywa']
 check(res.ok() && texts.every((t) => body.includes(t)), `licenses.txt served (${res.status()}) with the 4 licence texts`)
+// ☕ Donations (2026-10-30): one line with the Ko-fi page, opening in a new tab.
+const support = await page.$eval('#creditsSupport', (li) => ({ text: li.textContent, href: li.querySelector('a')?.href, target: li.querySelector('a')?.target }))
+check(support.text.startsWith('☕ Apoya jquads') && support.href === 'https://ko-fi.com/jquads' && support.target === '_blank', `donations line: "${support.text.slice(0, 40)}…" → ${support.href}`)
 await credits.screenshot({ path: `${outDir}/credits.png` })
 await browser.close()
 process.exit(failed ? 1 : 0)

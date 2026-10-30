@@ -10,6 +10,10 @@ evaluates them. It is a reduced, personal take on the analysis page of
 Created by **José Luis Cuadros** — say hi on [Lichess (Ousland)](https://lichess.org/@/Ousland)
 or [LinkedIn](https://www.linkedin.com/in/jose-luis-cuadros-fernandez/).
 
+## Support
+jquads is free, open source and has no ads. If you find it useful, you can support it with a
+tip on **[Ko-fi](https://ko-fi.com/jquads)** ☕ — it helps keep improving it.
+
 ## Features
 - Board with move list and variations; tap a suggested move to play it.
 - **Maia-3** with selectable rating (600–2600): most human-like moves and win probability.
@@ -91,6 +95,8 @@ Browser end-to-end tests (Playwright, WebKit emulating an iPhone) are described 
   (CC0) — both players rated 2300+, rapid and classical; the book is CC0 too ([docs/BOOK.md](docs/BOOK.md)).
   Book lookups use the Polyglot format's Random64 numbers, taken from
   [python-chess](https://github.com/niklasf/python-chess) (GPL-3.0).
+- Opening names and ECO codes: the [Lichess opening list](https://github.com/lichess-org/chess-openings)
+  (CC0), built into the app with `scripts/openings/build-openings.mjs`.
 
 The full licence texts of the shipped components are generated into `licenses.txt`
 (`scripts/third-party-licenses.mjs`), linked from ⚙ → Credits and licences.
