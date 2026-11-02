@@ -6,8 +6,8 @@
 //     macOS);
 //   - Google Play feature graphic 1024 × 500, Spanish and English;
 //   - screenshots in Spanish and English: iPhone 6.9" (1320 × 2868, the size App
-//     Store Connect asks for) and Android phone (1080 × 2160, 2:1, within Google's
-//     limits), of: analysis, games list, whole game (📜), annotations, endgame table.
+//     Store Connect asks for) and Android phone (1080 × 1920, 9:16: since 2026 Play
+//     Console only accepts 16:9 or 9:16 phone screenshots; 2:1 was refused), of: analysis, games list, whole game (📜), annotations, endgame table.
 // Store rules for the listing (screenshots are part of it):
 //   - taken as the store app (`?app=android` → storeApp()): no Ko-fi link visible;
 //   - the games list uses DEMO games with invented opponents (the Lichess API answer
@@ -16,6 +16,7 @@
 //
 // Usage (server running with the current build, engines cached in the profile):
 //   UI_TEST_PROFILE=<profile> node scripts/store-images.mjs http://localhost:4173 <out-dir> <original-icon.png>
+//   ONLY=android (or ios) regenerates the screenshots of one device only.
 // Needs network (Lichess for the games list, the endgame tablebase).
 import { webkit } from 'playwright'
 import { squareIcon } from './lib/icon.mjs'
@@ -43,7 +44,16 @@ if (originalIcon) {
 const LANGS = {
   es: { tagline: 'Analiza ajedrez como un humano', sub: 'Maia + Stockfish · gratis · sin anuncios' },
   en: { tagline: 'Analyse chess like a human', sub: 'Maia + Stockfish · free · no ads' },
+  // The other app languages (2026-11-02, Google Play translations of the listing; Portuguese
+  // serves both pt-PT and pt-BR, the app has one Portuguese).
+  fr: { tagline: 'Analysez les échecs comme un humain', sub: 'Maia + Stockfish · gratuit · sans pub' },
+  pt: { tagline: 'Analise xadrez como um humano', sub: 'Maia + Stockfish · grátis · sem anúncios' },
+  ru: { tagline: 'Анализ шахмат по‑человечески', sub: 'Maia + Stockfish · бесплатно · без рекламы' }, // non-breaking hyphen (U+2011): one line
+  de: { tagline: 'Schach analysieren wie ein Mensch', sub: 'Maia + Stockfish · kostenlos · ohne Werbung' },
+  it: { tagline: 'Analizza gli scacchi come un umano', sub: 'Maia + Stockfish · gratis · senza pubblicità' },
 }
+// LANGS_ONLY=fr,pt… limits the screenshots to some languages (the feature graphics are always all).
+const SHOT_LANGS = process.env.LANGS_ONLY ? process.env.LANGS_ONLY.split(',') : Object.keys(LANGS)
 const JPEG = { type: 'jpeg', quality: 92 } // no alpha channel (store requirement)
 const BLUE = '#1e3fc4'
 const iconData = `data:image/png;base64,${readFileSync('public/icons/icon-512.png').toString('base64')}`
@@ -72,8 +82,10 @@ const iconData = `data:image/png;base64,${readFileSync('public/icons/icon-512.pn
 // ---------------------------------------------------------------------------
 const DEVICES = {
   ios: { viewport: { width: 440, height: 956 }, deviceScaleFactor: 3 }, // → 1320 × 2868 (iPhone 6.9")
-  android: { viewport: { width: 360, height: 720 }, deviceScaleFactor: 3 }, // → 1080 × 2160 (2:1)
+  android: { viewport: { width: 360, height: 640 }, deviceScaleFactor: 3 }, // → 1080 × 1920 (9:16, Play Console)
 }
+const CONTEXT_DEVICE = DEVICES.ios // the browser context is opened once; each device sets its viewport
+if (process.env.ONLY) for (const d of Object.keys(DEVICES)) if (d !== process.env.ONLY) delete DEVICES[d]
 // A Dragon game (in the book, named opening) and a rook endgame (tablebase), opened as a 📁 Local file.
 const DRAGON = '[Event "Club championship"]\n[Site "jquads"]\n[Date "2026.10.30"]\n[White "Alice"]\n[Black "Bob"]\n[Result "*"]\n\n1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 g6 6. Be3 Bg7 7. f3 O-O 8. Qd2 Nc6 9. Bc4 *\n'
 const ENDGAME = '[Event "Endgame study"]\n[White "Alice"]\n[Black "Bob"]\n[Result "*"]\n[SetUp "1"]\n[FEN "8/8/8/4k3/8/8/2K5/R7 w - - 0 1"]\n\n*\n'
@@ -103,13 +115,15 @@ function demoLichessGames(me) {
   }).join('\n')
 }
 
-const ctx = await webkit.launchPersistentContext(process.env.UI_TEST_PROFILE ?? join(tmpdir(), 'maia-ui-test-webkit-profile'), { ...DEVICES.ios, isMobile: true, hasTouch: true, locale: 'es-ES' })
+const ctx = await webkit.launchPersistentContext(process.env.UI_TEST_PROFILE ?? join(tmpdir(), 'maia-ui-test-webkit-profile'), { ...CONTEXT_DEVICE, isMobile: true, hasTouch: true, locale: 'es-ES' })
 const page = await ctx.newPage()
 page.on('pageerror', (e) => console.log('pageerror:', e.message))
 // As the store app: storeApp() hides the donation links (kept for the session).
 await page.goto(`${base}/?app=android`)
 await page.waitForSelector('#board .cg-wrap, #board.cg-wrap')
 const me = (await page.$eval('#lichessUserSetting', (i) => i.value)) || 'Ousland'
+// A fresh profile has no username saved (⚙ setting): set José's own one so the demo games list loads.
+await page.evaluate((u) => { const i = document.getElementById('lichessUserSetting'); i.value = u; i.dispatchEvent(new Event('change')) }, me)
 await page.route('https://lichess.org/api/games/user/**', (route) => route.fulfill({ status: 200, contentType: 'application/x-ndjson', body: demoLichessGames(me) }))
 const prevLang = await page.$eval('#lang', (s) => s.value)
 // Maia at 2000 for the pictures ("Maia 2000", "a 2000 player would find…"); the profile's own value comes back at the end.
@@ -138,7 +152,7 @@ async function goToPly(ply) {
 
 for (const [device, size] of Object.entries(DEVICES)) {
   await page.setViewportSize(size.viewport)
-  for (const [lang] of Object.entries(LANGS)) {
+  for (const lang of SHOT_LANGS) {
     await setLang(lang)
     const shot = (n) => page.screenshot({ path: out(`${device}-${lang}-${n}.jpg`), ...JPEG })
 
