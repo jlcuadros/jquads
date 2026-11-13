@@ -35,7 +35,7 @@ import { whiteWinProb } from './analysis/classify'
 import { TablebaseClient } from './analysis/tablebase'
 import { LANGUAGES, applyStaticTranslations, detectLang, setLang, t, type Lang, getLang } from './i18n/i18n'
 import { MaiaClient } from './maia/maiaClient'
-import { StockfishClient, type StockfishVariant } from './stockfish/stockfishClient'
+import { StockfishClient, type EngineLine, type StockfishVariant } from './stockfish/stockfishClient'
 import { Analyzer, type PositionAnalysis, type Settings } from './analysis/analyzer'
 import { openEditor, retranslateEditor } from './ui/editor'
 import { forgetPicked, openGames, ownerName, pickNeighbour, pickedInfo, retranslateGames } from './ui/gamesPanel'
@@ -78,6 +78,7 @@ const DEFAULTS: AppSettings = {
   threatsMode: 'moves', // José, iteration 3
   meterMode: 'bar', // top bar (Maia's moves): only the bar by default (José, iteration 5)
   deltaCol: true, // "Δ eval" column in the Maia panel (iteration 5, can be hidden)
+  pgnHighlight: true, // the game's own moves highlighted in the Maia / SF columns (José, 2026-11-09, can be turned off)
   maiaCol: true, // "Maia" % column in the Stockfish panel (iteration 5, can be hidden)
   hevalCandidates: 0, // h-eval: how many candidates (both columns + Stockfish depth 7); 0 = off, the default (José, 2026-10-28)
   hevalCol: true, // "h-eval" column in the Maia panel (can be hidden)
@@ -116,6 +117,7 @@ interface AppSettings extends Omit<Settings, 'threats' | 'depth' | 'threatDepth'
   threatsMode: ThreatsMode
   meterMode: MeterMode
   deltaCol: boolean // show "Δ eval" in the Maia panel
+  pgnHighlight: boolean // highlight the moves the game already has in the Maia / SF columns
   maiaCol: boolean // show Maia's % in the Stockfish panel
   hevalCol: boolean // show h-eval in the Maia panel
   hashMb: number // Stockfish hash (shared by the main analysis and the threats)
@@ -451,14 +453,28 @@ function updateBoard() {
  * Vertical evaluation bar (optional): the white part's height = Stockfish's
  * expected score for White; the red mark = Maia's win probability for White.
  * White sits at the bottom when the board is seen from White's side.
+ * The bar's two edges (José, 2026-11-09) keep the evaluation of the position
+ * before the last move, so a step between the edges and the middle shows at a
+ * glance how much that move changed it (a mistake = a big step). Only when the
+ * previous position was analysed; otherwise the edges are not drawn.
+ * The same for Maia (José, 2026-11-09: "esperaba ver dos barritas rojas a los lados con la
+ * evaluación anterior de Maia"): a short red tick on each edge at Maia's previous evaluation.
  */
 function renderEvalBar() {
   const bar = $('evalBarEl')
   bar.hidden = !settings.evalBar
   if (!settings.evalBar) return
+  const sfWp = (l?: EngineLine) => l && whiteWinProb(l.mate !== undefined ? { mate: l.mate } : { cp: l.scoreCp })
   const m = analysis?.main
-  const best = m?.lines[0]
-  const sf = best ? whiteWinProb(best.mate !== undefined ? { mate: best.mate } : { cp: best.scoreCp }) : 0.5
+  const sf = sfWp(m?.lines[0]) ?? 0.5
+  const parent = tree.current.parent
+  const before = parent && analyzer.cached(parent.fen, analysisSettings())?.main
+  const prev = sfWp(before?.lines[0])
+  bar.classList.toggle('has-prev', prev !== undefined)
+  bar.style.setProperty('--prev-pos', `${((prev ?? sf) * 100).toFixed(1)}%`)
+  const prevMaia = before?.maia && whiteWinProb({ cp: scoreToCp(before.maia.whiteWinProb) })
+  bar.classList.toggle('has-prev-maia', prevMaia !== undefined)
+  bar.style.setProperty('--prev-maia-pos', `${((prevMaia ?? 0.5) * 100).toFixed(1)}%`)
   // Maia's mark: its evaluation (as in the top line, iteration 8) placed with the same
   // formula as Stockfish's fill, so both read on one scale (±10 at the ends).
   const maiaWp = m?.maia ? whiteWinProb({ cp: scoreToCp(m.maia.whiteWinProb) }) : undefined
@@ -496,8 +512,11 @@ function renderPanel() {
     book: settings.book && openingBook ? (fen) => openingBook!.lookup(fen) : undefined,
     autoNags: settings.autoSymbols ? autoOf : undefined,
     openingComment: openingCommentOf,
+    // The moves the game already has here: highlighted in the columns (José, 2026-11-09).
+    continuation: settings.pgnHighlight ? { main: tree.current.children[0]?.uci, variations: tree.current.children.slice(1).map((c) => c.uci) } : undefined,
   })
   $('numbers').innerHTML = renderNumbers(analysis)
+  renderGameNav()
   renderEvalBar()
   // Top bar: it's still computed when hidden (the columns and arrows need it).
   $('meterMain').hidden = settings.meterMode === 'off'
@@ -520,6 +539,19 @@ function renderPanel() {
   if (analysis?.main.done) renderMoveStrip()
   refreshGameView()
   board.setAutoShapes(arrows())
+}
+
+/**
+ * ⏪ ⏩ at the ends of the move strip (José, 2026-11-09; first tried in the top bar, where they
+ * didn't fit on phones): the previous / next game of the 📁 Local database the game on the board
+ * came from, the same as in 📜. Hidden for any other game ("solo si hemos abierto una base de datos").
+ */
+function renderGameNav() {
+  const source = pickedInfo()
+  for (const [id, can] of [['stripPrevGame', source?.hasPrev], ['stripNextGame', source?.hasNext]] as const) {
+    $(id).hidden = !source?.local
+    $<HTMLButtonElement>(id).disabled = !can
+  }
 }
 
 function renderMoveStrip() {
@@ -593,7 +625,8 @@ function setupControls() {
   $<HTMLInputElement>('evalBar').checked = settings.evalBar
   // Middle columns of the panels (iteration 5): on/off, only redraw needed.
   // (checkbox ids "show…": "maiaCol" is already the Maia panel's id)
-  const COL_SETTING = { deltaCol: 'showDeltaCol', maiaCol: 'showMaiaCol', hevalCol: 'showHevalCol' } as const
+  // Also the highlight of the game's moves in the columns (José, 2026-11-09).
+  const COL_SETTING = { deltaCol: 'showDeltaCol', maiaCol: 'showMaiaCol', hevalCol: 'showHevalCol', pgnHighlight: 'pgnHighlight' } as const
   for (const [key, id] of Object.entries(COL_SETTING) as [keyof typeof COL_SETTING, string][]) {
     $<HTMLInputElement>(id).checked = settings[key]
     $(id).onchange = (ev) => {
@@ -674,6 +707,7 @@ function setupControls() {
       gameHeaders = headers
       annotationsDirty = false
     },
+    onPicked: renderGameNav,
   }
   const showGames = (start?: 'save' | 'picked') => {
     showPanel(null)
@@ -798,6 +832,7 @@ function setupControls() {
       editHeaders: () => showGames('save'),
     })
   $('last').onclick = () => (tree.toEnd(), positionChanged())
+  for (const [id, dir] of [['stripPrevGame', -1], ['stripNextGame', 1]] as const) $(id).onclick = () => void pickNeighbour(dir).then(renderGameNav)
   // ✏️ Symbols and comment of the current move (José, 2026-10-29): a panel from the
   // bottom; its ◀ ▶ are the navigation bar's. Changes go straight into the tree.
   $('annotateBtn').onclick = () => {

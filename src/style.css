@@ -11,6 +11,9 @@
   --meter-good: #1a9850;
   --meter-ok: #fee08b;
   --meter-blunder: #d73027;
+  /* Moves the game already has after this position (José, 2026-11-09): next move / a variation's */
+  --pgn-next: #3b78c4;
+  --pgn-var: #b07d10;
   color-scheme: light;
 }
 /* Dark theme: data-theme is set in index.html from ⚙ → Tema (light / dark / system). */
@@ -24,6 +27,8 @@
   --accent: #6aa0e0;
   --maia: #fe7f6d;
   --sf: #76addd;
+  --pgn-next: #6aa0e0;
+  --pgn-var: #e0b450;
 }
 
 * { box-sizing: border-box; }
@@ -103,9 +108,12 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 .nav { display: grid; grid-template-columns: 0.4fr 1fr 0.4fr 0.4fr 1fr 0.4fr; gap: 4px; margin: 6px 0 2px; }
 .nav button[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); }
 .nav button { padding: 5px 0; font-size: 1rem; }
+/* The strip with ⏪ ⏩ at its ends (José, 2026-11-09: they didn't fit in the top bar on phones) */
+.moves-row { display: flex; align-items: center; gap: 4px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.moves-row .game-step { flex: 0 0 auto; padding: 2px 4px; }
 .moves {
+  flex: 1; min-width: 0;
   display: flex; gap: 2px; overflow-x: auto; white-space: nowrap; padding: 6px 2px;
-  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
   scrollbar-width: thin;
 }
 .moves .num { color: var(--muted); margin-left: 6px; }
@@ -133,6 +141,14 @@ select { background: var(--surface); border: 1px solid var(--border); border-rad
 .col .num { text-align: right; white-space: nowrap; padding-left: 4px; }
 .col th.num { color: var(--muted); font-weight: normal; font-size: 0.75rem; }
 .col tr[data-move] { cursor: pointer; }
+/* A move the game already has here (José, 2026-11-09): a tinted row with a bar on its left —
+   strong for the next move of the line, softer and amber for a variation's. The tint is mixed
+   with transparent, so it works on the light and the dark background alike. */
+.col tr.pgn-next td { background: color-mix(in srgb, var(--pgn-next) 24%, transparent); }
+.col tr.pgn-var td { background: color-mix(in srgb, var(--pgn-var) 18%, transparent); }
+.col tr.pgn-next td:first-child { box-shadow: inset 3px 0 0 var(--pgn-next); }
+.col tr.pgn-var td:first-child { box-shadow: inset 3px 0 0 var(--pgn-var); }
+.col tr.pgn-next td:first-child, .col tr.pgn-var td:first-child { padding-left: 5px; }
 
 /* A move coloured by the colour code: coloured dot + text (light shades are
    unreadable as text on a light background, so the dot carries the colour). */
@@ -201,13 +217,31 @@ html, body { touch-action: manipulation; }
 .board-row { display: flex; gap: 3px; align-items: stretch; }
 .board-row .board-wrap { flex: 1; min-width: 0; }
 .evalbar {
-  position: relative; flex: 0 0 7px; border-radius: 2px; overflow: visible;
+  position: relative; flex: 0 0 9px; border-radius: 2px; overflow: visible;
   background: linear-gradient(to top, #f2f2f2 var(--white-pos, 50%), #3a3a3a var(--white-pos, 50%));
   outline: 1px solid #0003;
 }
 .evalbar.black-bottom { background: linear-gradient(to bottom, #f2f2f2 var(--white-pos, 50%), #3a3a3a var(--white-pos, 50%)); }
 .evalbar[hidden] { display: none; }
 .evalbar .fill { display: none; } /* the gradient above draws the fill */
+/* The edges (José, 2026-11-09): the evaluation of the previous position, same colours and scale.
+   José asked for about 10 % of the width on each side; the bar is so thin that this would be
+   less than a pixel, so it is 2 px each (the bar grew from 7 to 9 px to keep its middle). */
+.evalbar .prev {
+  display: none; position: absolute; top: 0; bottom: 0; width: 2px;
+  background: linear-gradient(to top, #f2f2f2 var(--prev-pos, 50%), #3a3a3a var(--prev-pos, 50%));
+}
+.evalbar.black-bottom .prev { background: linear-gradient(to bottom, #f2f2f2 var(--prev-pos, 50%), #3a3a3a var(--prev-pos, 50%)); }
+.evalbar.has-prev .prev { display: block; }
+.evalbar .prev-l { left: 0; }
+.evalbar .prev-r { right: 0; }
+/* Maia's previous evaluation (José, 2026-11-09): a red tick on each edge, as thick as Maia's mark */
+.evalbar .prev-maia {
+  display: none; position: absolute; width: 2px; height: 2px; margin-bottom: -1px; background: var(--maia);
+  bottom: var(--prev-maia-pos, 50%);
+}
+.evalbar.black-bottom .prev-maia { bottom: auto; top: var(--prev-maia-pos, 50%); margin: -1px 0 0; }
+.evalbar.has-prev-maia .prev-maia { display: block; }
 /* Maia marker: a red tick across the bar with a small triangle pointing at the board */
 .evalbar .maia-mark {
   position: absolute; left: -1px; right: -1px; height: 2px; background: var(--maia);
@@ -293,6 +327,9 @@ html, body { overflow-x: hidden; }
 .local-bar .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The game on the board, when its list is shown again from 📜 → 📂 */
 .games-list li.picked { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+/* ↩ the game last opened from this 📁 Local database (José, 2026-11-09) */
+.games-list li.last { box-shadow: inset 3px 0 0 var(--accent); }
+.games-list .last-mark { color: var(--accent); font-weight: 700; }
 /* 📜: ⏪ previous game · 📂 its list · 💾 headers · ⏩ next game (iteration 10) */
 .game-view-bar { display: flex; gap: 6px; margin-bottom: 8px; }
 .game-view-bar button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

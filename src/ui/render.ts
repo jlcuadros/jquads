@@ -36,9 +36,13 @@ import type { Opening } from '../book/openingNames'
  *  - book: the opening book's moves of a position (iteration 6), or undefined
  *    while it isn't loaded or when it is turned off in ⚙;
  *  - autoNags: a move's automatic symbols (iteration 7, analysis/autoSymbols.ts),
- *    or undefined when they are off in ⚙.
+ *    or undefined when they are off in ⚙;
+ *  - continuation: the moves the game already has after the current position
+ *    (José, 2026-11-09): `main` = the one that follows in the line on the board,
+ *    `variations` = the other ones. Their rows in the Maia / Stockfish columns
+ *    are highlighted (.pgn-next / .pgn-var).
  */
-const view: { notation: Notation; hideMoves: boolean; deltaCol: boolean; maiaCol: boolean; hevalCol: boolean; book?: (fen: string) => BookMove[]; autoNags?: (n: MoveNode) => number[]; openingComment?: ExtraComment } = {
+const view: { notation: Notation; hideMoves: boolean; deltaCol: boolean; maiaCol: boolean; hevalCol: boolean; book?: (fen: string) => BookMove[]; autoNags?: (n: MoveNode) => number[]; openingComment?: ExtraComment; continuation?: { main?: string; variations: string[] } } = {
   notation: 'figurine',
   hideMoves: false,
   deltaCol: true,
@@ -97,8 +101,17 @@ function chip(uci: string, san: string, color?: string, shape?: Shape): string {
 /** Shape of `uci` from a side's Maia list. */
 const shapeIn = (side: SideAnalysis | undefined, uci: string) => shapeOf(probOf(side?.maia?.policy, uci))
 
-/** `data-move` attribute for a table row, omitted when moves are hidden. */
-const rowMove = (uci: string) => (view.hideMoves ? '' : ` data-move="${uci}"`)
+/**
+ * Attributes of a Maia / Stockfish row: `data-move` (omitted when moves are hidden) and the
+ * highlight of a move the game already has here (José, 2026-11-09): the next move of the
+ * line strongly, a variation's move more softly. Kept with 🙈: it says nothing new, the
+ * move is already in the game.
+ */
+function rowMove(uci: string): string {
+  const c = view.continuation
+  const cls = c?.main === uci ? ' class="pgn-next"' : c?.variations.includes(uci) ? ' class="pgn-var"' : ''
+  return (view.hideMoves ? '' : ` data-move="${uci}"`) + cls
+}
 
 /** Probability without decimals (José, iteration 5: saves space). */
 const pct = (p: number) => `${Math.round(p * 100)}%`

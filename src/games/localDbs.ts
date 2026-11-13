@@ -24,6 +24,7 @@ export interface LocalDb {
   kind: 'file' | 'app'
   usedAt: number // ms: last opened or saved into (order of the buttons)
   count: number // games
+  lastGame?: number // index of the game last opened from it (José, 2026-11-09: shown when it is opened again)
 }
 
 /** Opened files remembered (José: "the last 4"). */
@@ -161,6 +162,11 @@ export async function createDb(name: string): Promise<LocalDb> {
 /** The games of a database (single-game PGNs, file order). */
 export async function loadDb(id: string): Promise<string[]> {
   return (await games.get(id)) ?? []
+}
+
+/** Remembers the game last opened from a database (kept when its file is opened again: same id). */
+export function setLastGame(id: string, index: number) {
+  writeMeta(readMeta().map((d) => (d.id === id ? { ...d, lastGame: index } : d)))
 }
 
 /** Marks a database as just used (it moves first among the files). */

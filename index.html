@@ -148,6 +148,8 @@
               <!-- José, iteration 10: say that it needs "Candidatas h-eval" in Motor -->
               <small class="setting-note" data-i18n="set.hevalCol.note">Solo sale si en Motor se calcula el h-eval («Candidatas h-eval» distinto de «No calcular»).</small>
               <label class="check"><input type="checkbox" id="showMaiaCol" /> <span data-i18n="set.maiaCol">Columna «Maia» en Stockfish</span></label>
+              <!-- José, 2026-11-09: the game's own moves highlighted in the columns, can be turned off -->
+              <label class="check"><input type="checkbox" id="pgnHighlight" /> <span data-i18n="set.pgnHighlight">Resaltar en Maia y SF las jugadas de la partida</span></label>
               <label class="check"><input type="checkbox" id="book" /> <span data-i18n="set.book">Libro de aperturas (Lichess 2300+, rápidas y clásicas)</span></label>
               <!-- Opening names (iteration 11, src/book/openingNames.ts) -->
               <label class="check"><input type="checkbox" id="openingName" /> <span data-i18n="set.openingName">Nombre de la apertura (texto y cabecera del PGN)</span></label>
@@ -205,7 +207,7 @@
         <!-- Optional thin evaluation bar (iteration 4): white/black fill = Stockfish,
              red marker = Maia's win probability for White -->
         <div class="board-row">
-          <div class="evalbar" id="evalBarEl" aria-hidden="true"><div class="fill"></div><div class="sf-mark"></div><div class="maia-mark"></div></div>
+          <div class="evalbar" id="evalBarEl" aria-hidden="true"><div class="fill"></div><div class="prev prev-l"></div><div class="prev prev-r"></div><div class="prev-maia prev-l"></div><div class="prev-maia prev-r"></div><div class="sf-mark"></div><div class="maia-mark"></div></div>
           <div class="board-wrap"><div id="board"></div></div>
         </div>
         <div class="status" id="status"></div>
@@ -226,8 +228,13 @@
           <button id="last" class="small" data-i18n-aria="nav.last">⏭</button>
         </nav>
 
-        <!-- Move list in one horizontal row -->
-        <div class="moves" id="moves"></div>
+        <!-- Move list in one horizontal row, between ⏪ ⏩: previous / next game of the 📁 Local
+             database the game came from (José, 2026-11-09), like 📜's; hidden for any other game -->
+        <div class="moves-row">
+          <button id="stripPrevGame" class="game-step" data-i18n-title="gameView.prevGame" data-i18n-aria="gameView.prevGame" hidden>⏪</button>
+          <div class="moves" id="moves"></div>
+          <button id="stripNextGame" class="game-step" data-i18n-title="gameView.nextGame" data-i18n-aria="gameView.nextGame" hidden>⏩</button>
+        </div>
 
         <div class="cols" id="cols">
           <div class="col maia" id="maiaCol"></div>

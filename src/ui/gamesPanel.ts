@@ -31,7 +31,7 @@ import { favoritesPgn, isFavorite, listFavorites, saveFavorite, toggleFavorite }
 import { RESULTS, ROSTER, defaultHeaders, pgnDate, type PgnHeaders } from '../game/pgn'
 import { shareFile } from '../lib/download'
 import {
-  createDb, dbPgnFile, dbSummaries, findDb, gameRef, listDbs, loadDb, openFile, removeDb, saveToDb, shortName, touchDb, writableDbs,
+  createDb, dbPgnFile, dbSummaries, findDb, gameRef, listDbs, loadDb, openFile, removeDb, saveToDb, setLastGame, shortName, touchDb, writableDbs,
 } from '../games/localDbs'
 import { fetchLichessGames } from '../lichess/games'
 import { fetchChessComGames, CHESSCOM_SPEEDS } from '../chesscom/games'
@@ -55,6 +55,8 @@ interface Hooks {
   buildPgn: (headers: PgnHeaders) => string
   /** The game on the board was saved as favourite or local game `id` with `headers`. */
   onSaved: (id: string, headers: PgnHeaders) => void
+  /** A game was opened from a list, which is now known (pickedInfo): the ⏪ ⏩ beside the move strip follow it. */
+  onPicked?: () => void
 }
 
 /** Headers editable in "Guardar", in this order (Result is a list; the rest text). */
@@ -178,11 +180,11 @@ export function forgetPicked() {
 }
 
 /** For 📜: the list the game came from (a short name) and whether there is a game before / after it. */
-export function pickedInfo(): { label: string; hasPrev: boolean; hasNext: boolean } | undefined {
+export function pickedInfo(): { label: string; hasPrev: boolean; hasNext: boolean; local: boolean } | undefined {
   if (!picked) return undefined
   // Plain name: 📜 puts it after 📂 ("📂 Lichess", "📂 Favoritas", "📂 mis partidas").
   const label = picked.tab === 'favorites' ? t('games.tab.favorites') : picked.tab === 'local' ? shortName(findDb(picked.dbId ?? '')?.name ?? '?') : SITE_NAMES[picked.site]
-  return { label, hasPrev: picked.index > 0, hasNext: picked.index + 1 < picked.list.length || canLoadMoreFor(picked) }
+  return { label, hasPrev: picked.index > 0, hasNext: picked.index + 1 < picked.list.length || canLoadMoreFor(picked), local: picked.tab === 'local' }
 }
 
 /** The recent list of `p` can still grow: same query, and the site has older games. */
@@ -196,7 +198,17 @@ export async function pickNeighbour(dir: 1 | -1): Promise<boolean> {
   const game = p.list[p.index + dir]
   if (!game || !hooks.onPick(game)) return false
   picked = { ...p, index: p.index + dir } // onPick forgot it (a new game started): it is this list's again
+  rememberLast(picked)
   return true
+}
+
+/**
+ * A game was opened from a list: a 📁 Local database remembers it as the one to show the next
+ * time it is opened, and the app is told (the ⏪ ⏩ beside the move strip).
+ */
+function rememberLast(p: Picked) {
+  if (p.tab === 'local' && p.dbId) setLastGame(p.dbId, p.index)
+  hooks.onPicked?.()
 }
 
 function closeGames() {
@@ -275,6 +287,7 @@ function setup() {
     }
     if (!hooks.onPick(game)) return
     picked = { tab, site, dbId: tab === 'local' ? localDb : undefined, list, index, key: queryKey() }
+    rememberLast(picked)
     closeGames()
   }
 }
@@ -421,12 +434,15 @@ async function showLocal(id: string) {
   } catch {
     /* not remembered */
   }
-  localShown = LOCAL_PAGE
   localGames = db ? dbSummaries(db, await loadDb(db.id)) : []
+  // The game last opened from it (José, 2026-11-09): listed (enough pages shown), marked and scrolled to.
+  const last = db?.lastGame !== undefined && db.lastGame < localGames.length ? db.lastGame : undefined
+  localShown = last === undefined ? LOCAL_PAGE : Math.ceil((last + 1) / LOCAL_PAGE) * LOCAL_PAGE
   if (db) touchDb(db.id)
   setStatus(!listDbs().length ? t('games.local.none') : db && !localGames.length ? t('games.local.empty') : '')
   renderSite()
   render()
+  if (last !== undefined) $('gamesList').querySelector<HTMLElement>(`li[data-id="${CSS.escape(localGames[last].id)}"]`)?.scrollIntoView({ block: 'center' })
 }
 
 /** "📄 Abrir PGN…": the chosen file becomes a database (read-only) and is shown. */
@@ -589,6 +605,9 @@ function render() {
   else if (tab === 'favorites') setStatus('')
 
   const dateFmt = new Intl.DateTimeFormat(getLang(), { day: 'numeric', month: 'short', year: 'numeric' })
+  // ↩ the game last opened from this 📁 Local database (José, 2026-11-09); game ids are `${db.id}#${index}`.
+  const db = tab === 'local' ? findDb(localDb) : undefined
+  const lastId = db?.lastGame !== undefined ? `${db.id}#${db.lastGame}` : undefined
   $('gamesList').innerHTML = list
     .map((g) => {
       const gameUser = ownerName(g) // favourites mix the sites
@@ -609,11 +628,12 @@ function render() {
         .filter(Boolean)
         .join(' · ')
       const fav = isFavorite(g.id)
+      const last = g.id === lastId
       return (
         // data-created / data-me: used by scripts/games-test.mjs (order and board orientation)
-        `<li data-id="${g.id}" data-site="${site}" data-created="${g.createdAt}" data-me="${me ?? ''}">` +
+        `<li data-id="${g.id}" data-site="${site}" data-created="${g.createdAt}" data-me="${me ?? ''}"${last ? ` class="last" title="${escapeHtml(t('games.local.last'))}"` : ''}>` +
         `<span class="res ${result ?? 'draw'}">${scoreText(g)}</span>` +
-        `<span class="info"><div class="players">♔ ${player('white')} – ♚ ${player('black')}</div><div class="meta">${meta}</div></span>` +
+        `<span class="info"><div class="players">${last ? '<span class="last-mark">↩</span> ' : ''}♔ ${player('white')} – ♚ ${player('black')}</div><div class="meta">${meta}</div></span>` +
         `<button class="fav" aria-label="${t(fav ? 'games.unfavorite' : 'games.favorite')}">${fav ? '⭐' : '☆'}</button>` +
         `</li>`
       )
