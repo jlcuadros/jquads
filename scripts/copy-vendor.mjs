@@ -15,6 +15,10 @@ const FILES = [
   ['node_modules/lila-stockfish-web/sf17-79.wasm', 'public/vendor/stockfish/sf17-79.wasm'],
   ['node_modules/lila-stockfish-web/sfhce.js', 'public/vendor/stockfish/sfhce.js'],
   ['node_modules/lila-stockfish-web/sfhce.wasm', 'public/vendor/stockfish/sfhce.wasm'],
+  // Single-threaded Stockfish 18 lite (Stockfish.js, Chess.com, GPL-3.0; its small NNUE is inside the .wasm):
+  // the fallback when the page is not cross-origin isolated (some iPhones in the iOS app, task_03.2).
+  ['node_modules/stockfish/bin/stockfish-18-lite-single.js', 'public/vendor/stockfish/stockfish-18-lite-single.js'],
+  ['node_modules/stockfish/bin/stockfish-18-lite-single.wasm', 'public/vendor/stockfish/stockfish-18-lite-single.wasm'],
   // onnxruntime-web WASM backend (runs the Maia model).
   ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs', 'public/vendor/ort/ort-wasm-simd-threaded.mjs'],
   ['node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm', 'public/vendor/ort/ort-wasm-simd-threaded.wasm'],

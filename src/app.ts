@@ -531,7 +531,8 @@ function renderPanel() {
     settings.threatsMode === 'bar', // 'moves' → only the legend line, no bar
   )
   $('maiaCol').innerHTML = renderMaiaCol(analysis?.main, settings.elo, settings.lines)
-  $('sfCol').innerHTML = renderSfCol(analysis?.main, settings.variant === 'sf17' ? 'SF' : t('panel.sfClassic')) // or the endgame tables
+  const sfName = stockfish.singleThread ? 'SF lite' : settings.variant === 'sf17' ? 'SF' : t('panel.sfClassic')
+  $('sfCol').innerHTML = renderSfCol(analysis?.main, sfName) // or the endgame tables
   const name = settings.openingName ? openingNames?.at(tree.current) : undefined
   const opening = name && { name, last: pliesSinceTheory(tree.current) > PLIES_NAME_FIRST }
   $('text').innerHTML = renderText(analysis, settings.elo, tree.current.fen, previousMove(), tree.current.comment, opening)
@@ -983,28 +984,49 @@ function setupControls() {
 async function loadEngines() {
   const status = $('status')
   const progress = { maia: 0, sf: 0 }
+  let lastChange = performance.now()
   const show = () => {
-    // Weighted by download size (classic Stockfish downloads nothing extra).
-    const sfMb = settings.variant === 'sf17' ? 78.4 : 0
+    // Weighted by download size (classic Stockfish and the 1-thread fallback download nothing extra).
+    const sfMb = settings.variant === 'sf17' && self.crossOriginIsolated ? 78.4 : 0
     const total = (progress.maia * 45.7 + progress.sf * sfMb) / (45.7 + sfMb)
     status.innerHTML = `${t('msg.loading', { pct: Math.round(total * 100) })} <progress value="${total}"></progress>`
+    lastChange = performance.now()
   }
   show()
+  // Never wait in silence (task_03.2: an engine that cannot start used to leave "37 %" forever): after
+  // STALL_MS without any progress, say so, with what tells the cause apart. A slow download still moves.
+  const STALL_MS = 90_000
+  const watchdog = setInterval(() => {
+    if (performance.now() - lastChange < STALL_MS) return
+    clearInterval(watchdog)
+    const detail = `no progress for ${STALL_MS / 1000} s (isolated=${self.crossOriginIsolated}, maia=${Math.round(progress.maia * 100)}%, sf=${Math.round(progress.sf * 100)}%)`
+    status.textContent = t('msg.loadError', { detail })
+  }, 5000)
   try {
     await Promise.all([
       maia.init(Math.min(4, CORES), (f) => ((progress.maia = f), show())),
       stockfish.init(settings.variant, Math.min(settings.sfThreads, CORES), settings.hashMb, (f) => ((progress.sf = f), show())),
     ])
+    clearInterval(watchdog)
     status.textContent = ''
     enginesReady = true
+    if (stockfish.singleThread) showSingleThread()
     // First time on this device: measure the speed (1 s) so "Auto" depths fit it.
     if (!settings.sfNps) await measureSpeed(false)
     runAnalysis()
     if (settings.book) void loadOpeningBook() // after the engines: they matter more on a first visit
     if (settings.openingName || settings.openingComments) void loadOpeningNames()
   } catch (e) {
+    clearInterval(watchdog)
     status.textContent = t('msg.loadError', { detail: e instanceof Error ? e.message : String(e) })
   }
+}
+
+/** With the single-threaded fallback (page not cross-origin isolated, task_03.2): 1 thread, not selectable. */
+function showSingleThread() {
+  const threads = $<HTMLSelectElement>('sfThreads')
+  threads.value = '1'
+  threads.disabled = true
 }
 
 /**

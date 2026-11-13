@@ -10,6 +10,12 @@
  * Both builds are multi-threaded and REQUIRE SharedArrayBuffer, i.e. the page must be
  * cross-origin isolated (COOP/COEP headers, see vite.config.ts and public/_headers).
  *
+ * When the page is NOT isolated, those builds never finish starting: their threads need the
+ * shared memory posted to them ("The object can not be cloned") and they wait forever — seen in
+ * the iOS app on some iPhones, "Cargando motores… 37 %" (task_03.2). Then a single-threaded
+ * build is used instead: Stockfish 18 lite (Stockfish.js by Chess.com, GPL-3.0, ~7 MB with its
+ * small NNUE inside, no download), run in a plain Worker. Weaker and one thread only, but it works.
+ *
  * The engine speaks UCI: we send text commands and parse the "info ..." lines.
  */
 import { fetchCached } from '../lib/cache'
@@ -24,6 +30,9 @@ const MODULE_FILE: Record<StockfishVariant, string> = {
   sf17: 'sf17-79.js',
   sfhce: 'sfhce.js',
 }
+
+/** The single-threaded fallback (Stockfish.js "lite single"), copied to public/vendor/stockfish/. */
+const SINGLE_THREAD_FILE = 'stockfish-18-lite-single.js'
 
 /** Minimal typing of the lila-stockfish-web instance (see its stockfishWeb.d.ts). */
 interface StockfishWeb {
@@ -44,6 +53,41 @@ export interface EngineLine {
 }
 
 /**
+ * The single-threaded Stockfish in a plain Worker, behind the same small interface as
+ * lila-stockfish-web (UCI text in, lines out). A class, not an object literal: the minifier
+ * (esbuild) dropped `engine.listen(line)` when `listen` started as an empty function in a literal
+ * (found 2026-11-13: every engine line was lost in the built app).
+ */
+class SingleThreadEngine implements StockfishWeb {
+  listen: (line: string) => void = () => {}
+  onError: (msg: string) => void = () => {}
+  private readonly worker: Worker
+
+  constructor(url: string) {
+    this.worker = new Worker(url)
+    this.worker.onmessage = (e: MessageEvent) => this.listen(String(e.data))
+    this.worker.onerror = (e) => this.onError(e.message || 'failed to start')
+  }
+
+  uci(command: string) {
+    this.worker.postMessage(command)
+  }
+  setNnueBuffer() {} // its NNUE is built in
+  getRecommendedNnue() {
+    return ''
+  }
+
+  /** Waits for the engine's answer to `command`: resolves on the line `until`, fails on a worker error. */
+  ask(command: string, until: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.listen = (line) => line === until && resolve()
+      this.onError = (msg) => reject(new Error(`Stockfish (1 thread): ${msg}`))
+      this.uci(command)
+    })
+  }
+}
+
+/**
  * Shared WebAssembly memory for the engine threads. Tries a large maximum and
  * shrinks it if the browser refuses (low-memory devices), as Lichess does.
  */
@@ -61,6 +105,8 @@ function sharedWasmMemory(initialPages: number, maxPages = 32767): WebAssembly.M
 export class StockfishClient {
   private engine: StockfishWeb | null = null
   private lineHandler: (line: string) => void = () => {}
+  /** True when the page is not cross-origin isolated and the single-threaded fallback runs. */
+  singleThread = false
 
   /** Loads the WASM module (+ NNUE nets for sf17) and runs the UCI handshake. */
   async init(
@@ -68,8 +114,22 @@ export class StockfishClient {
     threads: number,
     hashMb: number,
     onProgress?: (fraction: number) => void,
-  ): Promise<{ ms: number; nnueFromCache?: boolean }> {
+  ): Promise<{ ms: number; nnueFromCache?: boolean; singleThread: boolean }> {
     const t0 = performance.now()
+    if (!self.crossOriginIsolated) {
+      // No shared memory for threads: the multi-threaded builds would hang (task_03.2).
+      this.singleThread = true
+      // Started and ready before the app can use it (once `this.engine` is set, searches take over the lines).
+      const engine = new SingleThreadEngine(`${location.origin}/vendor/stockfish/${SINGLE_THREAD_FILE}`)
+      await engine.ask('uci', 'uciok')
+      engine.uci(`setoption name Hash value ${hashMb}`)
+      await engine.ask('isready', 'readyok')
+      engine.listen = (line) => this.lineHandler(line)
+      engine.onError = (msg) => console.error('stockfish:', msg)
+      this.engine = engine
+      onProgress?.(1)
+      return { ms: performance.now() - t0, singleThread: true }
+    }
     const url = `${location.origin}/vendor/stockfish/${MODULE_FILE[variant]}`
     // Loaded at runtime from public/vendor (not bundled): the Emscripten loader
     // finds its .wasm and spawns its threads relative to its own URL.
@@ -103,7 +163,7 @@ export class StockfishClient {
     engine.uci(`setoption name Threads value ${threads}`)
     engine.uci(`setoption name Hash value ${hashMb}`)
     await this.send('isready', (l) => l === 'readyok')
-    return { ms: performance.now() - t0, nnueFromCache }
+    return { ms: performance.now() - t0, nnueFromCache, singleThread: false }
   }
 
   /** Sends a command and resolves when a line satisfies `until`. */

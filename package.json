@@ -18,7 +18,8 @@
     "chess.js": "1.4.0",
     "chessground": "9.2.1",
     "lila-stockfish-web": "0.0.7",
-    "onnxruntime-web": "1.23.0"
+    "onnxruntime-web": "1.23.0",
+    "stockfish": "18.0.8"
   },
   "devDependencies": {
     "@bubblewrap/cli": "1.27.0",

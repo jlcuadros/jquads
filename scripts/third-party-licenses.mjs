@@ -31,6 +31,7 @@ const COMPONENTS = [
   ['maia-platform-frontend (maiachess.com)', 'CSSLab, University of Toronto', 'GPL-3.0', 'https://github.com/CSSLab/maia-platform-frontend', 'move encoding and move list ported; design and colour code adapted'],
   ['Stockfish 17', 'The Stockfish developers', 'GPL-3.0', 'https://github.com/official-stockfish/Stockfish', 'chess engine (WebAssembly build)'],
   ['lila-stockfish-web', 'Lichess (lichess-org)', 'GPL-3.0 (LICENSE file; package.json says AGPL-3.0-or-later)', 'https://github.com/lichess-org/lila-stockfish-web', 'Stockfish compiled for the web, shipped in vendor/stockfish/'],
+  ['Stockfish.js 18 lite single-threaded (stockfish-18-lite-single)', 'Nathan Rugg / Chess.com, LLC; the Stockfish developers', 'GPL-3.0', 'https://github.com/nmrugg/stockfish.js', 'fallback engine when the page is not cross-origin isolated (some iPhones), shipped in vendor/stockfish/'],
   ['Stockfish NNUE networks', 'The Stockfish developers', 'CC0-1.0', 'https://github.com/official-stockfish/networks', 'downloaded at run time'],
   ['chessground', 'Thibault Duplessis and contributors (Lichess)', 'GPL-3.0', 'https://github.com/lichess-org/chessground', 'board (bundled)'],
   ['cburnett piece set (in chessground)', 'Colin M.L. Burnett', 'GPL-2.0-or-later (used under GPL-3.0)', 'https://en.wikipedia.org/wiki/User:Cburnett', 'piece images'],
