@@ -118,6 +118,14 @@ describe('PGN comments (shown with ✏️, kept on export — 2026-10-26)', () =
     expect(gamePgn(treeFromPgn(pgn), date)).toContain('{Una partida de prueba} 1. e4 {El peón rey} 1... e5 (1... c5 {La siciliana}) 2. Nf3 *')
   })
 
+  it('a ";" inside a {…} comment is text; outside, it starts a comment to the end of the line (bug fixed 2026-11-13)', () => {
+    const t = treeFromPgn('{Ojo; no hay garantía} 1. e4 {bien; muy bien} e5 ; Abierta\n2. Nf3 *')
+    expect(t.root.comment).toBe('Ojo; no hay garantía')
+    expect(t.root.children[0].comment).toBe('bien; muy bien')
+    expect(t.root.children[0].children[0].comment).toBe('Abierta')
+    expect(t.root.children[0].children[0].children[0].san).toBe('Nf3') // the moves after the ";" are still there
+  })
+
   it('round trip keeps moves, variations and comments', () => {
     const once = gamePgn(treeFromPgn(pgn), date)
     expect(gamePgn(treeFromPgn(once), date)).toBe(once)

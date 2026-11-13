@@ -169,7 +169,9 @@ export function treeFromPgn(pgn: string): GameTree {
   const tree = new GameTree(parsePgnHeaders(pgn).FEN || START_FEN)
   const movetext = pgn
     .replace(/^\s*\[.*\]\s*$/gm, '') // headers
-    .replace(/;([^\n]*)/g, (_, c: string) => `{${c.replace(/}/g, ')')}}`) // ; comments to end of line → {…}
+    // ";" comments (to the end of the line) → {…}; a ";" inside a {…} comment is plain text (fixed 2026-11-13,
+    // found in jquads-vision: a comment with ";" made the moves after it disappear when the game was opened again)
+    .replace(/\{[^}]*\}|;([^\n]*)/g, (whole, c: string | undefined) => (c === undefined ? whole : `{${c.replace(/}/g, ')')}}`))
   // Where the next move is played from, and the last move played (a variation
   // replaces that last move, so it starts from its parent).
   let from = tree.root
